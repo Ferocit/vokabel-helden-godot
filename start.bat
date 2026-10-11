@@ -34,9 +34,8 @@ if /i "%~1"=="export" (
   pause
   exit /b %errorlevel%
 )
-rem Beim ersten Start einmal importieren (Texturen, Sounds, Schriften).
-if not exist ".godot\imported" (
-  echo Erster Start: importiere Ressourcen ...
-  "%GODOT%" --headless --path "%~dp0." --import
-)
+rem Vor jedem Start importieren: nach einem Update muss Godot neue Skriptklassen und Ressourcen
+rem registrieren, sonst bleibt der Bildschirm grau. Ist nichts neu, dauert das nur wenige Sekunden.
+echo Pruefe und importiere Ressourcen ...
+"%GODOT%" --headless --path "%~dp0." --import
 start "" "%GODOT%" --path "%~dp0."

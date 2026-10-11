@@ -13,5 +13,6 @@ if [ "$1" = "export" ]; then
   mkdir -p build/linux
   exec "$GODOT" --headless --path . --export-release "Linux" build/linux/Vokabel-Helden.x86_64
 fi
-[ -d .godot/imported ] || "$GODOT" --headless --path . --import
+# Vor jedem Start importieren (neue Skriptklassen nach einem Update registrieren).
+"$GODOT" --headless --path . --import
 exec "$GODOT" --path .
