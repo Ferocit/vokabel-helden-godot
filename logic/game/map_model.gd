@@ -3,8 +3,9 @@ extends RefCounted
 ## LevelMap { seed, width, height, tiles: PackedInt32Array (zeilenweise), rooms, startRoomId, bossRoomId,
 ##            start: Vector2i, objects: Array[MapObject] }
 ## Room      { id, x, y, w, h }
-## MapObject { id, kind: enemy|chest|door|bossDoor|heal, x, y, … }
+## MapObject { id, kind: enemy|chest|door|bossDoor|heal|shrine|plate, x, y, … }
 ##   enemy: enemyId, tier · chest: chestType (normal|rare|special) · door: answers · bossDoor: runes
+##   shrine: Wissensschrein (mehrere Vokabeln, Belohnung nach Treffern) · plate: Runenplatte im Gang (Issue #16)
 
 const VOID := 0
 const FLOOR := 1
@@ -32,4 +33,4 @@ static func room_center(room: Dictionary) -> Vector2i:
 
 ## Objekte, durch die man nicht hindurchlaufen kann, solange sie aktiv sind.
 static func is_solid_object(obj: Dictionary) -> bool:
-	return obj.kind != "enemy"
+	return obj.kind != "enemy" and obj.kind != "plate"

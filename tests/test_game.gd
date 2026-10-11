@@ -326,3 +326,50 @@ func test_level_skalierung_issue16() -> void:
 			fail("seed %d nicht erzeugt" % seed)
 			continue
 		_check_level(map, c, runes, false, "skaliert seed %d" % seed)
+
+
+# ---------- Wissensschreine und Runenplatten (Issue #16) ----------
+
+func test_level_hat_schreine_und_runenplatten() -> void:
+	var c := GameConfig.section("level")
+	for seed in [1, 2, 3, 4, 5]:
+		var map := LevelGenerator.generate(seed, c, {"bossRunesRequired": 4, "enemies": GameData.THEMES[0].enemies})
+		var shrines: Array = map.objects.filter(func(o: Dictionary) -> bool: return o.kind == "shrine")
+		var plates: Array = map.objects.filter(func(o: Dictionary) -> bool: return o.kind == "plate")
+		expect_ge(shrines.size(), int(c.shrines.min), "seed %d" % seed)
+		expect_ge(plates.size(), 1, "seed %d" % seed)
+		for p: Dictionary in plates:
+			var in_room := false
+			for r: Dictionary in map.rooms:
+				if MapModel.room_contains(r, int(p.x), int(p.y)):
+					in_room = true
+			expect_false(in_room, "Runenplatten liegen in Gängen")
+			expect_true(MapModel.is_floor(map, int(p.x), int(p.y)))
+
+
+func test_schrein_belohnung() -> void:
+	var words := int(GameConfig.section("shrine").words)
+	var perfect := Encounters.shrine_reward(words, 60)
+	expect_true(perfect.perfect)
+	expect_gt(int(perfect.heal), 0)
+	var some := Encounters.shrine_reward(1, 60)
+	expect_false(some.perfect)
+	expect_eq(int(some.heal), 0)
+	expect_eq(int(some.gold), int(GameConfig.section("shrine").goldPerCorrect))
+
+
+func test_runenplatte_nie_toedlich() -> void:
+	expect_eq(int(Encounters.plate_result("wrongCorrected", 2).damage), 1)
+	expect_eq(int(Encounters.plate_result("wrongCorrected", 1).damage), 0)
+	expect_eq(int(Encounters.plate_result("almostCorrect", 1).damage), 0)
+	expect_gt(int(Encounters.plate_result("correct", 10).gold), 0)
+
+
+func test_splitter_fuer_schreine() -> void:
+	Ctx.setup(KeyValueStore.new())
+	Ctx.start_run(["sample"], "jungle", 12345)
+	var before := int(Meta.run_reward(Ctx.run, false, Ctx.profile).total)
+	for o: Dictionary in Ctx.run.map.objects:
+		if o.kind == "shrine":
+			Ctx.run.opened[o.id] = true
+	expect_gt(int(Meta.run_reward(Ctx.run, false, Ctx.profile).total), before)

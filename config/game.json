@@ -46,7 +46,15 @@
       "min": 1,
       "max": 3
     },
-    "minEnemyDistanceFromStart": 6
+    "minEnemyDistanceFromStart": 6,
+    "shrines": {
+      "min": 2,
+      "max": 3
+    },
+    "plates": {
+      "min": 2,
+      "max": 4
+    }
   },
   "learning": {
     "wrongAnswerWeight": 5,
@@ -108,7 +116,8 @@
     "eliteEnemy": 15,
     "boss": 40,
     "chest": 3,
-    "almostAnswer": 1
+    "almostAnswer": 1,
+    "shrine": 3
   },
   "meta": {
     "classUnlockCost": {
@@ -128,7 +137,8 @@
       "chest": 1,
       "door": 2,
       "correctPer": 5,
-      "victory": 10
+      "victory": 10,
+      "shrine": 1
     },
     "lives": 3,
     "blessingChoices": 3,
@@ -215,10 +225,21 @@
       "combatRoundSec": 3.5,
       "lootSec": 3.0,
       "choiceSec": 4.0,
-      "shopSec": 10.0
+      "shopSec": 10.0,
+      "shrineSec": 3.0
     },
     "restBelowHp": 0.5,
     "daysBetweenRuns": 1.0,
     "almostShare": 0.3
+  },
+  "shrine": {
+    "words": 3,
+    "goldPerCorrect": 3,
+    "perfectHealShare": 0.3,
+    "perfectFocus": 2
+  },
+  "plate": {
+    "gold": 3,
+    "damage": 3
   }
 }

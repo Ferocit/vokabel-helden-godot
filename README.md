@@ -41,7 +41,9 @@ Einstellungen (Ton, Lautstärke, Vollbild) und eine Spielanleitung gibt es im Ti
 1. **Titel:** Vokabel-Sets auswählen (Filter, Sortierung, Mastery), importieren, bearbeiten oder trainieren.
    „🚪 Spiel verlassen“ beendet das Spiel.
 2. **Klasse wählen** (Tasten 1–3): Krieger, Schurke oder Magier (Schurke und Magier müssen erst freigeschaltet werden).
-3. **Erkunden:** Runen ◆ sammeln (Gegner, Türen), um das Siegeltor zum Boss zu öffnen.
+3. **Erkunden:** Runen ◆ sammeln (Gegner, Türen), um das Siegeltor zum Boss zu öffnen. **Wissensschreine**
+   (blaue Steintafeln) fragen drei Vokabeln ab – je mehr richtig, desto besser die Belohnung, alle drei heilen.
+   **Runenplatten** in den Gängen fragen beim Drüberlaufen ein Wort ab (richtig: Gold, falsch: ein paar HP).
    Der Kristallaltar heilt und ist der Rückkehrpunkt nach einer Niederlage.
 4. **Kämpfen:** Jede Aktion verlangt eine richtig erinnerte Vokabel. Falsch → die Aktion verpufft, die
    Lösung wird gezeigt und einmal abgetippt; das Wort kommt bald wieder. **Fast richtig** (ein Tippfehler oder

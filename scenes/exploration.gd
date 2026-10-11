@@ -89,7 +89,7 @@ func is_solid_tile(x: int, y: int) -> bool:
 	for obj: Dictionary in run.map.objects:
 		if obj.x != x or obj.y != y:
 			continue
-		if obj.kind == "chest" or obj.kind == "heal":
+		if obj.kind == "chest" or obj.kind == "heal" or obj.kind == "shrine":
 			return true
 		if (obj.kind == "door" or obj.kind == "bossDoor") and not run.opened.has(obj.id):
 			return true
@@ -180,6 +180,10 @@ func _process(delta: float) -> void:
 		walk_time = 0.0
 	_place_hero()
 	fx.target = Vector3(run.player.x, 0, run.player.y)
+	var plate := Encounters.plate_at(run, Vector2i(floori(run.player.x), floori(run.player.y)))
+	if not plate.is_empty():
+		trigger_plate(plate)
+		return
 	update_enemies(dt)
 	check_enemy_contact()
 	_update_prompt()
@@ -312,7 +316,7 @@ func nearest_interactable() -> Variant:
 	var best: Variant = null
 	var best_dist := INTERACT_RANGE
 	for obj: Dictionary in run.map.objects:
-		if obj.kind == "enemy":
+		if obj.kind == "enemy" or obj.kind == "plate":
 			continue
 		if obj.kind != "heal" and run.opened.has(obj.id):
 			continue
@@ -346,6 +350,8 @@ func describe(obj: Dictionary) -> String:
 			return "Siegeltor – dir fehlen noch %d Runen" % missing if missing > 0 else "Siegeltor mit den Runen öffnen"
 		"heal":
 			return "Am Kristallaltar ausruhen"
+		"shrine":
+			return "Wissensschrein befragen (%d Vokabeln – je mehr richtig, desto besser)" % int(GameConfig.section("shrine").words)
 	return ""
 
 
@@ -394,6 +400,18 @@ func interact(obj: Dictionary) -> void:
 			_shake(0.4, 0.12)
 			toast("Die Runen leuchten auf – das Siegeltor öffnet sich! Dahinter wartet der Boss.")
 			Ctx.autosave()
+		"shrine":
+			busy = true
+			var hits: int = await run_shrine()
+			busy = false
+			_target_dirty = true
+			if hits < 0:
+				return
+			run.opened[obj.id] = true
+			_refresh_object(obj)
+			grant_shrine(hits)
+			hud.refresh()
+			Ctx.autosave()
 		"chest", "door":
 			busy = true
 			var title: String = MapModel.CHEST_LABELS[obj.chestType] if obj.kind == "chest" else "Verschlossene Tür"
@@ -428,6 +446,79 @@ func grant_chest(obj: Dictionary) -> void:
 	loot_toast(MapModel.CHEST_LABELS[obj.chestType], CHEST_ICONS[obj.chestType], LootView.entries(loot, xp))
 	if levels > 0:
 		level_up_toast(levels)
+
+
+## Wissensschrein: Vokabeln nacheinander, jede genau einmal. Liefert die Zahl der Treffer
+## (richtig oder fast richtig) oder -1, wenn vor der ersten Antwort abgebrochen wurde.
+func run_shrine() -> int:
+	var words := int(GameConfig.section("shrine").words)
+	var wallet := Ctx.hint_wallet(int(run.focus))
+	var learning: LearningSession = run.learning
+	var hits := 0
+	for i in words:
+		var item := learning.next_word("normal")
+		var prompt := VocabPrompt.create({"item": item, "wallet": wallet, "label": "Wissensschrein", "footer": "Frage %d/%d · %d richtig" % [i + 1, words, hits], "allow_cancel": i == 0})
+		prompt.wallet_changed.connect(func(w: Dictionary) -> void:
+			run.focus = int(w.focus)
+			hud.refresh())
+		ui.add_child(prompt)
+		var out: Dictionary = await prompt.finished
+		wallet = out.wallet
+		run.focus = int(wallet.focus)
+		if out.cancelled:
+			return -1
+		var levels := Ctx.submit_answer(item, out.result)
+		if levels > 0:
+			level_up_toast(levels)
+		hud.refresh()
+		if out.result.outcome != "wrongCorrected":
+			hits += 1
+	return hits
+
+
+func grant_shrine(hits: int) -> void:
+	var s := Ctx.stats()
+	var r := Encounters.shrine_reward(hits, int(s.maxHp))
+	Ctx.apply_loot({"gold": int(r.gold), "potions": 0, "itemId": null})
+	run.hp = mini(int(s.maxHp), int(run.hp) + int(r.heal))
+	run.focus = mini(int(s.maxFocus), int(run.focus) + int(r.focus))
+	var xp := int(GameConfig.section("xp").shrine)
+	var levels := Ctx.gain_xp(xp)
+	Sound.play("chest" if r.perfect else "coins")
+	var entries := LootView.entries({"gold": r.gold}, xp)
+	if r.perfect:
+		entries.append({"icon": "✨", "title": "Segen des Schreins", "detail": "Alle %d richtig!" % hits, "amount": "+%d HP · +%d FP" % [int(r.heal), int(r.focus)], "color": UI.GOOD, "highlight": true})
+	loot_toast("Wissensschrein – %d richtig" % hits, SHRINE_FRAME, entries)
+	if levels > 0:
+		level_up_toast(levels)
+
+
+## Runenplatte: Beim Drüberlaufen eine Vokabel. Richtig → etwas Gold, falsch → ein paar HP (nie tödlich).
+func trigger_plate(obj: Dictionary) -> void:
+	busy = true
+	walk_time = 0.0
+	run.opened[obj.id] = true
+	_refresh_object(obj)
+	Sound.play("hint")
+	var item := (run.learning as LearningSession).next_word("normal")
+	var prompt := VocabPrompt.create({"item": item, "wallet": Ctx.hint_wallet(int(run.focus)), "label": "Runenplatte"})
+	ui.add_child(prompt)
+	var out: Dictionary = await prompt.finished
+	run.focus = int(out.wallet.focus)
+	var levels := Ctx.submit_answer(item, out.result)
+	var r := Encounters.plate_result(out.result.outcome, int(run.hp))
+	if int(r.gold) > 0:
+		Ctx.apply_loot({"gold": int(r.gold), "potions": 0, "itemId": null})
+		toast("Die Runenplatte leuchtet auf: +%d Gold" % int(r.gold))
+	else:
+		run.hp = int(run.hp) - int(r.damage)
+		_shake(0.2, 0.1)
+		toast("Die Runenplatte zischt: −%d HP" % int(r.damage))
+	if levels > 0:
+		level_up_toast(levels)
+	busy = false
+	hud.refresh()
+	Ctx.autosave()
 
 
 ## Lernaktion außerhalb des Kampfes (Truhe, Tür): `required` richtig erinnerte Vokabeln öffnen sie.
@@ -653,6 +744,7 @@ func toast(text: String) -> void:
 
 
 const CHEST_ICONS := {"normal": 89, "rare": 90, "special": 92}
+const SHRINE_FRAME := 65
 
 
 ## Beute einer Truhe als kleine Liste mit Symbolen; blendet sich wie ein Toast selbst aus.

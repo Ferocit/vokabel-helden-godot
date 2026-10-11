@@ -59,6 +59,12 @@ func _draw() -> void:
 				c = Color("#8a5a2c")
 			"bossDoor":
 				c = Color("#c070ff")
+			"shrine":
+				c = Color("#7ab8ff") if not run.opened.has(obj.id) else Color("#6a7080")
+			"plate":
+				if run.opened.has(obj.id):
+					continue
+				c = Color("#5ab0ff")
 			_:
 				c = Color("#3ddc84")
 		if obj.kind in ["door", "bossDoor"] and run.opened.has(obj.id):

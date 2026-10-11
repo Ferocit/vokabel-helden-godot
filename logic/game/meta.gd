@@ -160,7 +160,7 @@ static func reset_run_fields(profile: Dictionary, player_cfg: Dictionary) -> Dic
 ## Belohnung für ein beendetes Abenteuer: { total, lines: [[Text, Splitter], …] }
 static func run_reward(run: Dictionary, victory: bool, profile: Dictionary) -> Dictionary:
 	var c: Dictionary = cfg().shards
-	var counts := {"normal": 0, "elite": 0, "boss": 0, "chest": 0, "door": 0}
+	var counts := {"normal": 0, "elite": 0, "boss": 0, "chest": 0, "door": 0, "shrine": 0}
 	for obj: Dictionary in run.map.objects:
 		if obj.kind == "enemy" and run.defeated.has(obj.id):
 			counts[obj.tier] += 1
@@ -168,6 +168,8 @@ static func run_reward(run: Dictionary, victory: bool, profile: Dictionary) -> D
 			counts.chest += 1
 		elif obj.kind == "door" and run.opened.has(obj.id):
 			counts.door += 1
+		elif obj.kind == "shrine" and run.opened.has(obj.id):
+			counts.shrine += 1
 	var correct := 0
 	var learning: LearningSession = run.learning
 	for r: Dictionary in learning.run.records.values():
@@ -181,6 +183,7 @@ static func run_reward(run: Dictionary, victory: bool, profile: Dictionary) -> D
 	add.call("Boss", counts.boss, int(c.boss))
 	add.call("Truhen", counts.chest, int(c.chest))
 	add.call("Türen", counts.door, int(c.door))
+	add.call("Wissensschreine", counts.shrine, int(c.get("shrine", 0)))
 	var per_words := int(c.correctPer)
 	if per_words > 0 and correct >= per_words:
 		lines.append(["%d richtig erinnerte Vokabeln" % correct, correct / per_words])

@@ -106,3 +106,11 @@ func test_balance_verteidigen_umgeht_keine_schweren_woerter() -> void:
 	var s := batch({"seed": 6100, "learner": "beginner"}, 30)
 	expect_gt(s.defendShare, 0.0, "Der Bot verteidigt überhaupt")
 	expect_lt(absf(float(s.defendKnowledge) - float(s.otherKnowledge)), 0.08)
+
+
+func test_balance_abfragen_pro_minute() -> void:
+	# Issue #16: Schreine und Runenplatten bringen mehr Abfragen, ohne das Abenteuer zu verlängern.
+	var s := batch({"seed": 6200, "learner": "average"}, 20)
+	expect_ge(s.perMinute, 4.0)
+	expect_ge(s.questions, 42.0)
+	expect_le(s.minutes, 14.0)

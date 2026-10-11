@@ -225,6 +225,42 @@ func test_erkundung_truhe_abbrechen_und_oeffnen() -> void:
 	e.free()
 
 
+func test_erkundung_wissensschrein() -> void:
+	var e := _explore()
+	var shrine := find_obj(e, "shrine")
+	expect_true(e.is_solid_tile(shrine.x, shrine.y), "Schrein blockiert")
+	var gold := int(Ctx.profile.gold)
+	e.interact(shrine)
+	var asked := 0
+	while current_prompt(e) != null and asked < 10:
+		var p := current_prompt(e)
+		answer(p, p.entry.en)
+		asked += 1
+	expect_eq(asked, int(GameConfig.section("shrine").words), "Jede Vokabel genau einmal")
+	expect_true(Ctx.run.opened.has(shrine.id))
+	expect_gt(int(Ctx.profile.gold), gold, "Belohnung")
+	expect_false(e.busy)
+	e.free()
+
+
+func test_erkundung_runenplatte_beim_drueberlaufen() -> void:
+	var e := _explore()
+	var plate := find_obj(e, "plate")
+	Ctx.run.player = Vector2(plate.x + 0.5, plate.y + 0.5)
+	e._process(0.016)
+	expect_true(e.busy, "Platte löst eine Abfrage aus")
+	var p := current_prompt(e)
+	expect_true(p != null)
+	var hp := int(Ctx.run.hp)
+	answer(p, "xyz")
+	if current_prompt(e) != null:
+		answer(current_prompt(e), current_prompt(e).entry.en)  # Lösung abtippen
+	expect_true(Ctx.run.opened.has(plate.id), "Platte verbraucht")
+	expect_lt(int(Ctx.run.hp), hp, "Falsch kostet ein paar HP")
+	expect_false(e.busy)
+	e.free()
+
+
 func test_erkundung_gegnerkontakt_startet_kampf() -> void:
 	var e := _explore()
 	var enemy := find_obj(e, "enemy")

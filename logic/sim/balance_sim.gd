@@ -461,12 +461,39 @@ class _Run:
 			run_state.runes = int(run_state.runes) + 1
 		pick_talents()
 
+	## Wissensschrein: jede Vokabel einmal, Belohnung nach Treffern (wie Exploration.run_shrine).
+	func shrine(obj: Dictionary) -> void:
+		var wallet := _wallet(int(run_state.focus))
+		var hits := 0
+		for i in int(c.shrine.words):
+			if ask("normal", wallet) != "wrongCorrected":
+				hits += 1
+		run_state.focus = int(wallet.focus)
+		run_state.opened[obj.id] = true
+		var s := _stats()
+		var r := Encounters.shrine_reward(hits, int(s.maxHp))
+		profile.gold = int(profile.gold) + int(r.gold)
+		run_state.hp = mini(int(s.maxHp), int(run_state.hp) + int(r.heal))
+		run_state.focus = mini(int(s.maxFocus), int(run_state.focus) + int(r.focus))
+		gain_xp(int(c.xp.shrine))
+		_spend(float(sc.time.shrineSec))
+		pick_talents()
+
+	## Runenplatte: eine Vokabel, Gold oder ein paar HP Schaden.
+	func plate(obj: Dictionary) -> void:
+		run_state.opened[obj.id] = true
+		var outcome := ask("normal", _wallet(int(run_state.focus)))
+		var r := Encounters.plate_result(outcome, int(run_state.hp))
+		profile.gold = int(profile.gold) + int(r.gold)
+		run_state.hp = int(run_state.hp) - int(r.damage)
+		pick_talents()
+
 	# ---------- Ablauf ----------
 
 	func play() -> Dictionary:
 		var altars: Array = map.objects.filter(func(x: Dictionary) -> bool: return x.kind == "heal")
 		var todo: Array = map.objects.filter(func(x: Dictionary) -> bool:
-			return x.kind in ["chest", "door"] or (x.kind == "enemy" and x.tier != "boss"))
+			return x.kind in ["chest", "door", "shrine", "plate"] or (x.kind == "enemy" and x.tier != "boss"))
 		var boss: Dictionary = map.objects.filter(func(x: Dictionary) -> bool: return x.kind == "enemy" and x.tier == "boss")[0]
 		var defeats := 0
 		var boss_attempts := 0
@@ -480,7 +507,11 @@ class _Run:
 			if obj.kind == "enemy" and (obj.tier == "elite" or low):
 				rest(_nearest(altars))
 			_walk_to(Vector2i(obj.x, obj.y))
-			if obj.kind == "enemy":
+			if obj.kind == "shrine":
+				shrine(obj)
+			elif obj.kind == "plate":
+				plate(obj)
+			elif obj.kind == "enemy":
 				if fight(obj) == "lost":
 					defeats += 1
 					alive = Meta.lose_life(profile)

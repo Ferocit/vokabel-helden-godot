@@ -288,10 +288,19 @@ func _try_generate() -> Dictionary:
 			return {"id": id, "kind": "chest", "x": x, "y": y, "chestType": chest_type}):
 			return {}
 
+	# Wissensschreine in Räumen, Runenplatten in Gängen (Issue #16: mehr Abfragen unterwegs).
+	var shrine_rooms: Array = Rng.shuffle(rng, non_start)
+	for i in _rand(cfg.get("shrines", {"min": 0, "max": 0})):
+		var rotated: Array = shrine_rooms.slice(i % shrine_rooms.size()) + shrine_rooms
+		if not _place(rotated, func(x: int, y: int, id: String) -> Dictionary:
+			return {"id": id, "kind": "shrine", "x": x, "y": y}):
+			break
+	_place_plates(_rand(cfg.get("plates", {"min": 0, "max": 0})))
+
 	# 6. Absicherung: Mit allen festen Objekten als Hindernis muss alles erreichbar bleiben.
 	var walls := PackedInt32Array([boss_door_idx])
 	for o: Dictionary in objects:
-		if o.kind == "chest" or o.kind == "heal":
+		if o.kind == "chest" or o.kind == "heal" or o.kind == "shrine":
 			walls.append(_idx(o.x, o.y))
 	var final_dist := _bfs(walls)
 	for o: Dictionary in objects:
@@ -418,6 +427,32 @@ func _free_tiles(room: Dictionary, min_dist: int) -> Array:
 				continue
 			result.append(Vector2i(x, y))
 	return result
+
+
+## Runenplatten auf Gangkacheln (außerhalb der Räume), mit Abstand zueinander und zu Türen.
+func _place_plates(count: int) -> void:
+	var corridor: Array = []
+	for y in range(1, H - 1):
+		for x in range(1, W - 1):
+			var i := _idx(x, y)
+			if tiles[i] == MapModel.FLOOR and room_at[i] == -1 and not occupied.has(i):
+				corridor.append(Vector2i(x, y))
+	var placed: Array = []
+	for t: Vector2i in Rng.shuffle(rng, corridor):
+		if placed.size() >= count:
+			return
+		var ok := true
+		for o: Dictionary in objects:
+			if absi(int(o.x) - t.x) + absi(int(o.y) - t.y) < (5 if o.kind == "plate" else 2):
+				ok = false
+				break
+		if not ok:
+			continue
+		occupied[_idx(t.x, t.y)] = true
+		var plate := {"id": "o%d" % counter, "kind": "plate", "x": t.x, "y": t.y}
+		counter += 1
+		objects.append(plate)
+		placed.append(plate)
 
 
 func _place(candidates: Array, make: Callable, min_dist: int = 0) -> bool:

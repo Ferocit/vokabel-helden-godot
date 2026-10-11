@@ -27,6 +27,9 @@ static func scale_level_config(cfg: Dictionary, scale: float) -> Dictionary:
 	c.eliteEnemies = _scale_range(cfg.eliteEnemies, sqrt(scale))
 	c.chests = _scale_range(cfg.chests, scale)
 	c.doors = _scale_range(cfg.doors, pow(scale, 0.7))
+	if cfg.has("shrines"):
+		c.shrines = _scale_range(cfg.shrines, sqrt(scale))
+		c.plates = _scale_range(cfg.plates, scale)
 	return c
 
 

@@ -17,7 +17,7 @@ const SIDE_DOOR_YAW := 62.0
 const TD := {
 	"floor": [48, 48, 48, 48, 48, 48, 48, 48, 42], "wall": [40, 40, 40, 57, 59, 58, 28], "wall_plain": 40,
 	"banner": 29, "door": 45, "chest": 89, "chest_rare": 90, "chest_special": 92,
-	"altar": 32, "pots": [54, 55, 56],
+	"altar": 32, "pots": [54, 55, 56], "shrine": 65, "plate": 60,
 }
 const TT := {"grass": [0, 0, 0, 0, 1, 1, 2], "dirt": 25, "trees": [4, 16, 28, 5], "bush": [5, 17], "mushrooms": 29}
 const SHEET_PX := Vector2(192.0, 176.0)
@@ -489,6 +489,26 @@ func _create_view(obj: Dictionary) -> void:
 				s.modulate = Color("#e0a0ff")
 				node.add_child(_light(Color("#c070ff"), 1.6, 3.2, Vector3(0, 1.0, 0.6)))
 			node.add_child(_marker(Color("#e0a0ff") if obj.kind == "bossDoor" else Color.WHITE))
+		"shrine":
+			node.add_child(Fx.shadow_quad(0.8))
+			var s := Fx.sprite(Assets.frame(TD.shrine))
+			s.rotation.x = TILT
+			node.add_child(s)
+			if gone:
+				s.modulate = Color(0.45, 0.45, 0.5, 0.9)
+			else:
+				node.add_child(_light(Color("#7ab8ff"), 1.0, 2.6, Vector3(0, 0.8, 0.4)))
+				node.add_child(_marker(Color("#9cc8ff")))
+		"plate":
+			if gone:
+				return
+			# Flach auf dem Boden liegende, schwach leuchtende Runenplatte.
+			var s := Fx.sprite(Assets.frame(TD.plate), 16.0, false)
+			s.rotation.x = -PI / 2.0
+			s.position.y = 0.03
+			s.modulate = Color("#8fd8ff")
+			node.add_child(s)
+			node.add_child(_light(Color("#5ab0ff"), 0.6, 1.6, Vector3(0, 0.4, 0)))
 		"heal":
 			var s := Fx.sprite(Assets.frame(TD.altar))
 			s.rotation.x = TILT
