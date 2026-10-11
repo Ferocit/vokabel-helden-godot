@@ -13,6 +13,10 @@ var _list_body: VBoxContainer
 var _summary: Label
 var _toggle_all: Button
 var _start_btn: Button
+var _fx: WorldFx
+var _pan_points: Array[Vector3] = []
+var _pan_i := 0
+var _pan_t := 0.0
 
 
 func _ready() -> void:
@@ -32,25 +36,43 @@ func _exit_tree() -> void:
 		get_window().files_dropped.disconnect(_on_files_dropped)
 
 
-## Kulisse; in Phase 3 kommt hier ein langsam schwenkendes 3D-Level dazu.
+## Ein zufälliges Level als langsam schwenkende 3D-Kulisse.
 func _build_backdrop() -> void:
-	var bg := TextureRect.new()
-	bg.name = "Backdrop"
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	var grad := Gradient.new()
-	grad.colors = PackedColorArray([Color("#1b2a1c"), Color("#0b120d"), Color("#030504")])
-	grad.offsets = PackedFloat32Array([0.0, 0.55, 1.0])
-	var tex := GradientTexture2D.new()
-	tex.gradient = grad
-	tex.fill = GradientTexture2D.FILL_RADIAL
-	tex.fill_from = Vector2(0.5, 0.35)
-	tex.fill_to = Vector2(1.1, 1.1)
-	tex.width = 256
-	tex.height = 144
-	bg.texture = tex
-	add_child(bg)
+	var theme := GameData.get_theme("jungle")
+	var cfg := GameConfig.section("level")
+	var map := LevelGenerator.generate(Rng.random_seed(), cfg, {"bossRunesRequired": 3, "enemies": theme.enemies})
+	var world := Node3D.new()
+	world.name = "Backdrop"
+	add_child(world)
+	world.add_child(LevelBuilder.build(map).root)
+	_fx = WorldFx.new(1.2)
+	_fx.zoom = 0.8
+	_fx.follow_speed = 0.0
+	world.add_child(_fx)
+	for room: Dictionary in map.rooms:
+		var c := MapModel.room_center(room)
+		_pan_points.append(Vector3(c.x + 0.5, 0, c.y + 0.5))
+	_fx.target = _pan_points[0]
+	_fx.snap()
+	var shade := ColorRect.new()
+	shade.color = Color(0.02, 0.04, 0.024, 0.35)
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(shade)
+
+
+func _process(delta: float) -> void:
+	if _fx == null or _pan_points.size() < 2:
+		return
+	# Gleichmäßig von Raum zu Raum schwenken (etwa 9 s pro Abschnitt, sanft ein- und ausblenden).
+	_pan_t += delta / 9.0
+	if _pan_t >= 1.0:
+		_pan_t = 0.0
+		_pan_i = (_pan_i + 1) % _pan_points.size()
+	var a: Vector3 = _pan_points[_pan_i]
+	var b: Vector3 = _pan_points[(_pan_i + 1) % _pan_points.size()]
+	_fx.target = a.lerp(b, smoothstep(0.0, 1.0, _pan_t))
+	_fx.snap()
 
 
 # ---------- Hauptmenü ----------

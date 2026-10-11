@@ -9,6 +9,14 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		var kv := a.split("=", true, 1)
 		args[kv[0]] = kv[1] if kv.size() > 1 else ""
+	# run=1 startet ein Abenteuer mit dem Beispiel-Set (Spielstand nur im Arbeitsspeicher).
+	if args.has("run"):
+		Ctx.setup(KeyValueStore.new())
+		Ctx.profile.heroClass = args.get("class", "warrior")
+		Ctx.start_run(["sample"], "jungle", int(args.get("seed", "12345")))
+		if args.has("at"):
+			var at: PackedStringArray = String(args.at).split(",")
+			Ctx.run.player = Vector2(float(at[0]), float(at[1]))
 	var scene: PackedScene = load(args.get("scene", "res://scenes/title.tscn"))
 	var node := scene.instantiate()
 	get_tree().root.add_child.call_deferred(node)

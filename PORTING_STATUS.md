@@ -4,8 +4,10 @@
 - **Phaser-Original als Referenz:** `G:\VibeCoding\VokabelHeroes`. Dort nichts ändern.
 - **Godot:** `E:\Spiele\Steam\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe` (4.7.2)
 - **Godot in der Cloud (Linux):** 4.7.2 stable von github.com/godotengine/godot-builds, nach `/usr/local/bin/godot` verlinken.
-- **Tests:** `godot --headless --path . -s res://tests/run_tests.gd [-- filter]`. Erwartet: 58 grün, etwa 25–40 s.
+- **Tests:** `godot --headless --path . -s res://tests/run_tests.gd [-- filter]`. Erwartet: 70 grün, etwa 25–40 s.
 - **Screenshots:** Linux: `tools/shot.sh <name> scene=res://scenes/title.tscn [call=open_unit_manager]` (xvfb + opengl3).
+  Ohne GPU: `apt-get install mesa-vulkan-drivers` (lavapipe) für Forward+, sonst `DRIVER=opengl3`.
+  Mit `run=1 [class=rogue] [seed=…] [at=x,y]` startet ein Abenteuer im Arbeitsspeicher.
   Windows: `godot --path . res://tools/screenshot.tscn -- out=screenshots/x.png scene=…`. Argumente mit `|` trennen, `@pfad` übergibt Dateiinhalt.
 - **Repo:** github.com/Ferocit/vokabel-helden-godot (privat), Branch `main`.
 
@@ -21,15 +23,23 @@
     (`files_dropped`), Klassenwahl (1–3), Sets & Statistik, Ausrüstung mit Händler, Fortsetzen
   - `ui/import_dialog.gd` (Tabellen-Editor mit Anhängen), `ui/stats_view.gd`, `ui/equipment_view.gd`
   - Testläufer startet jetzt im ersten Frame (damit `_ready` beim Einhängen läuft)
+- **Phase 3:** HD-2D-Erkundung in 3D, 12 Welt-Tests.
+  - `world/level_builder.gd`: Boden, Mauerblöcke (2 hoch, Rückwände), Urwald und Deko als zur Kamera geneigte
+    Sprite-Quads, pro 8×8-Chunk zu Meshes zusammengefasst. Vor Wegen nur niedrige Büsche (Sichtlinie).
+    Objekte (Gegner, Truhen, Türen, Altar) als Sprite3D mit Licht, Markierungspfeil (immer sichtbar), Funken.
+  - `world/world_fx.gd`: Kamera (52°, FOV 34), Glow, SSAO, Nebel, Filmic, Vignette, Glühwürmchen, Blätter. Keine DOF.
+  - `world/fx.gd`: Pixel-Fackel (3 Frames), Pfeil, Schatten, Lichtstrahl; Flicker/FrameAnim/Bob-Helfer.
+  - `scenes/exploration.tscn`: Bewegung mit Wandgleiten, Interaktion (E/Enter/Leertaste), Truhen/Türen per
+    Vokabeln (`run_challenge`), Altar, Siegeltor, HUD (`ui/hud.gd`), Minikarte (`ui/minimap.gd`), Toasts, Menü (Esc).
+  - `ui/vocab_prompt.gd`: Abfrage mit Hilfen (Alt+1/2), Fehlerkorrektur durch Abtippen, Esc bricht ab.
+  - `ui/controls.gd`: Input-Actions zur Laufzeit. Titel-Kulisse ist jetzt ein schwenkendes 3D-Level.
+  - Kampfstart ruft `res://scenes/combat.tscn` auf (Knoten mit `object_id` und Signal `finished(data)`),
+    Rückgabe über `on_combat_return({objectId, outcome, messages, victory?})`.
 
 ## Nächste Schritte (siehe Plan, Abschnitt „Reihenfolge“)
-1. **Phase 3:** HD-2D-Erkundung in 3D (`world/level_builder.gd`):
-   - Sprite3D-Billboards, OmniLight-Fackeln
-   - WorldEnvironment mit Glow, SSAO und Nebel; **keine Tiefenunschärfe**
-   - Titel-Kulisse (`title.gd/_build_backdrop`) danach durch schwenkendes 3D-Level ersetzen
-2. **Phase 4:** Kampf
-3. **Phase 5:** Auswertung, Sound
-4. **Phase 6:** Melden via gh, start.bat, README
+1. **Phase 4:** Kampf
+2. **Phase 5:** Auswertung, Sound
+3. **Phase 6:** Melden via gh, start.bat, README
 
 **Arbeitsweise:**
 - Selbstständig ohne Rückfragen arbeiten.
