@@ -327,3 +327,25 @@ func test_kacheln_ohne_sandhintergrund() -> void:
 		expect_eq(img.get_pixel(15, 15).a, 0.0, "Kachel %d: Ecke durchsichtig" % f)
 		expect_gt(img.get_pixel(8, 8).a, 0.0, "Kachel %d: Motiv bleibt" % f)
 	expect_gt(Assets.frame_image(48).get_pixel(0, 15).a, 0.0, "Bodenkacheln bleiben unverändert")
+
+
+## Issue #15: Keine Stachelfalle (Bodenkachel 41) auf den Mauern.
+func test_keine_stacheln_an_der_wand() -> void:
+	Ctx.setup(KeyValueStore.new())
+	Ctx.start_run(["sample"], "jungle", 777)
+	var level := LevelBuilder.build(Ctx.run.map)
+	var spikes := LevelBuilder.uv_rect(41)
+	var found := false
+	for mi: MeshInstance3D in level.root.find_children("*", "MeshInstance3D", true, false):
+		var mesh := mi.mesh as ArrayMesh
+		if mesh == null:
+			continue
+		for s in mesh.get_surface_count():
+			var mat := mi.material_override as BaseMaterial3D
+			if mat == null or mat.albedo_texture != Assets.sheet(Assets.DUNGEON):
+				continue
+			for uv: Vector2 in mesh.surface_get_arrays(s)[Mesh.ARRAY_TEX_UV]:
+				if spikes.has_point(uv):
+					found = true
+	expect_false(found, "Stachel-Kachel an der Wand")
+	level.root.free()

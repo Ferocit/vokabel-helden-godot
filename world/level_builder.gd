@@ -16,7 +16,7 @@ const SIDE_DOOR_YAW := 62.0
 
 const TD := {
 	"floor": [48, 48, 48, 48, 48, 48, 48, 48, 42], "wall": [40, 40, 40, 57, 59, 58, 28], "wall_plain": 40,
-	"banner": 29, "skull": 41, "door": 45, "door_open": 9, "chest": 89, "chest_rare": 90, "chest_special": 92,
+	"banner": 29, "door": 45, "door_open": 9, "chest": 89, "chest_rare": 90, "chest_special": 92,
 	"altar": 32, "pots": [54, 55, 56],
 }
 const TT := {"grass": [0, 0, 0, 0, 1, 1, 2], "dirt": 25, "trees": [4, 16, 28, 5], "bush": [5, 17], "mushrooms": 29}
@@ -214,7 +214,8 @@ func _build_ground_and_walls(w: int, h: int) -> void:
 		var j := key.y
 		var room: Dictionary = _room_of(i, j + 1)
 		var torch := _is_torch_column(room, i)
-		var lower: int = TD.wall_plain if torch else (_pick([TD.banner, TD.skull]) if rng.call() < 0.12 else _pick(TD.wall))
+		# Kachel 41 (Stachelfalle) ist eine Bodenkachel und sah an der Wand flach aufgemalt aus (Issue #15).
+		var lower: int = TD.wall_plain if torch else (TD.banner if rng.call() < 0.12 else _pick(TD.wall))
 		var upper: int = TD.wall_plain if torch else _pick(TD.wall)
 		var z := float(j + 1)
 		var st := _st(i, j, "dungeon")
