@@ -20,7 +20,7 @@ var _pan_t := 0.0
 
 
 func _ready() -> void:
-	Sound.enabled = bool(Ctx.settings.get("sound", true))
+	SettingsView.apply()
 	_build_backdrop()
 	_ui = Control.new()
 	_ui.name = "UI"
@@ -93,12 +93,10 @@ func render_menu() -> void:
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 	var p: Dictionary = Ctx.profile
-	var sound_btn := UI.button("Ton: %s" % ("an" if Ctx.settings.sound else "aus"), Callable(), "SmallButton")
-	sound_btn.pressed.connect(func() -> void:
-		Ctx.settings.sound = not Ctx.settings.sound
-		Sound.enabled = Ctx.settings.sound
-		Ctx.save_persistent()
-		sound_btn.text = "Ton: %s" % ("an" if Ctx.settings.sound else "aus"))
+	var settings_btn := UI.button("⚙", open_settings, "SmallButton")
+	settings_btn.tooltip_text = "Einstellungen"
+	var help_btn := UI.button("❔", open_help, "SmallButton")
+	help_btn.tooltip_text = "So geht's"
 
 	# Set-Auswahl mit Filter, Sortierung und Datum (Issue #8).
 	var filter := LineEdit.new()
@@ -134,7 +132,7 @@ func render_menu() -> void:
 		UI.hbox([
 			UI.label("%s %d %s" % [Meta.ICON, int(p.shards), Meta.CURRENCY], "Accent", 18),
 			UI.label("Abenteuer: %d · Siege: %d" % [int(p.records.runs), int(p.records.victories)], "Dim", 15),
-			UI.spacer(), sound_btn,
+			UI.spacer(), help_btn, settings_btn,
 		], 14),
 		UI.label("Welche Vokabel-Sets willst du üben?", "H3"),
 		UI.hbox([filter, sort, _toggle_all]),
@@ -170,6 +168,47 @@ func render_menu() -> void:
 	_render_list()
 	_update_start()
 	UI.focus_later(_start_btn)
+	# Beim allerersten Start erklärt ein kurzes Fenster das Spiel.
+	if not bool(Ctx.settings.get("seenIntro", false)):
+		_show_intro.call_deferred()
+
+
+func _show_intro() -> void:
+	if not is_inside_tree() or bool(Ctx.settings.get("seenIntro", false)):
+		return
+	Ctx.settings.seenIntro = true
+	Ctx.save_persistent()
+	open_help()
+
+
+func open_settings() -> UI.Modal:
+	var m := UI.modal(_ui, "Einstellungen", 640)
+	var box := UI.vbox()
+	m.body.add_child(box)
+	SettingsView.render(box)
+	return m
+
+
+const HELP := [
+	["⚔ Ziel", "Erkunde den Dschungeltempel, sammle Runen ◆ (besiegte Gegner, geöffnete Türen) und öffne damit das Siegeltor zum Boss."],
+	["📖 Lernen", "Jede Aktion im Kampf, jede Truhe und jede Tür verlangt ein englisches Wort. Falsch ist nicht schlimm: Du siehst die Lösung, tippst sie einmal ab und das Wort kommt bald wieder. Es gibt kein Zeitlimit."],
+	["💡 Hilfen", "Alt+1 zeigt die Wortlänge, Alt+2 den ersten Buchstaben. Hilfen kosten Fokus (FP)."],
+	["❤ Leben", "Jedes Abenteuer hat 3 Leben. Bei einer Niederlage erwachst du am Kristallaltar; ist das letzte Leben weg, endet das Abenteuer."],
+	["🔷 Tempelsplitter", "Jedes Abenteuer beginnt auf Level 1 mit Holzschwert – Ausrüstung, Gold und Level verfallen am Ende. Dafür bekommst du Tempelsplitter für alles Erreichte. Damit schaltest du unter „🌳 Fertigkeiten“ neue Klassen frei und baust Skillbäume aus."],
+	["✨ Unterwegs", "Am Kristallaltar ruhst du dich aus und kaufst beim Händler mit Gold ein. Nach jedem Sieg über einen Elite-Gegner wählst du eine Segnung für den Rest des Abenteuers."],
+	["🎮 Steuerung", "WASD/Pfeiltasten oder Controller bewegen · E/Enter/Leertaste (A) interagieren · Esc (Start) Menü · F8 oder 🐞 etwas melden."],
+]
+
+
+func open_help() -> UI.Modal:
+	var m := UI.modal(_ui, "So geht's", 860)
+	for h: Array in HELP:
+		var title := UI.label(h[0], "H3")
+		title.custom_minimum_size.x = 210
+		title.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		var text := UI.para(h[1], "", 16)
+		m.body.add_child(UI.hbox([title, text], 12))
+	return m
 
 
 static func _center(c: Control) -> CenterContainer:

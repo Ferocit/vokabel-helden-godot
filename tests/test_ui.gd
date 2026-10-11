@@ -162,3 +162,43 @@ func test_ausruestung_verkaufen_und_trank_kaufen() -> void:
 	expect_eq(int(Ctx.profile.gold), 20)
 	expect_eq(int(Ctx.profile.potions), 3)
 	close(box)
+
+
+func test_einstellungen_anwenden() -> void:
+	fresh_ctx()
+	Ctx.settings.volume = 0.5
+	Ctx.settings.sound = false
+	SettingsView.apply()
+	expect_false(Sound.enabled)
+	expect_near(db_to_linear(AudioServer.get_bus_volume_db(0)), 0.5, 0.01)
+	var box := VBoxContainer.new()
+	root().add_child(box)
+	SettingsView.render(box)
+	var slider: HSlider = box.find_children("*", "HSlider", true, false)[0]
+	slider.value = 0.25
+	expect_near(float(Ctx.settings.volume), 0.25, 0.001, "Regler speichert")
+	Ctx.settings.sound = true
+	Ctx.settings.volume = 0.8
+	SettingsView.apply()
+	close(box)
+
+
+func test_controller_belegung() -> void:
+	Controls.ensure()
+	for action in ["move_up", "move_left", "interact", "menu"]:
+		expect_true(InputMap.action_get_events(action).any(func(e: InputEvent) -> bool: return e is InputEventJoypadButton), action)
+	expect_true(InputMap.action_get_events("move_right").any(func(e: InputEvent) -> bool: return e is InputEventJoypadMotion), "Stick")
+	var before := InputMap.action_get_events("interact").size()
+	Controls.ensure()
+	expect_eq(InputMap.action_get_events("interact").size(), before, "Kein doppeltes Anlegen")
+
+
+func test_einstieg_beim_ersten_start() -> void:
+	fresh_ctx()
+	var t := open_title()
+	expect_false(bool(Ctx.settings.seenIntro))
+	t._show_intro()
+	expect_true(bool(Ctx.settings.seenIntro), "Nur einmal")
+	var modals: Array = t._ui.get_children().filter(func(c: Node) -> bool: return c is UI.Modal)
+	expect_eq(modals.size(), 1, "Hilfe geöffnet")
+	close(t)

@@ -47,6 +47,12 @@ func _run() -> void:
 	var started := Time.get_ticks_msec()
 	for f in files:
 		var script: GDScript = load("res://tests/" + f)
+		if script == null or not script.can_instantiate():
+			# Eine Testdatei mit Parse-Fehler darf nicht stillschweigend fehlen.
+			total += 1
+			failed += 1
+			print("  ✗ %s lässt sich nicht laden (Parse-Fehler, siehe oben)" % f)
+			continue
 		var methods: Array[String] = []
 		for m in script.get_script_method_list():
 			if (m.name as String).begins_with("test_") and not methods.has(m.name):

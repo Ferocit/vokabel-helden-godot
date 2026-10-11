@@ -51,7 +51,7 @@ func save_progress(progress: Dictionary) -> void:
 
 
 func load_settings() -> Dictionary:
-	var s := {"sound": true, "selectedUnits": [], "depthOfField": false}
+	var s := {"sound": true, "volume": 0.8, "fullscreen": false, "seenIntro": false, "selectedUnits": [], "depthOfField": false}
 	var d: Variant = _read(KEYS.settings)
 	if d is Dictionary:
 		s.merge(d, true)
