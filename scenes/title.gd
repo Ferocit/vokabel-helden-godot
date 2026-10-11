@@ -1,6 +1,6 @@
 extends Control
 ## Titelbildschirm: Set-Auswahl (Filter, Sortierung, Datum, Mastery, ✎, Alle/Keine), Import und
-## Drag & Drop, Klassenwahl (Tasten 1–3), Sets & Statistik, Ausrüstung, Fortsetzen, Training,
+## Drag & Drop, Klassenwahl (Tasten 1–3), Sets & Statistik, Fortsetzen, Training,
 ## Zeit-Challenge und Spiel verlassen.
 
 const EXPLORATION := "res://scenes/exploration.tscn"
@@ -164,7 +164,7 @@ func render_menu() -> void:
 	help.autowrap_mode = TextServer.AUTOWRAP_OFF
 	help.add_theme_font_size_override("normal_font_size", 14)
 	help.add_theme_color_override("default_color", UI.DIM)
-	help.text = "[center]Steuerung: [color=#f1c96b]WASD[/color]/[color=#f1c96b]Pfeiltasten[/color] bewegen · [color=#f1c96b]E[/color]/[color=#f1c96b]Enter[/color] interagieren · [color=#f1c96b]Esc[/color] Menü · Grafik & Sound: Kenney.nl (CC0)[/center]"
+	help.text = "[center]Steuerung: [color=#f1c96b]WASD[/color]/[color=#f1c96b]Pfeiltasten[/color] bewegen · [color=#f1c96b]E[/color]/[color=#f1c96b]Enter[/color] interagieren · [color=#f1c96b]I[/color] Inventar · [color=#f1c96b]Esc[/color] Menü · Grafik & Sound: Kenney.nl (CC0)[/center]"
 	help.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	help.custom_minimum_size.x = 1000
 	help.grow_horizontal = Control.GROW_DIRECTION_BOTH
@@ -206,12 +206,12 @@ const HELP := [
 	["⚔ Ziel", "Erkunde den Dschungeltempel, sammle Runen ◆ (besiegte Gegner, geöffnete Türen) und öffne damit das Siegeltor zum Boss."],
 	["📖 Lernen", "Jede Aktion im Kampf, jede Truhe und jede Tür verlangt ein englisches Wort. Falsch ist nicht schlimm: Du siehst die Lösung, tippst sie einmal ab und das Wort kommt bald wieder. Es gibt kein Zeitlimit – außer du wählst die ⏱ Zeit-Challenge."],
 	["🎯 Training", "Mit 🎯 neben einem Set übst du ohne Spiel: Du siehst das deutsche Wort und tippst das englische ein. Falsche Wörter kommen am Ende noch einmal, bis alle sitzen. Schaffst du alle, gibt es Tempelsplitter."],
-	["⏱ Zeit-Challenge", "Wer mag, schaltet sie vor dem Start ein: Dann muss das ganze Abenteuer in einer festen Zeit geschafft werden. Je mehr Vokabeln du übst, desto mehr Zeit gibt es. Im Menü (Esc) steht die Uhr still. Ein Sieg bringt extra Tempelsplitter."],
+	["⏱ Zeit-Challenge", "Wer mag, schaltet sie vor dem Start ein: Dann muss das ganze Abenteuer in einer festen Zeit geschafft werden. Je mehr Vokabeln du übst, desto mehr Zeit gibt es. Im Menü (Esc) und im Inventar (I) steht die Uhr still. Ein Sieg bringt extra Tempelsplitter."],
 	["💡 Hilfen", "Alt+1 zeigt die Wortlänge, Alt+2 den ersten Buchstaben. Hilfen kosten Fokus (FP)."],
 	["❤ Leben", "Jedes Abenteuer hat 3 Leben. Bei einer Niederlage erwachst du am Kristallaltar; ist das letzte Leben weg, endet das Abenteuer."],
 	["🔷 Tempelsplitter", "Jedes Abenteuer beginnt auf Level 1 mit Holzschwert – Ausrüstung, Gold und Level verfallen am Ende. Dafür bekommst du Tempelsplitter für alles Erreichte. Damit schaltest du unter „🌳 Fertigkeiten“ neue Klassen frei und baust Skillbäume aus."],
 	["✨ Unterwegs", "Am Kristallaltar ruhst du dich aus und kaufst beim Händler mit Gold ein. Nach jedem Sieg über einen Elite-Gegner wählst du eine Segnung für den Rest des Abenteuers."],
-	["🎮 Steuerung", "WASD/Pfeiltasten oder Controller bewegen · E/Enter/Leertaste (A) interagieren · Esc (Start) Menü · F8 oder 🐞 etwas melden."],
+	["🎮 Steuerung", "WASD/Pfeiltasten oder Controller bewegen · E/Enter/Leertaste (A) interagieren · I (Y) Charakter & Inventar · Esc (Start) Menü · F8 oder 🐞 etwas melden."],
 ]
 
 

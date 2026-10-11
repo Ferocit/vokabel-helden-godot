@@ -27,11 +27,12 @@ Die Vorlagen stehen in `export_presets.cfg`. In der exportierten Version landen 
 | --- | --- |
 | WASD / Pfeiltasten | bewegen |
 | E / Enter / Leertaste | interagieren (Truhe, Tür, Altar, Siegeltor) |
-| Esc | Menü (Ausrüstung, Lernstand, Speichern, Beenden) |
+| I | Charakter & Inventar (Ausrüstung an-/ablegen, verkaufen, Werte) |
+| Esc | Menü (Lernstand, Speichern, Beenden) |
 | 1–4, ↑↓ / W S + Enter | Kampfbefehl wählen |
 | Alt+1 / Alt+2 | Hilfe: Wortlänge / erster Buchstabe |
 | F8 oder 🐞 unten rechts | etwas melden |
-| Controller | Stick/Steuerkreuz bewegen, A interagieren, Start Menü |
+| Controller | Stick/Steuerkreuz bewegen, A interagieren, Y Inventar, Start Menü |
 
 Einstellungen (Ton, Lautstärke, Vollbild) und eine Spielanleitung gibt es im Titel über ⚙ und ❔.
 
@@ -63,7 +64,7 @@ Wörter haben Vorrang; wer ein Wort mehrmals in Folge auf Anhieb weiß, bekommt 
 **⏱ Zeit-Challenge (optional):** Im Titel unter „Neues Abenteuer“ einschaltbar. Dann muss das ganze Abenteuer
 in einer festen Zeit geschafft werden: 6 Minuten + 15 Sekunden pro Vokabel der gewählten Sets, mindestens
 10 und höchstens 40 Minuten (`timeChallenge` in `config/game.json`). Die Uhr läuft auch in Kämpfen und
-Abfragen und steht nur im Menü (Esc) still. Läuft sie ab, wird die laufende Aktion noch beendet, dann endet
+Abfragen und steht nur im Menü (Esc) und im Inventar (I) still. Läuft sie ab, wird die laufende Aktion noch beendet, dann endet
 das Abenteuer. Ein Sieg in der Zeit bringt +30 % Tempelsplitter.
 
 **🎯 Training:** Mit 🎯 neben einem Set (oder „🎯 Training“ unter „Sets & Statistik“) übt man ohne Spiel:

@@ -7,11 +7,11 @@ const PHYSICAL := {
 	"move_up": [KEY_W, KEY_UP], "move_down": [KEY_S, KEY_DOWN],
 	"move_left": [KEY_A, KEY_LEFT], "move_right": [KEY_D, KEY_RIGHT],
 }
-## Controller: Steuerkreuz und linker Stick bewegen, A interagiert, Start öffnet das Menü.
+## Controller: Steuerkreuz und linker Stick bewegen, A interagiert, Start öffnet das Menü, Y das Inventar.
 const JOY_BUTTONS := {
 	"move_up": [JOY_BUTTON_DPAD_UP], "move_down": [JOY_BUTTON_DPAD_DOWN],
 	"move_left": [JOY_BUTTON_DPAD_LEFT], "move_right": [JOY_BUTTON_DPAD_RIGHT],
-	"interact": [JOY_BUTTON_A], "menu": [JOY_BUTTON_START],
+	"interact": [JOY_BUTTON_A], "menu": [JOY_BUTTON_START], "inventory": [JOY_BUTTON_Y],
 }
 const JOY_AXES := {
 	"move_up": [JOY_AXIS_LEFT_Y, -1.0], "move_down": [JOY_AXIS_LEFT_Y, 1.0],
@@ -21,6 +21,7 @@ const JOY_AXES := {
 const LOGICAL := {
 	"interact": [KEY_E, KEY_ENTER, KEY_KP_ENTER, KEY_SPACE],
 	"menu": [KEY_ESCAPE],
+	"inventory": [KEY_I],
 }
 
 

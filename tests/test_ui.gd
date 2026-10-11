@@ -148,20 +148,39 @@ func test_ausruestung_verkaufen_und_trank_kaufen() -> void:
 	fresh_ctx()
 	Ctx.profile.gold = 30
 	(Ctx.profile.bag as Array).append("copper_ring")
-	var box := VBoxContainer.new()
-	root().add_child(box)
-	EquipmentView.render(box)
-	var buttons := box.find_children("*", "Button", true, false)
-	var sell: Button = buttons.filter(func(b: Button) -> bool: return b.text.begins_with("Verkaufen"))[0]
-	sell.pressed.emit()
+	var m := CharacterWindow.open(root())
+	var w: CharacterWindow = m.body.get_child(0)
+	w.sell("copper_ring")
 	expect_eq(int(Ctx.profile.gold), 40, "Gewöhnlich: +10 Gold")
 	expect_false((Ctx.profile.bag as Array).has("copper_ring"))
-	buttons = box.find_children("*", "Button", true, false)
-	var buy: Button = buttons.filter(func(b: Button) -> bool: return b.text.begins_with("Kaufen"))[0]
+	var box := VBoxContainer.new()
+	root().add_child(box)
+	box.add_child(EquipmentView._merchant(func() -> void: pass))
+	var buy: Button = box.find_children("*", "Button", true, false).filter(func(b: Button) -> bool: return b.text.begins_with("Kaufen"))[0]
 	buy.pressed.emit()
 	expect_eq(int(Ctx.profile.gold), 20)
 	expect_eq(int(Ctx.profile.potions), 3)
 	close(box)
+	close(m)
+
+
+func test_charakterfenster_anlegen_ablegen_vergleichen() -> void:
+	fresh_ctx()
+	Ctx.profile.equipment.weapon = "wooden_sword"
+	(Ctx.profile.bag as Array).append("iron_sword")
+	var m := CharacterWindow.open(root())
+	var w: CharacterWindow = m.body.get_child(0)
+	var cells := w.find_children("*", "Button", true, false).filter(func(b: Button) -> bool: return b.custom_minimum_size == Vector2(CharacterWindow.SLOT_PX, CharacterWindow.SLOT_PX))
+	expect_eq(cells.size(), 3 + CharacterWindow.BAG_COLS * CharacterWindow.BAG_ROWS, "3 Plätze an der Figur + Taschenraster")
+	expect_eq(CharacterWindow.compare_text(GameData.get_item("iron_sword"), GameData.get_item("wooden_sword")), "Gegenüber Holzschwert: Angriff ▲2")
+	w.equip("iron_sword")
+	expect_eq(Ctx.profile.equipment.weapon, "iron_sword", "Angelegt")
+	expect_true((Ctx.profile.bag as Array).has("wooden_sword"), "Alte Waffe in der Tasche")
+	expect_eq(w.selected.get("from"), "slot", "Neue Waffe bleibt ausgewählt")
+	w.unequip("weapon")
+	expect_eq(Ctx.profile.equipment.weapon, null, "Abgelegt")
+	expect_true((Ctx.profile.bag as Array).has("iron_sword"))
+	close(m)
 
 
 func test_einstellungen_anwenden() -> void:

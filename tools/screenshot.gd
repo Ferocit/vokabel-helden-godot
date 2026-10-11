@@ -47,6 +47,10 @@ func _ready() -> void:
 							Ctx.run.player = Vector2(o.x + d.x + 0.5, o.y + d.y + 0.5)
 							break
 					break
+	# bag=a,b,c legt Gegenstände in die Tasche.
+	if args.has("bag") and Ctx.has_run():
+		for id: String in String(args.bag).split(",", false):
+			(Ctx.profile.bag as Array).append(id)
 	# weapon=<Gegenstand> rüstet den Helden mit dieser Waffe aus.
 	if args.has("weapon") and Ctx.has_run():
 		Ctx.profile.equipment.weapon = args.weapon
@@ -87,6 +91,11 @@ func _ready() -> void:
 			node.call(m)
 		for i in 5:
 			await get_tree().process_frame
+	# select=<Gegenstand> wählt im offenen Charakterfenster einen Gegenstand aus der Tasche.
+	if args.has("select"):
+		for w: Node in get_tree().root.find_children("*", "CharacterWindow", true, false):
+			(w as CharacterWindow).selected = {"from": "bag", "id": args.select, "slot": GameData.get_item(args.select).slot}
+			(w as CharacterWindow).render()
 	if args.has("report"):
 		Reporter.open_report()
 	for i in int(args.get("frames", "30")):

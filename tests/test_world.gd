@@ -301,3 +301,19 @@ func test_truhe_zeigt_beuteliste() -> void:
 	expect_true(texts.has("Seltene Truhe geöffnet"), "Titel mit Truhe")
 	expect_true(texts.has("Gold"), "Gold als eigene Zeile")
 	e.free()
+
+
+func test_inventar_mit_taste_i() -> void:
+	Controls.ensure()
+	var e := _explore()
+	var key := InputEventKey.new()
+	key.keycode = KEY_I
+	key.physical_keycode = KEY_I
+	key.pressed = true
+	e._unhandled_input(key)
+	expect_true(e.busy, "Charakterfenster offen")
+	var w: Array = e.ui.find_children("*", "CharacterWindow", true, false)
+	expect_eq(w.size(), 1, "Fenster im UI")
+	(w[0] as CharacterWindow).modal.close()
+	expect_false(e.busy, "Nach dem Schließen geht es weiter")
+	e.free()

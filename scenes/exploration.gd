@@ -351,6 +351,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action("menu"):
 		get_viewport().set_input_as_handled()
 		open_menu()
+	elif event.is_action("inventory"):
+		get_viewport().set_input_as_handled()
+		open_character()
 	elif event.is_action("interact"):
 		var target: Variant = nearest_interactable()
 		if target != null:
@@ -580,7 +583,7 @@ func _build_ui() -> void:
 	kt.autowrap_mode = TextServer.AUTOWRAP_OFF
 	kt.scroll_active = false
 	kt.add_theme_font_size_override("normal_font_size", 15)
-	kt.text = "[color=#f1c96b]E[/color] Interagieren · [color=#f1c96b]Esc[/color] Menü"
+	kt.text = "[color=#f1c96b]E[/color] Interagieren · [color=#f1c96b]I[/color] Inventar · [color=#f1c96b]Esc[/color] Menü"
 	keyhint.add_child(kt)
 	UI.pin(ui, keyhint, Control.PRESET_TOP_RIGHT, Vector2(-12, 12))
 
@@ -715,7 +718,7 @@ func _render_altar(content: VBoxContainer, obj: Dictionary) -> void:
 		var buy := UI.button("Kaufen −%d 💰" % price, func() -> void:
 			Ctx.set_profile(Meta.buy_item(Ctx.profile, item))
 			Sound.play("coins")
-			toast("Gekauft: %s (in der Tasche, anlegen über Esc → Ausrüstung)" % item.name)
+			toast("Gekauft: %s (in der Tasche, anlegen mit I)" % item.name)
 			rerender.call(), "SmallButton")
 		buy.disabled = not Meta.can_buy_item(Ctx.profile, item)
 		content.add_child(EquipmentView._item_card(item, buy))
@@ -735,11 +738,11 @@ func open_menu() -> UI.Modal:
 		_refresh_speed()
 		hud.refresh())
 	var content := UI.vbox()
-	var show_equipment := func() -> void: EquipmentView.render(content)
-	var show_learning := func() -> void: _render_learning(content)
-	var tabs := UI.hbox([UI.button("Ausrüstung", show_equipment, "SmallButton"), UI.button("Lernstand", show_learning, "SmallButton")])
-	m.header.add_child(tabs)
-	m.header.move_child(tabs, 1)
+	var character := UI.button("Charakter & Inventar (I)", func() -> void:
+		m.close()
+		open_character(), "SmallButton")
+	m.header.add_child(character)
+	m.header.move_child(character, 1)
 	m.body.add_child(content)
 	var finish := UI.button("Abenteuer beenden", func() -> void:
 		UI.confirm(ui, "Abenteuer jetzt beenden und zur Auswertung gehen? Dein Lernfortschritt bleibt gespeichert.", func() -> void:
@@ -752,8 +755,24 @@ func open_menu() -> UI.Modal:
 	var resume := UI.button("Weiterspielen", m.close)
 	m.body.add_child(UI.gap(8))
 	m.body.add_child(UI.hbox([finish, UI.spacer(), to_title, resume]))
-	show_equipment.call()
+	_render_learning(content)
 	UI.focus_later(resume)
+	return m
+
+
+## Charakterfenster mit Inventar (Taste I); die Uhr der Zeit-Challenge steht dabei still.
+func open_character() -> UI.Modal:
+	busy = true
+	walk_time = 0.0
+	_clock_paused = true
+	Sound.play("select", 0.5)
+	var m := CharacterWindow.open(ui)
+	m.closed.connect(func() -> void:
+		_clock_paused = false
+		busy = false
+		_target_dirty = true
+		_refresh_speed()
+		hud.refresh())
 	return m
 
 
