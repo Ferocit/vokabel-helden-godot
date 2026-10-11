@@ -29,6 +29,8 @@ var _target_dirty := true
 var _time := 0.0
 ## Laufgeschwindigkeit aus Skills, Gegenständen und Segnungen; wird bei Profiländerungen neu berechnet.
 var _speed_factor := 1.0
+## Bewegliche Gegner (Objekt-ID → EnemyAgent); besiegte fehlen.
+var agents := {}
 
 var ui: CanvasLayer
 var hud: Hud
@@ -47,6 +49,7 @@ func _ready() -> void:
 	run = Ctx.run
 	_refresh_speed()
 	Ctx.profile_changed.connect(_refresh_speed)
+	_create_agents()
 	level = LevelBuilder.build(run.map, is_gone)
 	add_child(level.root)
 	fx = WorldFx.new()
@@ -161,6 +164,7 @@ func _process(delta: float) -> void:
 		walk_time = 0.0
 	_place_hero()
 	fx.target = Vector3(run.player.x, 0, run.player.y)
+	update_enemies(dt)
 	check_enemy_contact()
 	_update_prompt()
 	minimap_timer -= dt
@@ -234,9 +238,57 @@ func check_enemy_contact() -> void:
 		if obj.kind != "enemy" or run.defeated.has(obj.id):
 			continue
 		var reach := 1.0 if obj.tier == "boss" else 0.75
-		if p.distance_to(Vector2(obj.x + 0.5, obj.y + 0.5)) < reach:
+		if p.distance_to(enemy_pos(obj)) < reach:
 			start_combat(obj)
 			return
+
+
+# ---------- Gegnerbewegung ----------
+
+func _create_agents() -> void:
+	agents.clear()
+	var ai_rng := Rng.create((int(run.seed) ^ 0x0A11CE) & Rng.MASK)
+	for obj: Dictionary in run.map.objects:
+		if obj.kind != "enemy" or run.defeated.has(obj.id):
+			continue
+		var room: Dictionary = {}
+		for r: Dictionary in run.map.rooms:
+			if MapModel.room_contains(r, obj.x, obj.y):
+				room = r
+		agents[obj.id] = EnemyAgent.new(obj, room, ai_rng)
+
+
+## Aktuelle Position eines Gegners (Kachel-Einheiten).
+func enemy_pos(obj: Dictionary) -> Vector2:
+	if agents.has(obj.id):
+		return (agents[obj.id] as EnemyAgent).pos
+	return Vector2(obj.x + 0.5, obj.y + 0.5)
+
+
+func update_enemies(dt: float) -> void:
+	var hero_speed := SPEED * _speed_factor
+	for a: EnemyAgent in agents.values():
+		if not a.moves():
+			continue
+		a.update(dt, run.player, is_solid_tile, hero_speed)
+		_sync_enemy_view(a)
+
+
+func _sync_enemy_view(a: EnemyAgent) -> void:
+	var view: Node3D = level.views.get(a.id)
+	if view == null:
+		return
+	view.position = Vector3(a.pos.x, 0, a.pos.y)
+	if absf(a.facing.x) > 0.1:
+		for s in view.find_children("*", "Sprite3D", false, false):
+			(s as Sprite3D).flip_h = a.facing.x < 0.0
+
+
+## Alle Gegner zurück an ihren Platz (nach einer Niederlage des Helden).
+func reset_enemies() -> void:
+	for a: EnemyAgent in agents.values():
+		a.reset()
+		_sync_enemy_view(a)
 
 
 func nearest_interactable() -> Variant:
@@ -422,7 +474,9 @@ func on_combat_return(data: Dictionary) -> void:
 	_target_dirty = true
 	if data.outcome == "won":
 		level.fade_out(data.objectId)
+		agents.erase(data.objectId)
 	else:
+		reset_enemies()
 		run.player = run.lastHeal
 		_place_hero()
 		fx.target = Vector3(run.player.x, 0, run.player.y)
@@ -515,6 +569,7 @@ func _build_ui() -> void:
 	UI.pin(ui, _toasts, Control.PRESET_TOP_RIGHT, Vector2(-16, 80))
 
 	minimap = Minimap.new()
+	minimap.enemy_pos = enemy_pos
 	ui.add_child(minimap)
 	UI.pin(ui, minimap, Control.PRESET_BOTTOM_RIGHT, Vector2(-14, -52))
 	minimap.reveal_around(run.player)

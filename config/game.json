@@ -120,5 +120,37 @@
       "enemyAttack": 0.2,
       "shardBonus": 0.25
     }
+  },
+  "enemyAI": {
+    "normal": {
+      "patrolSpeed": 1.1,
+      "chaseSpeed": 2.4,
+      "aggroRange": 3.0,
+      "giveUpRange": 5.0,
+      "giveUpTime": 3.0,
+      "leash": 7.0,
+      "pauseMin": 0.8,
+      "pauseMax": 2.2
+    },
+    "elite": {
+      "patrolSpeed": 0.0,
+      "chaseSpeed": 2.2,
+      "aggroRange": 2.2,
+      "giveUpRange": 3.5,
+      "giveUpTime": 2.0,
+      "leash": 3.0,
+      "pauseMin": 1.0,
+      "pauseMax": 2.0
+    },
+    "boss": {
+      "patrolSpeed": 0.0,
+      "chaseSpeed": 0.0,
+      "aggroRange": 0.0,
+      "giveUpRange": 0.0,
+      "giveUpTime": 0.0,
+      "leash": 0.0,
+      "pauseMin": 1.0,
+      "pauseMax": 1.0
+    }
   }
 }

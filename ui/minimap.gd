@@ -7,6 +7,8 @@ const CELL := 7.0
 const REVEAL := 6
 
 var explored := {}  # Kachelindex → true
+## Liefert die aktuelle Position eines Gegners (bewegliche Gegner); sonst gilt die Kachel aus der Karte.
+var enemy_pos: Callable
 
 
 func _ready() -> void:
@@ -40,7 +42,10 @@ func _draw() -> void:
 	for idx: int in explored:
 		draw_rect(Rect2(origin + Vector2(idx % w, idx / w) * CELL, Vector2(CELL + 0.4, CELL + 0.4)), Color("#c9b48f"))
 	for obj: Dictionary in map.objects:
-		if not explored.has(int(obj.y) * w + int(obj.x)):
+		var at := Vector2(obj.x, obj.y)
+		if obj.kind == "enemy" and enemy_pos.is_valid():
+			at = (enemy_pos.call(obj) as Vector2) - Vector2(0.5, 0.5)
+		if not explored.has(roundi(at.y) * w + roundi(at.x)):
 			continue
 		if obj.kind == "enemy" and run.defeated.has(obj.id):
 			continue
@@ -58,6 +63,6 @@ func _draw() -> void:
 				c = Color("#3ddc84")
 		if obj.kind in ["chest", "door", "bossDoor"] and run.opened.has(obj.id):
 			c = Color("#8a7a65")
-		draw_rect(Rect2(origin + Vector2(obj.x, obj.y) * CELL + Vector2(1, 1), Vector2(CELL - 2, CELL - 2)), c)
+		draw_rect(Rect2(origin + at * CELL + Vector2(1, 1), Vector2(CELL - 2, CELL - 2)), c)
 	draw_circle(size / 2.0, 5.5, Color("#1a1030"))
 	draw_circle(size / 2.0, 4.5, Color.WHITE)

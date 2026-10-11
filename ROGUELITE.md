@@ -67,6 +67,14 @@ Neue Effekte: Schlüssel in `SkillTrees.EFFECT_TEXT` eintragen und an der passen
   Fähigkeitsschaden). Keine Gratis-Vokabelhilfen mehr; einzige Lern-Ausnahme bleibt der Bibliotheksring
   (falsch beantwortete Wörter kommen früher wieder – hilft beim Lernen, nicht beim Antworten).
 
+## Gegnerbewegung (`logic/game/enemy_agent.gd`, Werte in `config/game.json → enemyAI`)
+- **Normale Gegner** patrouillieren langsam in ihrem Raum, verfolgen den Helden ab 3 Kacheln und geben auf,
+  wenn er länger als 3 s weiter als 5 Kacheln entfernt ist oder sie sich 7 Kacheln von ihrem Platz entfernt haben.
+- **Elite-Gegner** bewachen ihren Platz, reagieren ab 2,2 Kacheln und folgen höchstens 3 Kacheln weit.
+- **Boss** steht.
+- **Lernspiel-Regel:** Gegner sind nie schneller als 90 % des Heldentempos – man kann Kämpfen immer ausweichen.
+- Nach einer Niederlage und beim Fortsetzen eines gespeicherten Abenteuers stehen alle Gegner wieder auf ihrem Platz.
+
 ## Tempelstufen (Schwierigkeit)
 Ein Sieg auf der höchsten freien Stufe schaltet die nächste frei (bis 5). Vor dem Abenteuer im Titel wählbar.
 Pro Stufe: Gegner +25 % HP, +20 % Angriff, +25 % Splitter (`meta.heat`). Gegenstück zur wachsenden Stärke durch
