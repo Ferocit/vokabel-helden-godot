@@ -16,7 +16,7 @@ const SIDE_DOOR_YAW := 62.0
 
 const TD := {
 	"floor": [48, 48, 48, 48, 48, 48, 48, 48, 42], "wall": [40, 40, 40, 57, 59, 58, 28], "wall_plain": 40,
-	"banner": 29, "door": 45, "door_open": 9, "chest": 89, "chest_rare": 90, "chest_special": 92,
+	"banner": 29, "door": 45, "chest": 89, "chest_rare": 90, "chest_special": 92,
 	"altar": 32, "pots": [54, 55, 56],
 }
 const TT := {"grass": [0, 0, 0, 0, 1, 1, 2], "dirt": 25, "trees": [4, 16, 28, 5], "bush": [5, 17], "mushrooms": 29}
@@ -477,17 +477,18 @@ func _create_view(obj: Dictionary) -> void:
 				node.add_child(_light(c, 0.8, 2.2, Vector3(0, 0.7, 0.4)))
 				node.add_child(_marker(c))
 		"door", "bossDoor":
-			var s := Fx.sprite(Assets.frame(TD.door_open if gone else TD.door))
+			# Geöffnete Türen sind einfach weg (Issue #13).
+			if gone:
+				return
+			var s := Fx.sprite(Assets.frame(TD.door))
 			s.scale = Vector3(1.0, 1.25, 1.0)
 			if door_faces_side(map, int(obj.x), int(obj.y)):
 				_turn_sideways(s)
 			node.add_child(s)
 			if obj.kind == "bossDoor":
-				s.modulate = Color("#8a6a8a") if gone else Color("#e0a0ff")
-				if not gone:
-					node.add_child(_light(Color("#c070ff"), 1.6, 3.2, Vector3(0, 1.0, 0.6)))
-			if not gone:
-				node.add_child(_marker(Color("#e0a0ff") if obj.kind == "bossDoor" else Color.WHITE))
+				s.modulate = Color("#e0a0ff")
+				node.add_child(_light(Color("#c070ff"), 1.6, 3.2, Vector3(0, 1.0, 0.6)))
+			node.add_child(_marker(Color("#e0a0ff") if obj.kind == "bossDoor" else Color.WHITE))
 		"heal":
 			var s := Fx.sprite(Assets.frame(TD.altar))
 			s.rotation.x = TILT

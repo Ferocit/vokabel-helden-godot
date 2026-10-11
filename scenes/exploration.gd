@@ -458,7 +458,11 @@ static func describe_loot(loot: Dictionary) -> String:
 
 func _refresh_object(obj: Dictionary) -> void:
 	_target_dirty = true
-	level.refresh_object(obj)
+	# Geöffnete Türen verschwinden ganz (Issue #13), statt offen stehen zu bleiben.
+	if obj.kind in ["door", "bossDoor"] and run.opened.has(obj.id):
+		level.fade_out(obj.id)
+	else:
+		level.refresh_object(obj)
 
 
 # ---------- Kampf ----------

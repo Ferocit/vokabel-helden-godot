@@ -177,6 +177,10 @@ func test_erkundung_tuer_mit_vokabeln_oeffnen() -> void:
 	expect_true(Ctx.run.opened.has(door.id), "Tür offen")
 	expect_eq(int(Ctx.run.runes), 1, "+1 Rune")
 	expect_eq((Ctx.run.learning as LearningSession).run.questions, asked, "Abfragen protokolliert")
+	expect_false(e.level.views.has(door.id), "Geöffnete Tür verschwindet (Issue #13)")
+	var rebuilt := LevelBuilder.build(Ctx.run.map, e.is_gone)
+	expect_false(rebuilt.views.has(door.id), "… auch nach dem Laden")
+	rebuilt.root.free()
 	e.free()
 
 

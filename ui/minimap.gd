@@ -61,7 +61,9 @@ func _draw() -> void:
 				c = Color("#c070ff")
 			_:
 				c = Color("#3ddc84")
-		if obj.kind in ["chest", "door", "bossDoor"] and run.opened.has(obj.id):
+		if obj.kind in ["door", "bossDoor"] and run.opened.has(obj.id):
+			continue
+		if obj.kind == "chest" and run.opened.has(obj.id):
 			c = Color("#8a7a65")
 		draw_rect(Rect2(origin + at * CELL + Vector2(1, 1), Vector2(CELL - 2, CELL - 2)), c)
 	draw_circle(size / 2.0, 5.5, Color("#1a1030"))
