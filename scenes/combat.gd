@@ -35,6 +35,7 @@ var hero: Sprite3D
 var enemy: Sprite3D
 var enemy_root: Node3D
 var enemy_height := 2.0
+var weapon: HeldWeapon
 var _shield: MeshInstance3D
 
 var ui: CanvasLayer
@@ -138,6 +139,7 @@ func _build_combatants() -> void:
 	hero = Fx.sprite(Assets.frame(int(cls.frame)), 8.0)
 	hero.flip_h = TOWARD_ENEMY < 0.0
 	hero_root.add_child(hero)
+	weapon = HeldWeapon.equip(hero, Ctx.profile.equipment.get("weapon"))
 	var light := OmniLight3D.new()
 	light.light_color = Color("#ffe2a8")
 	light.light_energy = 0.8
@@ -915,6 +917,8 @@ func _warrior_attack(skill: bool, crit: bool) -> void:
 		_ring(ENEMY_POS, Color("#ffd75e"), 6.0, 0.5)
 		_burst(ENEMY_POS + Vector3(0, 0.2, 0.3), Color("#c89a6a"), 14, 2.5, true)
 		_shake(0.3, 0.2)
+	if weapon:
+		weapon.swing(0.3 if skill else 0.24)
 	var c := Color("#ffd75e") if skill or crit else Color.WHITE
 	var center := enemy_pos(enemy_height * 0.55) + Vector3(-0.3 * TOWARD_ENEMY, 0, 0.3)
 	var sweep := 1.4 if skill else 1.0
@@ -946,8 +950,12 @@ func _rogue_attack(skill: bool, crit: bool) -> void:
 	await _move_hero(to, 0.11)
 	var c := Color("#8aff6a") if skill else (Color("#ffb0ff") if crit else Color.WHITE)
 	var center := enemy_pos(enemy_height * 0.55) + Vector3(0, 0, 0.3)
+	if weapon:
+		weapon.swing(0.14)
 	_slash(center, 45, 2.0, c)
 	await _sleep(0.11)
+	if weapon:
+		weapon.swing(0.14)
 	_slash(center + Vector3(0.2 * TOWARD_ENEMY, 0, 0), -45, 2.0, c)
 	if skill:
 		_burst(center, Color("#6adf4a"), 24, 1.0, true)
@@ -962,6 +970,11 @@ func _rogue_attack(skill: bool, crit: bool) -> void:
 ## Magier: Zauberkreis, dann ein Feuerball mit Funkenspur; die Fähigkeit ist ein großer Feuerball.
 func _mage_attack(skill: bool) -> void:
 	_ring(HERO_POS, Color("#ff9040") if skill else Color("#ffd080"), 3.0, 0.42)
+	if weapon:
+		var raise := create_tween()
+		raise.tween_property(weapon, "swing_deg", 35.0, 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		raise.tween_property(weapon, "swing_deg", -30.0, 0.16)
+		raise.tween_property(weapon, "swing_deg", 0.0, 0.3)
 	var hop := create_tween()
 	hop.tween_property(hero, "position:y", 0.25, 0.18).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	hop.tween_property(hero, "position:y", 0.0, 0.18)
@@ -1028,3 +1041,10 @@ func debug_answer(text: String) -> void:
 		if n is VocabPrompt:
 			(n as VocabPrompt).input.text = text
 			(n as VocabPrompt)._submit()
+
+
+## Nur für Screenshots/Debugging: aktuelle Abfrage richtig beantworten.
+func debug_answer_correct() -> void:
+	for n in ui.get_children():
+		if n is VocabPrompt:
+			debug_answer((n as VocabPrompt).entry.en)

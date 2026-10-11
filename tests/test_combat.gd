@@ -247,3 +247,11 @@ func test_kampf_befehle_erklaeren_ihre_wirkung() -> void:
 	c.state.enemy.guarding = true
 	expect_true(CombatService.action_effect("attack", c.state, cfg).contains("gepanzert"), "Panzer wird erwähnt")
 	c.free()
+
+
+func test_kampf_waffe_schwingt() -> void:
+	start_run()
+	var c := open_combat()
+	expect_true(c.weapon != null, "Waffe in der Hand")
+	expect_eq(c.weapon.get_parent(), c.hero)
+	c.free()

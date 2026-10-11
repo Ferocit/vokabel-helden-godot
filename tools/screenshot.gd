@@ -47,6 +47,9 @@ func _ready() -> void:
 							Ctx.run.player = Vector2(o.x + d.x + 0.5, o.y + d.y + 0.5)
 							break
 					break
+	# weapon=<Gegenstand> rüstet den Helden mit dieser Waffe aus.
+	if args.has("weapon") and Ctx.has_run():
+		Ctx.profile.equipment.weapon = args.weapon
 	# train=<Set-ID> öffnet mit scene=res://scenes/training.tscn das Training für dieses Set.
 	if args.has("train"):
 		TrainingScreen.unit_id = args.train

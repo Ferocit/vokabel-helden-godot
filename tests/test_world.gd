@@ -269,3 +269,24 @@ func test_abfrage_nach_fehler_sofort_tippbereit() -> void:
 	expect_true(p.input.has_focus(), "Fokus im Eingabefeld (Issue #6)")
 	expect_true(p.input.is_editing(), "Eingabefeld ist tippbereit")
 	p.free()
+
+
+func test_waffe_in_der_hand() -> void:
+	var e := _explore()
+	var w := e.hero.get_node_or_null("Weapon") as HeldWeapon
+	expect_true(w != null, "Startwaffe in der Hand")
+	expect_eq(w.item_id, str(Ctx.profile.equipment.weapon))
+	var p: Vector3 = w.position
+	e.hero.flip_h = true
+	w._update()
+	expect_true(w.flip_h, "Waffe spiegelt sich mit dem Helden")
+	expect_near(w.position.x, -p.x, 0.001, "… und wechselt die Hand")
+	Ctx.profile.equipment.weapon = "rune_blade"
+	Ctx.profile_changed.emit()
+	w = e.hero.get_node_or_null("Weapon") as HeldWeapon
+	expect_eq(w.item_id, "rune_blade", "Neue Waffe nach Ausrüstungswechsel")
+	expect_eq(w.get_child_count(), 1, "Seltene Waffe schimmert")
+	Ctx.profile.equipment.weapon = null
+	Ctx.profile_changed.emit()
+	expect_true(e.hero.get_node_or_null("Weapon") == null or e.hero.get_node("Weapon").is_queued_for_deletion(), "Ohne Waffe nichts in der Hand")
+	e.free()

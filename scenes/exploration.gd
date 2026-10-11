@@ -110,6 +110,7 @@ func _build_hero() -> void:
 	hero = Fx.sprite(Assets.frame(int(Ctx.hero_class().frame)))
 	hero.rotation.x = LevelBuilder.TILT
 	hero_root.add_child(hero)
+	HeldWeapon.equip(hero, Ctx.profile.equipment.get("weapon"))
 	# Warmer Lichtschein um den Helden – der Tempel ist schummrig.
 	var light := OmniLight3D.new()
 	light.light_color = Color("#ffe2a8")
@@ -511,6 +512,9 @@ func _set_shader_player(pos: Vector3) -> void:
 
 func _refresh_speed() -> void:
 	_speed_factor = Ctx.move_speed_factor()
+	# Ausrüstung kann sich geändert haben (Menü, Händler): Waffe in der Hand anpassen.
+	if hero != null:
+		HeldWeapon.equip(hero, Ctx.profile.equipment.get("weapon"))
 
 
 func _exit_tree() -> void:

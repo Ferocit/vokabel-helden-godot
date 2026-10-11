@@ -99,11 +99,11 @@ const MAX_POTIONS := 9
 ## nicht beim Antworten. Effekte jenseits von attack/maxHp/maxFocus/repeatGapReduction nutzen dieselben Schlüssel wie
 ## die Skillbäume (siehe SkillTrees.EFFECT_TEXT) und werden zu den Skill-Effekten addiert.
 const ITEMS: Array[Dictionary] = [
-	{"id": "wooden_sword", "name": "Holzschwert", "slot": "weapon", "rarity": "common", "icon": 104, "description": "Ein einfaches Übungsschwert.", "effects": {"attack": 1}},
+	{"id": "wooden_sword", "name": "Holzschwert", "slot": "weapon", "rarity": "common", "icon": 107, "description": "Ein einfaches Übungsschwert.", "effects": {"attack": 1}},
 	{"id": "iron_sword", "name": "Eisenschwert", "slot": "weapon", "rarity": "uncommon", "icon": 104, "description": "Solide Klinge.", "effects": {"attack": 3}},
-	{"id": "precision_blade", "name": "Präzisionsklinge", "slot": "weapon", "rarity": "rare", "icon": 104, "description": "Hohe Kampfstärke, aber keine Lernhilfe.", "effects": {"attack": 5}},
-	{"id": "hunter_dagger", "name": "Jägerdolch", "slot": "weapon", "rarity": "uncommon", "icon": 104, "description": "Leicht und tückisch.", "effects": {"attack": 2, "critChance": 0.1}},
-	{"id": "rune_blade", "name": "Runenklinge", "slot": "weapon", "rarity": "rare", "icon": 104, "description": "Verstärkt die Klassenfähigkeit.", "effects": {"attack": 4, "skillPower": 0.3}},
+	{"id": "precision_blade", "name": "Präzisionsklinge", "slot": "weapon", "rarity": "rare", "icon": 106, "description": "Hohe Kampfstärke, aber keine Lernhilfe.", "effects": {"attack": 5}},
+	{"id": "hunter_dagger", "name": "Jägerdolch", "slot": "weapon", "rarity": "uncommon", "icon": 103, "description": "Leicht und tückisch.", "effects": {"attack": 2, "critChance": 0.1}},
+	{"id": "rune_blade", "name": "Runenklinge", "slot": "weapon", "rarity": "rare", "icon": 105, "description": "Verstärkt die Klassenfähigkeit.", "effects": {"attack": 4, "skillPower": 0.3}},
 	{"id": "focus_staff", "name": "Fokusstab", "slot": "weapon", "rarity": "uncommon", "icon": 129, "description": "Erhöht die maximalen Fokus-Punkte deutlich.", "effects": {"attack": 1, "maxFocus": 4}},
 	{"id": "leather_cap", "name": "Lederkappe", "slot": "helmet", "rarity": "common", "icon": 96, "description": "Etwas mehr Lebenspunkte.", "effects": {"maxHp": 6}},
 	{"id": "apprentice_helm", "name": "Lehrlingshelm", "slot": "helmet", "rarity": "uncommon", "icon": 96, "description": "Gut gepolstert: Jeder Treffer schmerzt etwas weniger.", "effects": {"maxHp": 4, "armor": 1}},
