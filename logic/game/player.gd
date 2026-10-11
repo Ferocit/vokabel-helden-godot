@@ -72,7 +72,11 @@ static func compute_stats(profile: Dictionary, cfg: Dictionary) -> Dictionary:
 			stats.attack += int(t.effect.get("attack", 0))
 			stats.maxFocus += int(t.effect.get("maxFocus", 0))
 			_add_mods(m, t.effect)
-	for id: String in profile.get("blessings", []):
+	var blessing_list: Array = profile.get("blessings", [])
+	# Duo-Segnungen (Issue #20) wirken automatisch, sobald beide Segnungen eines Paars gewählt sind.
+	for duo: Dictionary in Blessings.active_duos(blessing_list):
+		_add_mods(m, duo.effect)
+	for id: String in blessing_list:
 		var b := Blessings.get_blessing(id)
 		if not b.is_empty():
 			stats.maxHp += int(b.effect.get("maxHp", 0))

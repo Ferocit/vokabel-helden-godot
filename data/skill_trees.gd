@@ -19,6 +19,12 @@ extends RefCounted
 ##   startPotions, startGold  – Startvorräte jedes Abenteuers
 ##   goldFind                 – mehr Gold aus Beute (+Anteil)
 ##   shardBonus               – mehr Tempelsplitter am Ende eines Abenteuers (+Anteil)
+## Regel-Effekte (Segnungen/Talente, Issue #20) – belohnen richtiges Erinnern, helfen nie beim Antworten:
+##   chainStrike              – jede 3. Kombo-Stufe (3, 6 …) trifft doppelt
+##   revenge                  – ein im Abenteuer schon falsches Wort richtig: +Anteil Schaden
+##   firstStrike              – der erste Treffer jedes Kampfes ist kritisch
+##   critHeal, critFocus      – kritische Treffer heilen HP / geben Fokus
+##   poisonStack              – neues Gift addiert sich zum alten, statt es zu ersetzen
 
 const EFFECT_TEXT := {
 	"maxHp": "+%d max. HP",
@@ -36,9 +42,15 @@ const EFFECT_TEXT := {
 	"startGold": "+%d Gold zu Beginn",
 	"goldFind": "+%d %% Gold aus Beute",
 	"shardBonus": "+%d %% Tempelsplitter",
+	"chainStrike": "Jede 3. Antwort in Folge (Kombo 3, 6 …) trifft doppelt",
+	"revenge": "Früher falsches Wort jetzt richtig: +%d %% Schaden",
+	"firstStrike": "Der erste Treffer jedes Kampfes ist kritisch",
+	"critHeal": "Kritische Treffer heilen %d HP",
+	"critFocus": "Kritische Treffer geben %d Fokus",
+	"poisonStack": "Gift stapelt sich",
 }
 ## Diese Werte sind Anteile und werden in Prozent angezeigt.
-const PERCENT := ["moveSpeed", "critChance", "critMult", "defend", "skillPower", "goldFind", "shardBonus"]
+const PERCENT := ["moveSpeed", "critChance", "critMult", "defend", "skillPower", "goldFind", "shardBonus", "revenge"]
 
 const TREES := {
 	"warrior": {
@@ -102,5 +114,9 @@ static func effect_text(node: Dictionary, rank: int) -> String:
 	var parts: Array[String] = []
 	for key: String in node.effect:
 		var v: float = float(node.effect[key]) * rank
-		parts.append(EFFECT_TEXT[key] % (roundi(v * 100.0) if key in PERCENT else roundi(v)))
+		var template: String = EFFECT_TEXT[key]
+		if not template.contains("%d"):
+			parts.append(template)  # Regel ohne Zahl
+			continue
+		parts.append(template % (roundi(v * 100.0) if key in PERCENT else roundi(v)))
 	return ", ".join(parts)

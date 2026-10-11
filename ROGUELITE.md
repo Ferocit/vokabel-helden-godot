@@ -61,6 +61,13 @@ Neue Effekte: Schlüssel in `SkillTrees.EFFECT_TEXT` eintragen und an der passen
   Abenteuer – Splitter gibt es trotzdem für alles Erreichte (ohne Siegbonus). HUD: ❤.
 - **Segnungen** (`data/blessings.gd`): Nach jedem Elite-Sieg eine von 3 zufälligen Segnungen wählen (Tasten 1–3).
   Gelten bis zum Ende des Abenteuers (`profile.blessings`), nutzen die Skill-Effektschlüssel.
+- **Regel-Segnungen und Duos** (Issue #20): Neben Werte-Segnungen (gewöhnlich) gibt es seltene und legendäre
+  Segnungen, die richtiges Erinnern belohnen: ⚡ Kettenblitz (Kombo 3, 6 … trifft doppelt), 📜 Rache des Gelehrten
+  (früher falsches Wort jetzt richtig: doppelter Schaden), 🎯 Jagdinstinkt (erster Treffer kritisch), 🩸 Lebensdurst
+  (Krit heilt), 🐍 Schlangenbiss (Schurke: Gift stapelt sich), ✨ Funkenflug (Magier: Krit gibt Fokus).
+  Gezogen wird gewichtet nach Seltenheit (6 : 3 : 1,2), klassengebundene nur für ihre Klasse. Zwei passende
+  Segnungen ergeben eine **Duo-Segnung** (z. B. Steinhaut + Schildgebet = 🏰 Festung), die von selbst wirkt; die
+  Auswahl zeigt an, welche Karte ein Duo vervollständigt. Regel-Talente: Überraschungsangriff, Kampfeslust, Geistesblitz.
 - **Talente** (`data/talents.gd`): Jedes Level-up im Abenteuer bringt eine Wahl aus 3 zufälligen Talenten
   (Tasten 1–3), z. B. +8 HP, +1 Angriff, +5 % Krit. Stapelbar bis zur jeweiligen Höchststufe, kleiner als
   Segnungen, gelten bis zum Ende des Abenteuers (`profile.talents`, offene Wahlen `profile.pendingTalents`).

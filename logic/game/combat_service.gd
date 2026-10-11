@@ -70,6 +70,13 @@ static func combat_player_from(base: Dictionary, cls: Dictionary, mods: Dictiona
 	p.armor = int(Meta.mod(mods, "armor"))
 	p.potionHealBonus = int(Meta.mod(mods, "potionHeal"))
 	p.lifeOnWin = int(Meta.mod(mods, "lifeOnWin"))
+	# Regel-Effekte aus Segnungen und Talenten (Issue #20).
+	p.chainStrike = Meta.mod(mods, "chainStrike") > 0.0
+	p.revenge = Meta.mod(mods, "revenge")
+	p.firstStrike = Meta.mod(mods, "firstStrike") > 0.0
+	p.critHeal = int(Meta.mod(mods, "critHeal"))
+	p.critFocus = int(Meta.mod(mods, "critFocus"))
+	p.poisonStack = Meta.mod(mods, "poisonStack") > 0.0
 	return p
 
 
@@ -127,24 +134,43 @@ static func resolve_player_action(state: Dictionary, action: String, answered_co
 		return events
 	if power < 1.0:
 		events.append({"type": "weak", "action": action, "power": power})
+	# Schadensfaktor: fast richtig × Kombo × Regel-Effekte (Kettenblitz, Rache des Gelehrten).
+	var mult := power * float(state.player.get("comboMult", 1.0))
+	if action in ["attack", "skill"]:
+		var combo := int(state.player.get("combo", 0))
+		if state.player.get("chainStrike", false) and combo > 0 and combo % 3 == 0:
+			mult *= 2.0
+			events.append({"type": "chain"})
+		if float(state.player.get("revenge", 0.0)) > 0.0 and state.player.get("revengeWord", false):
+			mult *= 1.0 + float(state.player.revenge)
+			events.append({"type": "revenge"})
 
 	var player: Dictionary = state.player
 	var enemy: Dictionary = state.enemy
 	match action:
 		"attack":
-			var crit: bool = rng.call() < float(player.critChance)
+			var crit: bool = rng.call() < float(player.critChance) or (player.get("firstStrike", false) and not state.get("hitDone", false))
 			var base: int = int(player.attack) + Rng.rand_int(rng, 0, 2)
 			var dmg: int = js_round(base * float(player.critMultiplier)) if crit else base
-			events.append_array(_damage_enemy(state, maxi(1, js_round(dmg * power * float(player.get("comboMult", 1.0)))), crit))
+			events.append_array(_damage_enemy(state, maxi(1, js_round(dmg * mult)), crit))
+			state.hitDone = true
+			if crit:
+				events.append_array(_on_crit(state))
 		"skill":
 			var skill: Dictionary = player.skill
 			player.focus = int(player.focus) - int(skill.focusCost)
 			var hit: int = js_round(int(player.attack) * float(skill.multiplier)) + Rng.rand_int(rng, 0, 2)
-			events.append_array(_damage_enemy(state, maxi(1, js_round(hit * power * float(player.get("comboMult", 1.0)))), false))
+			events.append_array(_damage_enemy(state, maxi(1, js_round(hit * mult)), false))
+			state.hitDone = true
 			if skill.has("poisonTurns") and state.outcome == "ongoing":
 				var dmg := maxi(1, js_round(int(player.attack) * float(skill.get("poisonFactor", 0.5))))
-				enemy.poison = {"turns": int(skill.poisonTurns), "damage": dmg}
-				events.append({"type": "poisoned", "turns": int(skill.poisonTurns)})
+				var turns := int(skill.poisonTurns)
+				# Schlangenbiss: neues Gift addiert sich zum alten.
+				if player.get("poisonStack", false) and enemy.poison != null:
+					dmg += int(enemy.poison.damage)
+					turns += int(enemy.poison.turns)
+				enemy.poison = {"turns": turns, "damage": dmg}
+				events.append({"type": "poisoned", "turns": turns})
 		"defend":
 			state.defending = true
 			state.defendPower = power
@@ -215,6 +241,21 @@ static func resolve_enemy_turn(state: Dictionary, rng: Callable) -> Array:
 	enemy.patternIndex = (int(enemy.patternIndex) + 1) % pattern.size()
 	enemy.intent = pattern[enemy.patternIndex]
 	events.append({"type": "intent", "move": enemy.intent})
+	return events
+
+
+## Kritischer Treffer: Regel-Effekte „heilt HP“ und „gibt Fokus“.
+static func _on_crit(state: Dictionary) -> Array:
+	var p: Dictionary = state.player
+	var events: Array = []
+	var heal := mini(int(p.get("critHeal", 0)), int(p.maxHp) - int(p.hp))
+	if heal > 0:
+		p.hp = int(p.hp) + heal
+		events.append({"type": "heal", "amount": heal})
+	var focus := mini(int(p.get("critFocus", 0)), int(p.maxFocus) - int(p.focus))
+	if focus > 0:
+		p.focus = int(p.focus) + focus
+		events.append({"type": "focus", "amount": focus})
 	return events
 
 

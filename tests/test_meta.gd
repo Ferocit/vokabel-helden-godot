@@ -276,3 +276,95 @@ func test_zeit_challenge_zeit_und_bonus() -> void:
 	Ctx.resume_run()
 	expect_true(Ctx.run.timeChallenge, "Modus bleibt beim Fortsetzen")
 	expect_near(float(Ctx.run.timeLeft), float(Ctx.run.timeLimit) - 12.5, 0.01, "Restzeit bleibt erhalten")
+
+
+# ---------- Regel-Segnungen und -Talente (Issue #20) ----------
+
+static func rule_combat(effects: Dictionary, attack: int = 10) -> Dictionary:
+	var base := {"hp": 30, "maxHp": 60, "focus": 2, "maxFocus": 6, "attack": attack, "potions": 0}
+	var p := CombatService.combat_player_from(base, GameData.get_class_def("warrior"), effects)
+	p.critChance = 0.0
+	return CombatService.create_combat(p, CombatService.create_enemy(GameData.get_enemy("temple_cyclops"), 1))
+
+
+static func damage_of(state: Dictionary) -> int:
+	return int(state.enemy.maxHp) - int(state.enemy.hp)
+
+
+func test_segnungen_und_talente_texte_bekannt() -> void:
+	for list: Array in [Blessings.ALL, Blessings.DUOS, Talents.ALL]:
+		for b: Dictionary in list:
+			for key: String in b.effect:
+				expect_true(key in Player.BASE_KEYS or SkillTrees.EFFECT_TEXT.has(key), "%s: %s" % [b.id, key])
+			expect_ne(Talents.text(b) if list == Talents.ALL else Blessings.text(b), "")
+
+
+func test_kettenblitz_bei_kombo_3() -> void:
+	var rng := func() -> float: return 0.5
+	var plain := rule_combat({})
+	plain.player.combo = 3
+	var chain := rule_combat({"chainStrike": 1})
+	chain.player.combo = 3
+	CombatService.resolve_player_action(plain, "attack", true, GameConfig.section("combat"), rng)
+	var ev := CombatService.resolve_player_action(chain, "attack", true, GameConfig.section("combat"), rng)
+	expect_eq(ev[0].type, "chain")
+	expect_eq(damage_of(chain), damage_of(plain) * 2)
+	var off := rule_combat({"chainStrike": 1})
+	off.player.combo = 2
+	CombatService.resolve_player_action(off, "attack", true, GameConfig.section("combat"), rng)
+	expect_eq(damage_of(off), damage_of(plain), "Kombo 2: kein Kettenblitz")
+
+
+func test_rache_des_gelehrten() -> void:
+	var rng := func() -> float: return 0.5
+	var plain := rule_combat({})
+	var rev := rule_combat({"revenge": 1.0})
+	rev.player.revengeWord = true
+	CombatService.resolve_player_action(plain, "attack", true, GameConfig.section("combat"), rng)
+	CombatService.resolve_player_action(rev, "attack", true, GameConfig.section("combat"), rng)
+	expect_eq(damage_of(rev), damage_of(plain) * 2)
+
+
+func test_erstschlag_krit_heilt_und_gibt_fokus() -> void:
+	var rng := func() -> float: return 0.5
+	var s := rule_combat({"firstStrike": 1, "critHeal": 4, "critFocus": 1})
+	var ev := CombatService.resolve_player_action(s, "attack", true, GameConfig.section("combat"), rng)
+	expect_true(ev.any(func(e: Dictionary) -> bool: return e.type == "damage" and e.crit), "erster Treffer kritisch")
+	expect_eq(int(s.player.hp), 34)
+	expect_eq(int(s.player.focus), 3)
+	ev = CombatService.resolve_player_action(s, "attack", true, GameConfig.section("combat"), rng)
+	expect_false(ev.any(func(e: Dictionary) -> bool: return e.type == "damage" and e.crit), "zweiter Treffer normal")
+
+
+func test_gift_stapelt_sich() -> void:
+	var base := {"hp": 30, "maxHp": 60, "focus": 6, "maxFocus": 6, "attack": 10, "potions": 0}
+	var p := CombatService.combat_player_from(base, GameData.get_class_def("rogue"), {"poisonStack": 1})
+	var s := CombatService.create_combat(p, CombatService.create_enemy(GameData.get_enemy("temple_cyclops"), 1))
+	var rng := func() -> float: return 0.5
+	CombatService.resolve_player_action(s, "skill", true, GameConfig.section("combat"), rng)
+	var first: Dictionary = s.enemy.poison.duplicate()
+	CombatService.resolve_player_action(s, "skill", true, GameConfig.section("combat"), rng)
+	expect_eq(int(s.enemy.poison.turns), int(first.turns) * 2)
+	expect_eq(int(s.enemy.poison.damage), int(first.damage) * 2)
+
+
+func test_duo_segnungen() -> void:
+	var p := rich()
+	p.blessings = ["b_stone"]
+	var before := Player.compute_stats(p, pc())
+	expect_eq(Blessings.duos_completed_by(p.blessings, "b_prayer").size(), 1)
+	p.blessings = ["b_stone", "b_prayer"]
+	var after := Player.compute_stats(p, pc())
+	expect_near(Meta.mod(after.mods, "armor"), Meta.mod(before.mods, "armor") + 1.0, 0.001, "Duo-Festung: +1 Rüstung")
+	expect_near(Meta.mod(after.mods, "defend"), Meta.mod(before.mods, "defend") + 0.2, 0.001, "Schildgebet + Duo")
+	expect_eq(Blessings.active_duos(p.blessings).size(), 1)
+
+
+func test_segnungen_klasse_und_seltenheit() -> void:
+	var seen := {}
+	for i in 200:
+		for b: Dictionary in Blessings.roll(Rng.create(i), [], 3, "warrior"):
+			seen[b.id] = int(seen.get(b.id, 0)) + 1
+	expect_false(seen.has("b_venom"), "Schurken-Segnung nicht für Krieger")
+	expect_true(seen.has("b_chain"), "legendäre Segnungen kommen vor")
+	expect_lt(int(seen.b_chain), int(seen.b_oak), "legendär seltener als gewöhnlich")

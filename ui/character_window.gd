@@ -159,6 +159,12 @@ func _stats() -> Control:
 			chip.tooltip_text = Blessings.text(bl)
 			chip.add_child(UI.label("%s %s" % [bl.icon, bl.name], "", 14))
 			flow.add_child(chip)
+		for duo: Dictionary in Blessings.active_duos(blessings):
+			var chip := PanelContainer.new()
+			chip.theme_type_variation = "Card"
+			chip.tooltip_text = "Duo-Segnung: %s" % Blessings.text(duo)
+			chip.add_child(UI.label("%s %s (Duo)" % [duo.icon, duo.name], "Accent", 14))
+			flow.add_child(chip)
 		box.add_child(UI.label("Segnungen", "H3"))
 		box.add_child(flow)
 	return box

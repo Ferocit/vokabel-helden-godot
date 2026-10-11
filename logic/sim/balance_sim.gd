@@ -17,8 +17,8 @@ extends RefCounted
 ##
 ## Ergebnis eines Abenteuers: siehe `_result`.
 
-const TALENT_ORDER := ["t_might", "t_vigor", "t_eye", "t_hide", "t_guard", "t_mastery", "t_will", "t_herbs", "t_focus", "t_stride", "t_luck"]
-const BLESSING_ORDER := ["b_blade", "b_oak", "b_stone", "b_fury", "b_falcon", "b_sun", "b_spring", "b_prayer", "b_alchemy", "b_crystal", "b_jaguar", "b_gold"]
+const TALENT_ORDER := ["t_might", "t_ambush", "t_vigor", "t_eye", "t_hide", "t_thirst", "t_guard", "t_mastery", "t_clarity", "t_will", "t_herbs", "t_focus", "t_stride", "t_luck"]
+const BLESSING_ORDER := ["b_chain", "b_revenge", "b_blade", "b_vampire", "b_hunter", "b_venom", "b_spark", "b_oak", "b_stone", "b_fury", "b_falcon", "b_sun", "b_spring", "b_prayer", "b_alchemy", "b_crystal", "b_jaguar", "b_gold"]
 
 
 static func default_options() -> Dictionary:
@@ -185,6 +185,7 @@ class _Run:
 	var pos := Vector2i.ZERO
 	var combo := 0
 	var max_combo := 0
+	var last_revenge := false
 
 	func _init(opts: Dictionary) -> void:
 		o = opts
@@ -266,7 +267,9 @@ class _Run:
 				used += 1
 				break
 		hints += used
+		var was_missed: bool = learning.scheduler.wrong_in_run.has(item.key)
 		var correct: bool = rng.call() < p
+		last_revenge = was_missed and correct
 		var outcome := "correct" if correct else ("almostCorrect" if rng.call() < float(sc.almostShare) else "wrongCorrected")
 		_spend(float(sc.time.answerSec) + used * float(sc.time.hintSec) + (float(sc.time.wrongExtraSec) if outcome == "wrongCorrected" else 0.0))
 		learning.submit(item, Vocab.result(outcome, used))
@@ -311,7 +314,7 @@ class _Run:
 	func pick_blessing() -> void:
 		if not o.useBlessings:
 			return
-		var offer := Blessings.roll(rng, profile.blessings, int(Meta.cfg().blessingChoices))
+		var offer := Blessings.roll(rng, profile.blessings, int(Meta.cfg().blessingChoices), String(profile.heroClass))
 		if offer.is_empty():
 			return
 		_spend(float(sc.time.choiceSec))
@@ -419,6 +422,8 @@ class _Run:
 				action = "attack"  # Fokus für eine Hilfe ausgegeben
 			var power := float(c.combat.almostPower) if outcome == "almostCorrect" else 1.0
 			p.comboMult = Combo.multiplier(combo)
+			p.combo = combo
+			p.revengeWord = last_revenge
 			CombatService.resolve_player_action(state, action, outcome != "wrongCorrected", c.combat, rng, power)
 			CombatService.resolve_enemy_turn(state, rng)
 			_spend(float(sc.time.combatRoundSec))

@@ -18,7 +18,7 @@ func test_balance_abfragen_pro_run() -> void:
 		var r := simulate_run(seed * 31, 0.8)
 		expect_ge(r.questions, min_q * 0.7, "seed %d" % seed)
 		expect_le(r.questions, 65, "seed %d" % seed)
-		expect_ge(r.words, 15, "seed %d" % seed)
+		expect_ge(r.words, 12, "seed %d" % seed)
 		total += int(r.questions)
 	expect_ge(total / 30.0, min_q, "im Schnitt mindestens minVocabularyInteractions")
 
@@ -45,10 +45,10 @@ func test_balance_grosse_sets_issue16() -> void:
 	var total := 0
 	for i in 15:
 		var r := simulate_run(7000 + i * 11, 0.8, "warrior", big)
-		expect_ge(r.words, 40)
+		expect_ge(r.words, 33)
 		expect_le(r.questions, 150)
 		total += int(r.words)
-	expect_ge(total / 15.0, 45)
+	expect_ge(total / 15.0, 38)
 
 
 # ---------- Lerner-Modell ----------

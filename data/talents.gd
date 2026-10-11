@@ -17,6 +17,10 @@ const ALL: Array[Dictionary] = [
 	{"id": "t_stride", "name": "Leichtfuß", "icon": "👟", "max": 3, "effect": {"moveSpeed": 0.08}},
 	{"id": "t_mastery", "name": "Klassenmeister", "icon": "★", "max": 3, "effect": {"skillPower": 0.15}},
 	{"id": "t_luck", "name": "Glückspilz", "icon": "💰", "max": 3, "effect": {"goldFind": 0.2}},
+	# Regel-Talente (Issue #20): verändern Kämpfe, belohnen Treffer – nie Hilfen beim Antworten.
+	{"id": "t_ambush", "name": "Überraschungsangriff", "icon": "🗡", "max": 1, "effect": {"firstStrike": 1}},
+	{"id": "t_thirst", "name": "Kampfeslust", "icon": "🩸", "max": 2, "effect": {"critHeal": 2}},
+	{"id": "t_clarity", "name": "Geistesblitz", "icon": "💫", "max": 2, "effect": {"critFocus": 1}},
 ]
 
 

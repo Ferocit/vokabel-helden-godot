@@ -300,10 +300,14 @@ func battle_loop() -> void:
 		_intent.visible = true
 		wallet = out.wallet
 		state.player.focus = int(wallet.focus)
+		# Rache des Gelehrten: War das Wort in diesem Abenteuer schon einmal falsch?
+		var was_missed: bool = learning.scheduler.wrong_in_run.has(item.key)
 		var levels := Ctx.submit_answer(item, out.result)
 		if levels > 0:
 			_on_level_up()
 		var outcome: String = out.result.outcome
+		state.player.combo = int(run.get("combo", 0))
+		state.player.revengeWord = was_missed and outcome == "correct"
 		var power := float(GameConfig.section("combat").almostPower) if outcome == "almostCorrect" else 1.0
 		state.player.comboMult = Combo.multiplier(int(run.get("combo", 0)))
 		var events := CombatService.resolve_player_action(state, action, outcome != "wrongCorrected", GameConfig.section("combat"), rng, power)
@@ -419,6 +423,13 @@ func play_events(events: Array, action: String) -> void:
 			"weak":
 				say("Fast richtig – „%s“ wirkt nur halb so stark." % CombatService.action_label(ev.action, state.player))
 				await _sleep(0.8)
+			"chain":
+				say("⚡ Kettenblitz! Kombo %d – doppelter Schaden!" % int(run.get("combo", 0)))
+				_burst(hero_pos(1.4), Color("#ffe066"), 14, 1.4, true)
+				await _sleep(0.7)
+			"revenge":
+				say("📜 Rache des Gelehrten! Das Wort sitzt jetzt – mehr Schaden!")
+				await _sleep(0.7)
 			"damage":
 				if ev.target == "enemy":
 					var skill := action == "skill"
@@ -628,7 +639,7 @@ func result_window(title: String, lines: Array) -> void:
 
 ## Nach einem Elite-Sieg: eine von mehreren Segnungen wählen (gilt nur in diesem Abenteuer).
 func choose_blessing_window() -> void:
-	var options := Blessings.roll(rng, Ctx.profile.blessings, int(Meta.cfg().blessingChoices))
+	var options := Blessings.roll(rng, Ctx.profile.blessings, int(Meta.cfg().blessingChoices), String(Ctx.profile.heroClass))
 	if options.is_empty():
 		return
 	var m := UI.modal(ui, "Wähle eine Segnung", 900, false)
@@ -638,7 +649,10 @@ func choose_blessing_window() -> void:
 	var row := UI.hbox([], 12)
 	for i in options.size():
 		var b: Dictionary = options[i]
-		var btn := UI.choice_card(i + 1, b.icon, b.name, Blessings.text(b))
+		var extra: String = Blessings.RARITY_LABEL[b.rarity].capitalize()
+		for duo: Dictionary in Blessings.duos_completed_by(Ctx.profile.blessings, b.id):
+			extra += " · Duo: %s %s" % [duo.icon, duo.name]
+		var btn := UI.choice_card(i + 1, b.icon, b.name, Blessings.text(b), extra)
 		btn.pressed.connect(choose_blessing.bind(i))
 		row.add_child(btn)
 	m.body.add_child(row)
@@ -653,8 +667,11 @@ func choose_blessing(i: int) -> void:
 	if _blessing_modal == null or i < 0 or i >= _blessing_options.size():
 		return
 	var b: Dictionary = _blessing_options[i]
+	var duos := Blessings.duos_completed_by(Ctx.profile.blessings, b.id)
 	Meta.add_blessing(Ctx.profile, run, b.id)
 	Sound.play("levelup")
+	for duo: Dictionary in duos:
+		say("Duo-Segnung erwacht: %s %s – %s" % [duo.icon, duo.name, Blessings.text(duo)])
 	var m := _blessing_modal
 	_blessing_modal = null
 	m.close()
