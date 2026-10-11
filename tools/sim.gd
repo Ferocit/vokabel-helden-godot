@@ -13,13 +13,14 @@ extends SceneTree
 ##   skills=none,full       Skillbaum leer oder voll
 ##   words=0                0 = Beispielset, sonst ein künstliches Set mit so vielen Wörtern
 ##   hints=1 shop=1 talents=1 blessings=1   Bot-Verhalten an (1) / aus (0)
+##   floors=1               so viele Ebenen spielt der Bot höchstens (steigt nur mit 2+ Leben ab)
 ##   campaign=0             >0: so viele Läufe hintereinander mit Meta-Fortschritt (je Klasse/Lerner)
 ##   seed=1
 
 
 func _init() -> void:
 	var args := {"runs": "30", "class": "warrior", "learner": "average", "accuracy": "0.8", "heat": "0", "skills": "none",
-		"words": "0", "hints": "1", "shop": "1", "talents": "1", "blessings": "1", "campaign": "0", "seed": "1"}
+		"words": "0", "hints": "1", "shop": "1", "talents": "1", "blessings": "1", "campaign": "0", "seed": "1", "floors": "1"}
 	# start.bat reicht die Argumente über SIM_ARGS weiter, weil cmd.exe bei „=“ und „,“ trennt.
 	var user_args: Array = Array(OS.get_cmdline_user_args())
 	var raw := OS.get_environment("SIM_ARGS")
@@ -34,7 +35,7 @@ func _init() -> void:
 		for i in int(args.words):
 			vocab.append(Vocab.entry("w%d" % i, "de%d" % i, "en%d" % i))
 	var base := {
-		"seed": int(args.seed), "accuracy": float(args.accuracy), "vocabulary": vocab,
+		"seed": int(args.seed), "accuracy": float(args.accuracy), "vocabulary": vocab, "floors": int(args.floors),
 		"useHints": args.hints == "1", "useShop": args.shop == "1", "useTalents": args.talents == "1", "useBlessings": args.blessings == "1",
 	}
 	if int(args.campaign) > 0:
@@ -56,10 +57,10 @@ func _batch(args: Dictionary, base: Dictionary) -> void:
 					o.heat = int(heat)
 					o.skills = "full" if skills == "full" else {}
 					var s := BalanceSim.batch(o, int(args.runs))
-					rows.append([cls, learner, int(heat), skills, "%d %%" % roundi(s.winRate * 100.0), s.defeats, s.shards, s.level,
+					rows.append([cls, learner, int(heat), skills, "%d %%" % roundi(s.winRate * 100.0), s.floorsCleared, s.defeats, s.shards, s.level,
 						s.questions, s.words, s.perMinute, s.minutes, s.hints, s.talents, s.blessings, s.maxCombo, "%d %% / %d %%" % [roundi(s.setBonus * 100.0), roundi(s.setBonusGolden * 100.0)], s.knowledgeGain,
 						"%.2f / %.2f" % [s.defendKnowledge, s.otherKnowledge]])
-	print(BalanceSim.table(["Klasse", "Lerner", "Stufe", "Skills", "Sieg", "Ø Niederl.", "Ø 🔷", "Ø Level", "Abfragen",
+	print(BalanceSim.table(["Klasse", "Lerner", "Stufe", "Skills", "Sieg", "Ø Ebenen", "Ø Niederl.", "Ø 🔷", "Ø Level", "Abfragen",
 		"Wörter", "Abfr./min", "Minuten", "Hilfen", "Talente", "Segnungen", "Ø max. Kombo", "Set-Meister / golden", "Wissen +", "Wissen Vert./sonst"], rows))
 
 

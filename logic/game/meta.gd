@@ -159,10 +159,12 @@ static func reset_run_fields(profile: Dictionary, player_cfg: Dictionary) -> Dic
 	return next
 
 
-## Belohnung für ein beendetes Abenteuer: { total, lines: [[Text, Splitter], …] }
-static func run_reward(run: Dictionary, victory: bool, profile: Dictionary) -> Dictionary:
-	var c: Dictionary = cfg().shards
+## Was auf der aktuellen Ebene geschafft wurde, plus frühere Ebenen (run.pastCounts, Issue #27).
+static func progress_counts(run: Dictionary) -> Dictionary:
 	var counts := {"normal": 0, "elite": 0, "boss": 0, "chest": 0, "door": 0, "shrine": 0}
+	var past: Dictionary = run.get("pastCounts", {})
+	for k: String in past:
+		counts[k] = int(counts.get(k, 0)) + int(past[k])
 	for obj: Dictionary in run.map.objects:
 		if obj.kind == "enemy" and run.defeated.has(obj.id):
 			counts[obj.tier] += 1
@@ -172,6 +174,13 @@ static func run_reward(run: Dictionary, victory: bool, profile: Dictionary) -> D
 			counts.door += 1
 		elif obj.kind == "shrine" and run.opened.has(obj.id):
 			counts.shrine += 1
+	return counts
+
+
+## Belohnung für ein beendetes Abenteuer: { total, lines: [[Text, Splitter], …] }
+static func run_reward(run: Dictionary, victory: bool, profile: Dictionary) -> Dictionary:
+	var c: Dictionary = cfg().shards
+	var counts := progress_counts(run)
 	var correct := 0
 	var learning: LearningSession = run.learning
 	for r: Dictionary in learning.run.records.values():
@@ -189,8 +198,12 @@ static func run_reward(run: Dictionary, victory: bool, profile: Dictionary) -> D
 	var per_words := int(c.correctPer)
 	if per_words > 0 and correct >= per_words:
 		lines.append(["%d richtig erinnerte Vokabeln" % correct, correct / per_words])
-	if victory:
+	# Jede bezwungene Ebene zahlt den Siegbonus – auch wenn man danach tiefer unten scheitert.
+	var cleared := maxi(int(run.get("floorsCleared", 0)), 1 if victory else 0)
+	if cleared == 1:
 		lines.append(["Tempel bezwungen", int(c.victory)])
+	elif cleared > 1:
+		lines.append(["Ebenen bezwungen ×%d" % cleared, int(c.victory) * cleared])
 	for unit_id: String in run.get("setBonus", {}):
 		var level: String = run.setBonus[unit_id]
 		lines.append(["%s Set-Meister" % ("🌟 Goldener" if level == "golden" else "⭐"), SetBonus.shards_for(level)])
@@ -222,7 +235,7 @@ static func apply_run_end(profile: Dictionary, run: Dictionary, victory: bool) -
 	profile.shards = int(profile.shards) + int(reward.total)
 	profile.records.runs = int(profile.records.runs) + 1
 	profile.records.shardsTotal = int(profile.records.shardsTotal) + int(reward.total)
-	if victory:
+	if victory or int(run.get("floorsCleared", 0)) > 0:
 		profile.records.victories = int(profile.records.victories) + 1
 		# Ein Sieg auf der höchsten freien Tempelstufe schaltet die nächste frei.
 		if int(run.get("heat", 0)) >= int(profile.records.heatUnlocked):
@@ -327,6 +340,29 @@ static func heat_attack_factor(heat: int) -> float:
 
 static func heat_shard_bonus(heat: int) -> float:
 	return float(cfg().heat.shardBonus) * heat
+
+
+# ---------- Ebenen (Issue #27) ----------
+## Nach dem Boss geht es tiefer hinab: neue Karte, stärkere Gegner. Ebene 1 ist der Normalfall.
+
+static func floors_cfg() -> Dictionary:
+	return GameConfig.section("floors")
+
+
+static func floor_hp_factor(floor: int) -> float:
+	return 1.0 + float(floors_cfg().enemyHp) * maxi(0, floor - 1)
+
+
+static func floor_attack_factor(floor: int) -> float:
+	return 1.0 + float(floors_cfg().enemyAttack) * maxi(0, floor - 1)
+
+
+static func max_floors() -> int:
+	return int(floors_cfg().max)
+
+
+static func floor_seed(seed: int, floor: int) -> int:
+	return (seed + (floor - 1) * int(floors_cfg().seedStep)) & Rng.MASK
 
 
 static func heat_text(heat: int) -> String:

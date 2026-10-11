@@ -45,6 +45,7 @@ Einstellungen (Ton, Lautstärke, Vollbild) und eine Spielanleitung gibt es im Ti
    (blaue Steintafeln) fragen drei Vokabeln ab – je mehr richtig, desto besser die Belohnung, alle drei heilen.
    **Runenplatten** in den Gängen fragen beim Drüberlaufen ein Wort ab (richtig: Gold, falsch: ein paar HP).
    Der Kristallaltar heilt und ist der Rückkehrpunkt nach einer Niederlage.
+   Nach dem Boss geht es auf Wunsch **tiefer hinab** (bis Ebene 3, stärkere Gegner, mehr Splitter).
 4. **Kämpfen:** Jede Aktion verlangt eine richtig erinnerte Vokabel. Falsch → die Aktion verpufft, die
    Lösung wird gezeigt und einmal abgetippt; das Wort kommt bald wieder. **Fast richtig** (ein Tippfehler oder
    nur die Großschreibung falsch): Die Aktion wirkt halb so stark, die richtige Schreibweise wird gezeigt.

@@ -10,6 +10,7 @@ const INTERACT_RANGE := 1.35
 const COMBAT := "res://scenes/combat.tscn"
 const SUMMARY := "res://scenes/summary.tscn"
 const TITLE := "res://scenes/title.tscn"
+const SELF := "res://scenes/exploration.tscn"
 
 ## Für Tests: Übergänge ohne Wartezeit.
 static var fast := false
@@ -67,7 +68,12 @@ func _ready() -> void:
 	fx.snap()
 	_fade_in(0.4)
 	var learning: LearningSession = run.learning
-	if learning.run.questions == 0 and (run.defeated as Dictionary).is_empty():
+	# Fortgesetzt nach einem Bosssieg, aber vor der Entscheidung: die Treppe wartet noch.
+	if _boss_defeated() and Ctx.can_descend():
+		open_descend_choice.call_deferred()
+	elif int(run.get("floor", 1)) > 1 and (run.defeated as Dictionary).is_empty() and (run.opened as Dictionary).is_empty():
+		get_tree().create_timer(0.7).timeout.connect(toast.bind("⬇ Ebene %d von %d: Die Gegner hier unten sind stärker – und die Beute auch." % [int(run.floor), Meta.max_floors()]))
+	elif learning.run.questions == 0 and (run.defeated as Dictionary).is_empty():
 		get_tree().create_timer(0.7).timeout.connect(toast.bind("Willkommen im geheimen Dschungeltempel! Sammle %d Runen ◆, um das Siegeltor zum Boss zu öffnen." % int(run.bossRunes)))
 		get_tree().create_timer(2.2).timeout.connect(toast.bind("Runen bekommst du für besiegte Gegner und geöffnete Türen. Truhen enthalten Beute."))
 
@@ -625,7 +631,12 @@ func on_combat_return(data: Dictionary) -> void:
 		toast(msg)
 	hud.refresh()
 	if data.get("victory", false):
-		finish_run(true)
+		run.floorsCleared = int(run.get("floorsCleared", 0)) + 1
+		if Ctx.can_descend():
+			Ctx.autosave()
+			open_descend_choice()
+		else:
+			finish_run(true)
 	elif data.get("gameOver", false):
 		finish_run(false)
 
@@ -672,6 +683,42 @@ func time_over() -> UI.Modal:
 	m.body.add_child(UI.hbox([UI.spacer(), btn, UI.spacer()]))
 	UI.focus_later(btn)
 	return m
+
+
+## Nach dem Bosssieg: tiefer hinab oder das Abenteuer (mit Siegbonus) beenden (Issue #27).
+func open_descend_choice() -> UI.Modal:
+	busy = true
+	_clock_paused = true
+	var next := int(run.floor) + 1
+	var m := UI.modal(ui, "Der Boss ist besiegt!", 760, false)
+	m.body.add_child(UI.para("Hinter dem Thron führt eine Treppe tiefer in den Tempel. Unten warten stärkere Gegner (+%d %% HP, +%d %% Angriff) – und mehr Beute und Splitter. Alles bisher Verdiente bleibt dir sicher." % [
+		roundi(float(Meta.floors_cfg().enemyHp) * (next - 1) * 100.0), roundi(float(Meta.floors_cfg().enemyAttack) * (next - 1) * 100.0)], "", 17))
+	var down := UI.button("⬇ Tiefer hinab (Ebene %d von %d)" % [next, Meta.max_floors()], func() -> void:
+		m.close()
+		descend())
+	down.name = "Descend"
+	var stop := UI.button("🏆 Abenteuer beenden", func() -> void:
+		m.close()
+		finish_run(true))
+	stop.name = "Finish"
+	m.body.add_child(UI.gap(6))
+	m.body.add_child(UI.hbox([stop, UI.spacer(), down]))
+	UI.focus_later(down)
+	return m
+
+
+func _boss_defeated() -> bool:
+	for o: Dictionary in run.map.objects:
+		if o.kind == "enemy" and o.tier == "boss":
+			return run.defeated.has(o.id)
+	return false
+
+
+func descend() -> void:
+	Sound.play("door")
+	Ctx.descend()
+	_clock_paused = false
+	get_tree().change_scene_to_file(SELF)
 
 
 func finish_run(victory: bool) -> void:

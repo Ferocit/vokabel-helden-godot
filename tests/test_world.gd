@@ -261,6 +261,21 @@ func test_erkundung_runenplatte_beim_drueberlaufen() -> void:
 	e.free()
 
 
+func test_erkundung_nach_boss_tiefer_oder_beenden() -> void:
+	var e := _explore()
+	var boss := find_obj(e, "enemy")
+	for o: Dictionary in e.run.map.objects:
+		if o.kind == "enemy" and o.tier == "boss":
+			boss = o
+	Ctx.run.defeated[boss.id] = true
+	e.on_combat_return({"objectId": boss.id, "outcome": "won", "messages": [], "victory": true})
+	expect_true(e.busy, "Entscheidung offen")
+	expect_eq(int(Ctx.run.floorsCleared), 1)
+	expect_true(e.ui.find_child("Descend", true, false) != null, "Tiefer hinab angeboten")
+	expect_true(e.ui.find_child("Finish", true, false) != null, "Beenden angeboten")
+	e.free()
+
+
 func test_erkundung_gegnerkontakt_startet_kampf() -> void:
 	var e := _explore()
 	var enemy := find_obj(e, "enemy")

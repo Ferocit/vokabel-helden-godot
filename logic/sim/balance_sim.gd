@@ -125,7 +125,7 @@ static func _forget(knowledge: Dictionary, learner: String) -> void:
 ## Durchschnitte und Quoten über mehrere Ergebnisse.
 static func summarize(rows: Array) -> Dictionary:
 	var n := float(maxi(1, rows.size()))
-	var keys := ["shards", "level", "defeats", "questions", "words", "firstTry", "hints", "minutes", "perMinute", "talents", "blessings", "itemsBought", "knowledgeGain", "defendShare", "defendKnowledge", "otherKnowledge", "maxCombo", "setBonus", "setBonusGolden"]
+	var keys := ["shards", "level", "defeats", "questions", "words", "firstTry", "hints", "minutes", "perMinute", "talents", "blessings", "itemsBought", "knowledgeGain", "defendShare", "defendKnowledge", "otherKnowledge", "maxCombo", "setBonus", "setBonusGolden", "floorsCleared"]
 	var sum := {}
 	for k: String in keys:
 		sum[k] = 0.0
@@ -183,6 +183,7 @@ class _Run:
 	var talents_taken := 0
 	var knowledge_before := 0.0
 	var pos := Vector2i.ZERO
+	var level_scale := 1.0
 	var combo := 0
 	var max_combo := 0
 	var last_revenge := false
@@ -213,16 +214,32 @@ class _Run:
 			knowledge_before += float(knowledge[item.key])
 		knowledge_before /= items.size()
 		learning = LearningSession.new(items, o.progress, c.learning, Rng.create(int(o.seed) + 1), func() -> int: return clock)
-		var scale := RunScaling.level_scale_for(vocab.size())
-		map = LevelGenerator.generate(int(o.seed), RunScaling.scale_level_config(c.level, scale), {
-			"bossRunesRequired": RunScaling.scaled_boss_runes(int(c.run.bossRunesRequired), scale),
-			"enemies": GameData.THEMES[0].enemies,
-		})
+		level_scale = RunScaling.level_scale_for(vocab.size())
 		var s := _stats()
-		run_state = {"seed": int(o.seed), "heat": int(o.heat), "map": map, "defeated": {}, "opened": {}, "learning": learning,
+		run_state = {"seed": int(o.seed), "heat": int(o.heat), "learning": learning, "floor": 1, "floorsCleared": 0, "pastCounts": {},
 			"hp": int(s.maxHp), "focus": int(s.maxFocus), "runes": 0}
+		_load_floor(1)
 		SetBonus.init_run(run_state, items)
 		pos = map.start
+
+	## Karte einer Ebene erzeugen (wie GameContext.start_run / descend).
+	func _load_floor(floor: int) -> void:
+		if floor > 1:
+			run_state.pastCounts = Meta.progress_counts(run_state)
+		map = LevelGenerator.generate(Meta.floor_seed(int(o.seed), floor), RunScaling.scale_level_config(c.level, level_scale), {
+			"bossRunesRequired": RunScaling.scaled_boss_runes(int(c.run.bossRunesRequired), level_scale),
+			"enemies": GameData.THEMES[0].enemies,
+		})
+		run_state.floor = floor
+		run_state.map = map
+		run_state.defeated = {}
+		run_state.opened = {}
+		run_state.runes = 0
+		pos = map.start
+		if floor > 1:
+			var s := _stats()
+			run_state.hp = int(s.maxHp)
+			run_state.focus = int(s.maxFocus)
 
 	func _initial_knowledge() -> float:
 		if o.learner == "fixed":
@@ -403,7 +420,7 @@ class _Run:
 		var s := _stats()
 		var cls := GameData.get_class_def(profile.heroClass)
 		var base := {"hp": run_state.hp, "maxHp": s.maxHp, "focus": run_state.focus, "maxFocus": s.maxFocus, "attack": s.attack, "potions": profile.potions}
-		var state := CombatService.create_combat(CombatService.combat_player_from(base, cls, s.mods), CombatService.create_enemy(def, int(profile.level), rng, int(run_state.heat)))
+		var state := CombatService.create_combat(CombatService.combat_player_from(base, cls, s.mods), CombatService.create_enemy(def, int(profile.level), rng, int(run_state.heat), int(run_state.floor)))
 		var wallet := _wallet(int(run_state.focus))
 		while state.outcome == "ongoing":
 			var p: Dictionary = state.player
@@ -503,7 +520,24 @@ class _Run:
 
 	# ---------- Ablauf ----------
 
+	## Ebenen nacheinander spielen: Der Bot steigt ab, solange `floors` es erlaubt und er noch 2+ Leben hat.
 	func play() -> Dictionary:
+		var defeats := 0
+		var boss_attempts := 0
+		var max_floor := mini(int(o.get("floors", 1)), Meta.max_floors())
+		while true:
+			var r := _play_floor()
+			defeats += int(r.defeats)
+			boss_attempts += int(r.bossAttempts)
+			if not r.victory:
+				return _result(false, defeats, boss_attempts)
+			run_state.floorsCleared = int(run_state.floorsCleared) + 1
+			if int(run_state.floor) >= max_floor or int(profile.lives) < 2:
+				return _result(true, defeats, boss_attempts)
+			_load_floor(int(run_state.floor) + 1)
+		return {}
+
+	func _play_floor() -> Dictionary:
 		var altars: Array = map.objects.filter(func(x: Dictionary) -> bool: return x.kind == "heal")
 		var todo: Array = map.objects.filter(func(x: Dictionary) -> bool:
 			return x.kind in ["chest", "door", "shrine", "plate"] or (x.kind == "enemy" and x.tier != "boss"))
@@ -542,7 +576,7 @@ class _Run:
 			else:
 				defeats += 1
 				alive = Meta.lose_life(profile)
-		return _result(victory, defeats, boss_attempts)
+		return {"victory": victory, "defeats": defeats, "bossAttempts": boss_attempts}
 
 	func _dist(obj: Dictionary) -> int:
 		return absi(int(obj.x) - pos.x) + absi(int(obj.y) - pos.y)
@@ -582,6 +616,7 @@ class _Run:
 			"defeats": defeats,
 			"bossAttempts": boss_attempts,
 			"shards": int(reward.total),
+			"floorsCleared": int(run_state.floorsCleared),
 			"examWords": exam_words.size(),
 			"examCorrect": exam_correct,
 			"level": int(profile.level),

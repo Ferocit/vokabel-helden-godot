@@ -81,6 +81,9 @@ func start_run(unit_ids: Array, world_id: String = "jungle", seed: int = -1, hea
 	var start_pos := Vector2(map.start.x + 0.5, map.start.y + 0.5)
 	run = {
 		"seed": seed,
+		"floor": 1,
+		"floorsCleared": 0,
+		"pastCounts": {},
 		"levelScale": level_scale,
 		"heat": clampi(heat, 0, Meta.heat_max_unlocked(profile)),
 		"bossRunes": boss_runes,
@@ -130,9 +133,10 @@ func resume_run() -> Dictionary:
 	if unit_ids.is_empty():
 		return {}
 	var seed := int(snap.seed)
+	var floor := int(snap.get("floor", 1))
 	var level_scale := float(snap.get("levelScale", 1.0))
 	var boss_runes := RunScaling.scaled_boss_runes(int(GameConfig.section("run").bossRunesRequired), level_scale)
-	var map := _generate_map(seed, level_scale, boss_runes, snap.worldId)
+	var map := _generate_map(Meta.floor_seed(seed, floor), level_scale, boss_runes, snap.worldId)
 	var learning := _create_learning(unit_ids, seed + int(snap.learning.scheduler.picks))
 	learning.restore(snap.learning)
 	var s := stats()
@@ -143,6 +147,9 @@ func resume_run() -> Dictionary:
 		return d
 	run = {
 		"seed": seed,
+		"floor": floor,
+		"floorsCleared": int(snap.get("floorsCleared", 0)),
+		"pastCounts": (snap.get("pastCounts", {}) as Dictionary).duplicate(),
 		"levelScale": level_scale,
 		"heat": int(snap.get("heat", 0)),
 		"bossRunes": boss_runes,
@@ -175,6 +182,32 @@ func resume_run() -> Dictionary:
 		if saved is Dictionary:
 			run[k] = (saved as Dictionary).duplicate()
 	return run
+
+
+## Nach einem Bosssieg: Geht es noch tiefer? (Issue #27)
+func can_descend() -> bool:
+	return has_run() and int(run.get("floor", 1)) < Meta.max_floors()
+
+
+## Eine Ebene tiefer: neue Karte, Gegner stärker. Held, Ausrüstung, Talente, Leben und Lernstand bleiben;
+## HP und Fokus werden aufgefüllt. Erreichtes der alten Ebene zählt weiter für die Splitter.
+func descend() -> void:
+	if not can_descend():
+		return
+	run.pastCounts = Meta.progress_counts(run)
+	run.floor = int(run.floor) + 1
+	var map := _generate_map(Meta.floor_seed(int(run.seed), int(run.floor)), float(run.levelScale), int(run.bossRunes), run.worldId)
+	run.map = map
+	run.defeated = {}
+	run.opened = {}
+	run.runes = 0
+	var start_pos := Vector2(map.start.x + 0.5, map.start.y + 0.5)
+	run.player = start_pos
+	run.lastHeal = start_pos
+	var s := stats()
+	run.hp = int(s.maxHp)
+	run.focus = int(s.maxFocus)
+	autosave()
 
 
 ## Beendet das Abenteuer und schreibt die Tempelsplitter gut. Liefert die Belohnung
@@ -302,6 +335,9 @@ func snapshot_run() -> Dictionary:
 	var learning: LearningSession = run.learning
 	return {
 		"seed": run.seed,
+		"floor": run.get("floor", 1),
+		"floorsCleared": run.get("floorsCleared", 0),
+		"pastCounts": run.get("pastCounts", {}),
 		"levelScale": run.levelScale,
 		"heat": run.get("heat", 0),
 		"unitIds": run.unitIds,

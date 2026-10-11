@@ -52,6 +52,7 @@ func refresh() -> void:
 		UI.gap(0), _lives(),
 		_combo(),
 		UI.label("🔥 %d" % int(run.get("heat", 0)), "Bad", 18) if int(run.get("heat", 0)) > 0 else null,
+		UI.label("⬇ %d" % int(run.get("floor", 1)), "Accent", 18) if int(run.get("floor", 1)) > 1 else null,
 		UI.label("🧪 %d" % int(Ctx.profile.potions), "Bold", 18),
 		UI.label("💰 %d" % int(Ctx.profile.gold), "Bold", 18),
 		UI.label("Lv %d" % int(Ctx.profile.level), "Accent", 18),

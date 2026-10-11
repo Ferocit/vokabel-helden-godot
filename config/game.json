@@ -246,5 +246,11 @@
   "setBonus": {
     "shards": 5,
     "goldenShards": 10
+  },
+  "floors": {
+    "max": 3,
+    "enemyHp": 1.1,
+    "enemyAttack": 0.8,
+    "seedStep": 7919
   }
 }

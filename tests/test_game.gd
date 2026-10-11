@@ -373,3 +373,53 @@ func test_splitter_fuer_schreine() -> void:
 		if o.kind == "shrine":
 			Ctx.run.opened[o.id] = true
 	expect_gt(int(Meta.run_reward(Ctx.run, false, Ctx.profile).total), before)
+
+
+# ---------- Ebenen (Issue #27) ----------
+
+func test_ebenen_tiefer_hinab() -> void:
+	Ctx.setup(KeyValueStore.new())
+	Ctx.start_run(["sample"], "jungle", 4242)
+	var first_map: Dictionary = Ctx.run.map
+	for o: Dictionary in first_map.objects:
+		if o.kind == "enemy":
+			Ctx.run.defeated[o.id] = true
+		elif o.kind in ["chest", "door", "shrine"]:
+			Ctx.run.opened[o.id] = true
+	Ctx.run.floorsCleared = 1
+	var shards_floor1 := int(Meta.run_reward(Ctx.run, false, Ctx.profile).total)
+	expect_true(Ctx.can_descend())
+	Ctx.profile.level = 4
+	Ctx.run.hp = 3
+	Ctx.descend()
+	expect_eq(int(Ctx.run.floor), 2)
+	expect_ne(Ctx.run.map.seed, first_map.seed, "neue Karte")
+	expect_true((Ctx.run.defeated as Dictionary).is_empty())
+	expect_eq(int(Ctx.run.runes), 0)
+	expect_eq(int(Ctx.profile.level), 4, "Held bleibt")
+	expect_eq(int(Ctx.run.hp), int(Ctx.stats().maxHp), "aufgefüllt")
+	expect_eq(int(Meta.run_reward(Ctx.run, false, Ctx.profile).total), shards_floor1, "Erreichtes zählt weiter")
+	Ctx.autosave()
+	Ctx.resume_run()
+	expect_eq(int(Ctx.run.floor), 2, "Ebene im Spielstand")
+	expect_eq(int(Ctx.run.map.seed), int(Meta.floor_seed(int(Ctx.run.seed), 2)))
+	Ctx.run.floor = Meta.max_floors()
+	expect_false(Ctx.can_descend(), "letzte Ebene")
+
+
+func test_ebenen_gegner_staerker() -> void:
+	var def := GameData.get_enemy("bat")
+	var e1 := CombatService.create_enemy(def, 1, null, 0, 1)
+	var e2 := CombatService.create_enemy(def, 1, null, 0, 2)
+	expect_gt(int(e2.maxHp), int(e1.maxHp))
+	expect_gt(int(e2.attack), int(e1.attack))
+
+
+func test_ebenen_siegbonus_je_ebene() -> void:
+	Ctx.setup(KeyValueStore.new())
+	Ctx.start_run(["sample"], "jungle", 4242)
+	Ctx.run.floorsCleared = 2
+	var r := Meta.run_reward(Ctx.run, false, Ctx.profile)
+	expect_true((r.lines as Array).any(func(l: Array) -> bool: return String(l[0]).begins_with("Ebenen bezwungen ×2")), "Bonus bleibt auch ohne Endsieg")
+	Ctx.end_run(false)
+	expect_eq(int(Ctx.profile.records.victories), 1, "zählt als Sieg")

@@ -114,3 +114,11 @@ func test_balance_abfragen_pro_minute() -> void:
 	expect_ge(s.perMinute, 4.0)
 	expect_ge(s.questions, 42.0)
 	expect_le(s.minutes, 14.0)
+
+
+func test_balance_ebenen() -> void:
+	# Issue #27: Drei Ebenen sind für Durchschnitts-Lerner meist, aber nicht immer schaffbar.
+	var s := batch({"seed": 6300, "learner": "average", "floors": 3}, 20)
+	expect_ge(s.floorsCleared, 2.2)
+	expect_gt(s.defeats, 0.0, "tiefe Ebenen sind gefährlich")
+	expect_gt(s.shards, 100.0)

@@ -82,6 +82,14 @@ Neue Effekte: Schlüssel in `SkillTrees.EFFECT_TEXT` eintragen und an der passen
   Fähigkeitsschaden). Keine Gratis-Vokabelhilfen mehr; einzige Lern-Ausnahme bleibt der Bibliotheksring
   (falsch beantwortete Wörter kommen früher wieder – hilft beim Lernen, nicht beim Antworten).
 
+## Ebenen (Issue #27, `config/game.json → floors`)
+Nach dem Bosssieg führt eine Treppe tiefer: „⬇ Tiefer hinab“ oder „🏆 Abenteuer beenden“ (bis Ebene 3). Unten gibt
+es eine neue Karte (Seed `Meta.floor_seed`), Gegner haben pro Ebene +110 % HP und +80 % Angriff. Held, Ausrüstung,
+Talente, Segnungen, Leben, Kombo und Lernstand bleiben; HP und Fokus werden aufgefüllt. Alles Erreichte früherer
+Ebenen zählt weiter (`run.pastCounts`), jede bezwungene Ebene zahlt den Siegbonus – auch wenn man tiefer unten
+scheitert. Simulator: `start.bat sim floors=3` (der Bot steigt nur mit mindestens 2 Leben ab).
+Gemessen (Durchschnitt, Stufe 0, 30 Läufe): Ø 2,8 von 3 Ebenen, ≈ 150 Splitter, ≈ 185 Abfragen pro Lauf.
+
 ## Gegnerbewegung (`logic/game/enemy_agent.gd`, Werte in `config/game.json → enemyAI`)
 - **Normale Gegner** patrouillieren langsam in ihrem Raum, verfolgen den Helden ab 3 Kacheln und geben auf,
   wenn er länger als 3 s weiter als 5 Kacheln entfernt ist oder sie sich 7 Kacheln von ihrem Platz entfernt haben.
