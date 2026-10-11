@@ -11,6 +11,8 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 [autoload]
 
 Ctx="*res://logic/game/game_context.gd"
+UiTheme="*res://ui/ui_theme.gd"
+Sound="*res://ui/sound.gd"
 
 [display]
 

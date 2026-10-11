@@ -3,7 +3,10 @@
 - **Gesamtplan:** `C:\Users\Feroc\.claude\plans\schau-dir-mal-die-bubbly-stonebraker.md`
 - **Phaser-Original als Referenz:** `G:\VibeCoding\VokabelHeroes`. Dort nichts ändern.
 - **Godot:** `E:\Spiele\Steam\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe` (4.7.2)
-- **Tests:** `godot --headless --path . -s res://tests/run_tests.gd [-- filter]`. Erwartet: 50 grün, etwa 40 s.
+- **Godot in der Cloud (Linux):** 4.7.2 stable von github.com/godotengine/godot-builds, nach `/usr/local/bin/godot` verlinken.
+- **Tests:** `godot --headless --path . -s res://tests/run_tests.gd [-- filter]`. Erwartet: 58 grün, etwa 25–40 s.
+- **Screenshots:** Linux: `tools/shot.sh <name> scene=res://scenes/title.tscn [call=open_unit_manager]` (xvfb + opengl3).
+  Windows: `godot --path . res://tools/screenshot.tscn -- out=screenshots/x.png scene=…`. Argumente mit `|` trennen, `@pfad` übergibt Dateiinhalt.
 - **Repo:** github.com/Ferocit/vokabel-helden-godot (privat), Branch `main`.
 
 ## Erledigt
@@ -11,30 +14,22 @@
   - `logic/learning`, `logic/io`, `logic/game`
   - `data/game_data.gd`
   - Der Generator ist mit einem inline gerechneten A* optimiert.
-- **Phase 2 (begonnen):**
-  - Schriften Cinzel und Nunito unter `assets/fonts` (OFL)
-  - `ui/assets.gd` für Sheet-Frames
-  - `ui/sound.gd`, gedacht als Autoload „Sound“, noch nicht in `project.godot` eingetragen
+- **Phase 2:** Titelbildschirm komplett, 8 UI-Tests.
+  - Autoloads `UiTheme` (`ui/ui_theme.gd`, Theme im Code, variable Fonts mit wght) und `Sound`
+  - `ui/ui.gd` (class `UI`): Farben, Label/Button/Fenster/Modal/Bestätigung/Mastery-Balken/Toast, `focus_later`
+  - `scenes/title.tscn`: Set-Liste (Filter, Sortierung, Datum, Mastery, ✎, Alle/Keine), Import + Drag & Drop
+    (`files_dropped`), Klassenwahl (1–3), Sets & Statistik, Ausrüstung mit Händler, Fortsetzen
+  - `ui/import_dialog.gd` (Tabellen-Editor mit Anhängen), `ui/stats_view.gd`, `ui/equipment_view.gd`
+  - Testläufer startet jetzt im ersten Frame (damit `_ready` beim Einhängen läuft)
 
 ## Nächste Schritte (siehe Plan, Abschnitt „Reihenfolge“)
-1. **Phase 2:**
-   - `ui/ui_theme.gd`: Theme im Code bauen. Stil: dunkle Fenster, Goldrand #c9a96a, Cinzel-Überschriften, Nunito-Text. Vorlage ist `src/style.css` im Phaser-Projekt.
-   - `ui/ui.gd`: Helfer für Label, Button, Fenster, Modal, Bestätigung, Mastery-Balken und Toast.
-   - Autoloads Sound und Theme eintragen.
-   - `scenes/title.tscn` und `title.gd`:
-     - Set-Liste mit Filter, Sortierung, Datum, Mastery, ✎ und Alle/Keine
-     - Import-Knopf und Drag&Drop
-     - Klassenwahl mit den Tasten 1–3
-     - Sets & Statistik, Ausrüstung
-     - Fortsetzen
-   - `ui/import_dialog.gd` (Tabellen-Editor).
-   - `run/main_scene` zeigt bereits auf `res://scenes/title.tscn`.
-2. **Phase 3:** HD-2D-Erkundung in 3D (`world/level_builder.gd`):
+1. **Phase 3:** HD-2D-Erkundung in 3D (`world/level_builder.gd`):
    - Sprite3D-Billboards, OmniLight-Fackeln
    - WorldEnvironment mit Glow, SSAO und Nebel; **keine Tiefenunschärfe**
-3. **Phase 4:** Kampf
-4. **Phase 5:** Auswertung, Sound
-5. **Phase 6:** Melden via gh, start.bat, README
+   - Titel-Kulisse (`title.gd/_build_backdrop`) danach durch schwenkendes 3D-Level ersetzen
+2. **Phase 4:** Kampf
+3. **Phase 5:** Auswertung, Sound
+4. **Phase 6:** Melden via gh, start.bat, README
 
 **Arbeitsweise:**
 - Selbstständig ohne Rückfragen arbeiten.

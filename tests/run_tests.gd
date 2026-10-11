@@ -3,7 +3,18 @@ extends SceneTree
 ## Führt alle Methoden `test_*` in tests/test_*.gd aus und beendet sich mit Exit-Code 0 (grün) oder 1.
 
 
-func _initialize() -> void:
+var _done := false
+
+
+## Erst im ersten Frame starten: dann ist der Baum samt Autoloads bereit und `_ready` läuft beim Einhängen.
+func _process(_delta: float) -> bool:
+	if not _done:
+		_done = true
+		_run()
+	return false
+
+
+func _run() -> void:
 	var filter := ""
 	var args := OS.get_cmdline_user_args()
 	if not args.is_empty():
