@@ -290,3 +290,14 @@ func test_waffe_in_der_hand() -> void:
 	Ctx.profile_changed.emit()
 	expect_true(e.hero.get_node_or_null("Weapon") == null or e.hero.get_node("Weapon").is_queued_for_deletion(), "Ohne Waffe nichts in der Hand")
 	e.free()
+
+
+func test_truhe_zeigt_beuteliste() -> void:
+	var e := _explore()
+	var gold := int(Ctx.profile.gold)
+	e.debug_open_chest()
+	expect_gt(int(Ctx.profile.gold), gold, "Gold gutgeschrieben")
+	var texts: Array = e._toasts.find_children("*", "Label", true, false).map(func(l: Label) -> String: return l.text)
+	expect_true(texts.has("Seltene Truhe geöffnet"), "Titel mit Truhe")
+	expect_true(texts.has("Gold"), "Gold als eigene Zeile")
+	e.free()

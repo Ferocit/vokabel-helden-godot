@@ -514,17 +514,18 @@ func victory() -> void:
 	var got_rune: bool = def.tier != "boss"
 	if got_rune:
 		run.runes = int(run.runes) + 1
-	var lines: Array = [UI.label("+%d XP" % xp, "", 22), UI.label(describe_loot(loot), "", 22)]
+	var found := LootView.entries(loot, xp)
 	if got_rune:
-		lines.append(UI.label("+1 Rune ◆", "Accent", 22))
+		found.append({"icon": "◆", "title": "Rune", "detail": "%d von %d für das Siegeltor" % [mini(int(run.runes), int(run.bossRunes)), int(run.bossRunes)], "amount": "+1", "color": UI.ACCENT})
 	if life > 0:
-		lines.append(UI.label("+%d HP" % life, "Good", 22))
+		found.append({"icon": "❤", "title": "Lebenskraft", "detail": "Nach dem Sieg geheilt", "amount": "+%d HP" % life, "color": UI.GOOD})
 	if levels > 0:
 		Sound.play("levelup")
-		lines.append(UI.label("⭐ Level up! Jetzt Level %d" % int(Ctx.profile.level), "Good", 26))
+		found.push_front({"icon": "⭐", "title": "Level up!", "detail": "Jetzt Level %d – HP und Fokus aufgefüllt" % int(Ctx.profile.level), "amount": "Lv %d" % int(Ctx.profile.level), "color": UI.GOOD, "highlight": true})
 	say("%s wurde besiegt!" % def.name)
 	_victory_hop()
-	await result_window("Sieg!", lines)
+	var sub := UI.label("%s besiegt – deine Beute:" % def.name, "Dim", 17)
+	await result_window("Sieg!", [sub, LootView.list(found)])
 	var messages: Array[String] = ["%s besiegt: %s%s" % [def.name, describe_loot(loot), ", +1 Rune" if got_rune else ""]]
 	if def.tier == "elite":
 		await choose_blessing_window()
@@ -587,14 +588,15 @@ var _result_modal: UI.Modal
 
 
 func result_window(title: String, lines: Array) -> void:
-	var m := UI.modal(ui, "", 540, false)
+	var m := UI.modal(ui, "", 560, false)
 	_result_modal = m
 	var t := UI.label(title, "H1")
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	m.body.add_child(t)
-	for l: Label in lines:
-		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		m.body.add_child(l)
+	for c: Control in lines:
+		if c is Label:
+			(c as Label).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		m.body.add_child(c)
 	m.body.add_child(UI.gap(8))
 	var btn := UI.button("Weiter", close_result)
 	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER

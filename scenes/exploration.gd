@@ -392,21 +392,27 @@ func interact(obj: Dictionary) -> void:
 			run.opened[obj.id] = true
 			_refresh_object(obj)
 			if obj.kind == "chest":
-				var source := "chestRare" if obj.chestType == "rare" else ("chestSpecial" if obj.chestType == "special" else "chestNormal")
-				var loot := LootService.roll_loot(source, run.rng, Ctx.owns)
-				Ctx.apply_loot(loot)
-				var levels := Ctx.gain_xp(int(GameConfig.section("xp").chest))
-				Sound.play("chest")
-				get_tree().create_timer(0.25).timeout.connect(Sound.play.bind("coins", -1.0, 1.0))
-				toast("Gefunden: %s" % describe_loot(loot))
-				if levels > 0:
-					level_up_toast(levels)
+				grant_chest(obj)
 			else:
 				run.runes = int(run.runes) + 1
 				Sound.play("door")
 				toast("Die Tür springt auf! +1 Rune ◆")
 			hud.refresh()
 			Ctx.autosave()
+
+
+## Beute einer geöffneten Truhe gutschreiben und als Liste mit Symbolen zeigen.
+func grant_chest(obj: Dictionary) -> void:
+	var source := "chestRare" if obj.chestType == "rare" else ("chestSpecial" if obj.chestType == "special" else "chestNormal")
+	var loot := LootService.roll_loot(source, run.rng, Ctx.owns)
+	Ctx.apply_loot(loot)
+	var xp := int(GameConfig.section("xp").chest)
+	var levels := Ctx.gain_xp(xp)
+	Sound.play("chest")
+	get_tree().create_timer(0.25).timeout.connect(Sound.play.bind("coins", -1.0, 1.0))
+	loot_toast(MapModel.CHEST_LABELS[obj.chestType], CHEST_ICONS[obj.chestType], LootView.entries(loot, xp))
+	if levels > 0:
+		level_up_toast(levels)
 
 
 ## Lernaktion außerhalb des Kampfes (Truhe, Tür): `required` richtig erinnerte Vokabeln öffnen sie.
@@ -626,6 +632,28 @@ func toast(text: String) -> void:
 	tw.tween_callback(p.queue_free)
 
 
+const CHEST_ICONS := {"normal": 89, "rare": 90, "special": 92}
+
+
+## Beute einer Truhe als kleine Liste mit Symbolen; blendet sich wie ein Toast selbst aus.
+func loot_toast(title: String, icon: int, entries: Array) -> void:
+	var p := PanelContainer.new()
+	p.custom_minimum_size.x = 420
+	p.size_flags_horizontal = Control.SIZE_SHRINK_END
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var head := UI.hbox([UI.sprite(icon, 32), UI.label("%s geöffnet" % title, "H3")], 10)
+	p.add_child(UI.vbox([head, LootView.list(entries, true)], 6))
+	for c in p.find_children("*", "Control", true, false):
+		(c as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_toasts.add_child(p)
+	p.modulate.a = 0.0
+	var tw := p.create_tween()
+	tw.tween_property(p, "modulate:a", 1.0, 0.25)
+	tw.tween_interval(5.0)
+	tw.tween_property(p, "modulate:a", 0.0, 0.5)
+	tw.tween_callback(p.queue_free)
+
+
 func level_up_toast(levels: int) -> void:
 	Sound.play("levelup")
 	toast("⭐ Level up! Du bist jetzt Level %d%s. HP und Fokus aufgefüllt." % [int(Ctx.profile.level), " (+%d)" % levels if levels > 1 else ""])
@@ -759,6 +787,15 @@ func _render_learning(content: VBoxContainer) -> void:
 			chip.add_child(UI.label(i.entry.de, "", 16))
 			flow.add_child(chip)
 		content.add_child(flow)
+
+
+## Nur für Screenshots/Debugging: Beute der ersten (seltenen) Truhe zeigen, ohne Abfrage.
+func debug_open_chest() -> void:
+	for o: Dictionary in run.map.objects:
+		if o.kind == "chest":
+			o.chestType = "rare"
+			grant_chest(o)
+			return
 
 
 ## Nur für Screenshots/Debugging: Altar-Fenster am ersten Altar öffnen.

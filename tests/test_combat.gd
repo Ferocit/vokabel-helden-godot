@@ -255,3 +255,15 @@ func test_kampf_waffe_schwingt() -> void:
 	expect_true(c.weapon != null, "Waffe in der Hand")
 	expect_eq(c.weapon.get_parent(), c.hero)
 	c.free()
+
+
+func test_kampf_beute_als_liste_mit_symbolen() -> void:
+	start_run()
+	var c := open_combat()
+	while c.state.outcome == "ongoing":
+		act(c, 0, true)
+	var rows: Array = c._result_modal.body.find_children("*", "PanelContainer", true, false)
+	expect_ge(rows.size(), 3, "Erfahrung, Gold, Rune … als eigene Zeilen")
+	var titles: Array = c._result_modal.body.find_children("*", "Label", true, false).map(func(l: Label) -> String: return l.text)
+	expect_true(titles.has("Erfahrung") and titles.has("Rune"), "Zeilen für XP und Rune")
+	c.close_result()
