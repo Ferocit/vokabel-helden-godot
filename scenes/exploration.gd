@@ -475,7 +475,7 @@ func run_shrine() -> int:
 	var hits := 0
 	for i in words:
 		var item := learning.next_word("normal")
-		var prompt := VocabPrompt.create({"item": item, "wallet": wallet, "label": "Wissensschrein", "footer": "Frage %d/%d · %d richtig" % [i + 1, words, hits], "allow_cancel": i == 0})
+		var prompt := VocabPrompt.create({"item": Ctx.prompt_item(item), "wallet": wallet, "label": "Wissensschrein", "footer": "Frage %d/%d · %d richtig" % [i + 1, words, hits], "allow_cancel": i == 0, "hints": Ctx.hints_allowed()})
 		prompt.wallet_changed.connect(func(w: Dictionary) -> void:
 			run.focus = int(w.focus)
 			hud.refresh())
@@ -519,7 +519,7 @@ func trigger_plate(obj: Dictionary) -> void:
 	_refresh_object(obj)
 	Sound.play("hint")
 	var item := (run.learning as LearningSession).next_word("normal")
-	var prompt := VocabPrompt.create({"item": item, "wallet": Ctx.hint_wallet(int(run.focus)), "label": "Runenplatte"})
+	var prompt := VocabPrompt.create({"item": Ctx.prompt_item(item), "wallet": Ctx.hint_wallet(int(run.focus)), "label": "Runenplatte", "hints": Ctx.hints_allowed()})
 	ui.add_child(prompt)
 	var out: Dictionary = await prompt.finished
 	run.focus = int(out.wallet.focus)
@@ -547,7 +547,7 @@ func run_challenge(title: String, required: int, mode: String) -> bool:
 	var learning: LearningSession = run.learning
 	while correct < required:
 		var item := learning.next_word(mode)
-		var prompt := VocabPrompt.create({"item": item, "wallet": wallet, "label": title, "footer": "%d/%d richtig" % [correct, required], "allow_cancel": true})
+		var prompt := VocabPrompt.create({"item": Ctx.prompt_item(item), "wallet": wallet, "label": title, "footer": "%d/%d richtig" % [correct, required], "allow_cancel": true, "hints": Ctx.hints_allowed()})
 		prompt.wallet_changed.connect(func(w: Dictionary) -> void:
 			run.focus = int(w.focus)
 			hud.refresh())
@@ -882,13 +882,13 @@ func _render_altar(content: VBoxContainer, obj: Dictionary) -> void:
 	if offers.is_empty():
 		content.add_child(UI.label("Der Händler hat nichts mehr für dich.", "Dim", 16))
 	for item: Dictionary in offers:
-		var price := Meta.shop_price(item)
+		var price := Meta.shop_price(item, run)
 		var buy := UI.button("Kaufen −%d 💰" % price, func() -> void:
-			Ctx.set_profile(Meta.buy_item(Ctx.profile, item))
+			Ctx.set_profile(Meta.buy_item(Ctx.profile, item, run))
 			Sound.play("coins")
 			toast("Gekauft: %s (in der Tasche, anlegen mit I)" % item.name)
 			rerender.call(), "SmallButton")
-		buy.disabled = not Meta.can_buy_item(Ctx.profile, item)
+		buy.disabled = not Meta.can_buy_item(Ctx.profile, item, run)
 		content.add_child(EquipmentView._item_card(item, buy))
 	content.add_child(EquipmentView._merchant(rerender))
 

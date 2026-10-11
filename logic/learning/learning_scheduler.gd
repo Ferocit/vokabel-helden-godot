@@ -143,7 +143,8 @@ func weight(item: Dictionary, mode: String) -> float:
 	# Über alle Abenteuer: noch nie oder seltener als der Durchschnitt dran → Vorrang.
 	var seen: int = int(stats.seen)
 	if seen == 0:
-		w += float(_cfg.unseenWeight)
+		# Pakt „Neue Wörter“ (Issue #22): noch nie Geübtes kommt deutlich öfter.
+		w += float(_cfg.unseenWeight) * (3.0 if options.get("unseenBoost", false) else 1.0)
 	elif average_seen > 0.0 and seen < average_seen:
 		w += float(_cfg.rarelySeenWeight) * (1.0 - seen / average_seen)
 	# Zuletzt falsch beantwortet (die Serie ist seitdem nicht wieder angelaufen).

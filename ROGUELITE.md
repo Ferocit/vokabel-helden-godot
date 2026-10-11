@@ -98,10 +98,27 @@ Gemessen (Durchschnitt, Stufe 0, 30 Läufe): Ø 2,8 von 3 Ebenen, ≈ 150 Splitt
 - **Lernspiel-Regel:** Gegner sind nie schneller als 90 % des Heldentempos – man kann Kämpfen immer ausweichen.
 - Nach einer Niederlage und beim Fortsetzen eines gespeicherten Abenteuers stehen alle Gegner wieder auf ihrem Platz.
 
-## Tempelstufen (Schwierigkeit)
-Ein Sieg auf der höchsten freien Stufe schaltet die nächste frei (bis 5). Vor dem Abenteuer im Titel wählbar.
-Pro Stufe: Gegner +35 % HP, +35 % Angriff, +25 % Splitter (`meta.heat`). Gegenstück zur wachsenden Stärke durch
-Skillbäume.
+## Pakt (Schwierigkeit, Issue #22, `data/pact.gd`, `meta.pact`)
+Statt fester Tempelstufen wählt man im Titel („🔥 Pakt“) einzelne Erschwernisse mit Rängen. Jeder Punkt bringt
++12,5 % Splitter. Freie Punkte: 3 × Pakt-Stufe (`records.heatUnlocked`); der erste Sieg schaltet Stufe 1 frei, jeder
+Sieg mit voll ausgeschöpftem Pakt die nächste (bis 5 = 15 Punkte).
+
+| Erschwernis | Ränge | Punkte/Rang | Wirkung |
+| --- | --- | --- | --- |
+| 🛡 Zähe Gegner | 5 | 1 | Gegner +35 % HP |
+| ⚔ Wilde Gegner | 5 | 1 | Gegner +35 % Angriff |
+| 👹 Elite-Horden | 2 | 1 | +1 Elite-Gegner pro Ebene |
+| 🧪 Karge Vorräte | 2 | 1 | −1 Heiltrank zu Beginn |
+| 💔 Zerbrechlich | 2 | 2 | −1 Leben (mind. 1) |
+| 💰 Gierige Händler | 2 | 1 | Händler +50 % teurer |
+| 🚫 Ohne Hilfen | 1 | 2 | keine Hilfen |
+| 🔁 Umgekehrte Richtung | 2 | 1 | jede 3. bzw. jede Abfrage Englisch → Deutsch |
+| 🆕 Neue Wörter | 1 | 1 | noch nie Geübtes kommt 3× öfter |
+
+Die alten Tempelstufen entsprechen `{p_hp: n, p_atk: n}` (`Pact.from_heat`), ältere Spielstände laufen so weiter.
+Ein **Hörmodus** ist bewusst nicht dabei: Ein vorgelesenes deutsches Wort ist für deutschsprachige Kinder keine echte
+Erschwernis, und Sprachausgabe hängt unter Windows von installierten Stimmen ab. Sinnvoller wäre ein eigenes
+„Aussprache anhören“ für englische Wörter.
 
 ## Gemessene Balance (Simulator `logic/sim/balance_sim.gd`)
 Der Simulator spielt komplette Abenteuer mit der echten Spiellogik. Der Bot geht immer zum nächsten Ziel, heilt sich

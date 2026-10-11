@@ -51,7 +51,7 @@ func refresh() -> void:
 		UI.gap(0), runes(int(run.runes), int(run.bossRunes)),
 		UI.gap(0), _lives(),
 		_combo(),
-		UI.label("🔥 %d" % int(run.get("heat", 0)), "Bad", 18) if int(run.get("heat", 0)) > 0 else null,
+		_pact_label(),
 		UI.label("⬇ %d" % int(run.get("floor", 1)), "Accent", 18) if int(run.get("floor", 1)) > 1 else null,
 		UI.label("🧪 %d" % int(Ctx.profile.potions), "Bold", 18),
 		UI.label("💰 %d" % int(Ctx.profile.gold), "Bold", 18),
@@ -97,6 +97,17 @@ static func _set_progress() -> Label:
 			break
 	var l := UI.label(" ".join(parts), "Dim", 18)
 	l.tooltip_text = "Super-Bonus: Schreib jede Vokabel eines Sets einmal richtig!\n" + "\n".join(tips)
+	l.mouse_filter = Control.MOUSE_FILTER_PASS
+	return l
+
+
+## Pakt-Punkte (Issue #22) mit den gewählten Erschwernissen als Tooltip.
+static func _pact_label() -> Label:
+	var pact := Meta.run_pact(Ctx.run)
+	if Pact.points(pact) <= 0:
+		return null
+	var l := UI.label("🔥 %d" % Pact.points(pact), "Bad", 18)
+	l.tooltip_text = "Pakt:\n" + Pact.summary(pact)
 	l.mouse_filter = Control.MOUSE_FILTER_PASS
 	return l
 

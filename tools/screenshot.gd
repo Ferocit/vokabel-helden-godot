@@ -16,7 +16,7 @@ func _ready() -> void:
 		Ctx.settings.seenIntro = true
 		if args.has("heat"):
 			Ctx.profile.records.heatUnlocked = int(args.heat)
-			Ctx.settings.heat = int(args.heat)
+			Ctx.settings.pact = Pact.from_heat(int(args.heat))
 	# run=1 startet ein Abenteuer mit dem Beispiel-Set (Spielstand nur im Arbeitsspeicher).
 	if args.has("run"):
 		Ctx.setup(KeyValueStore.new())

@@ -238,26 +238,51 @@ func test_haendler_angebote_fest_und_kaufbar() -> void:
 	expect_false(Meta.shop_offers(Ctx.run, Ctx.profile, "o0").has(item), "Gekauftes verschwindet")
 
 
-func test_tempelstufen_freischalten_und_belohnung() -> void:
+func test_pakt_freischalten_und_belohnung() -> void:
 	Ctx.setup(KeyValueStore.new())
-	Ctx.start_run(["sample"], "jungle", 3, 4)
-	expect_eq(int(Ctx.run.heat), 0, "Gesperrte Stufe wird auf 0 begrenzt")
+	Ctx.start_run(["sample"], "jungle", 3, {"p_hp": 2})
+	expect_eq(Ctx.run.pact, {}, "Ohne Sieg kein Pakt")
 	Ctx.end_run(false)
 	expect_eq(Meta.heat_max_unlocked(Ctx.profile), 0, "Abbruch schaltet nichts frei")
-	Ctx.start_run(["sample"], "jungle", 3, 0)
+	Ctx.start_run(["sample"], "jungle", 3, {})
 	Ctx.end_run(true)
-	expect_eq(Meta.heat_max_unlocked(Ctx.profile), 1, "Sieg schaltet Stufe 1 frei")
-	Ctx.start_run(["sample"], "jungle", 3, 1)
-	expect_eq(int(Ctx.run.heat), 1)
+	expect_eq(Meta.heat_max_unlocked(Ctx.profile), 1, "Sieg schaltet Pakt-Stufe 1 frei")
+	expect_eq(Pact.cap(Ctx.profile), 3)
+	Ctx.start_run(["sample"], "jungle", 3, {"p_hp": 1, "p_nohints": 1, "p_atk": 3})
+	expect_eq(Pact.points(Ctx.run.pact), 3, "auf freie Punkte begrenzt")
+	expect_eq(int(Ctx.run.heat), 3)
+	expect_false(Ctx.hints_allowed(), "Ohne Hilfen")
+	var saved: Dictionary = Ctx.run.pact.duplicate()
 	Ctx.autosave()
-	expect_eq(int(Ctx.resume_run().heat), 1, "Stufe bleibt beim Fortsetzen erhalten")
+	expect_eq(Ctx.resume_run().pact, saved, "Pakt bleibt beim Fortsetzen erhalten")
 	var r := Meta.run_reward(Ctx.run, true, Ctx.profile)
 	var base := int(Meta.cfg().shards.victory)
-	expect_eq(int(r.total), base + int(floor(base * Meta.heat_shard_bonus(1))))
-	var e0 := CombatService.create_enemy(GameData.get_enemy("bat"), 1, null, 0)
+	expect_eq(int(r.total), base + int(floor(base * Pact.shard_bonus(saved))))
+	Ctx.end_run(true)
+	expect_eq(Meta.heat_max_unlocked(Ctx.profile), 2, "Sieg mit vollen Punkten schaltet weiter frei")
+	var e0 := CombatService.create_enemy(GameData.get_enemy("bat"), 1, null, {})
 	var e2 := CombatService.create_enemy(GameData.get_enemy("bat"), 1, null, 2)
-	expect_gt(int(e2.hp), int(e0.hp))
+	expect_gt(int(e2.hp), int(e0.hp), "alte Tempelstufe als Zahl geht weiter")
 	expect_gt(int(e2.attack), int(e0.attack))
+
+
+func test_pakt_regeln() -> void:
+	Ctx.setup(KeyValueStore.new())
+	Ctx.profile.records.heatUnlocked = 5
+	Ctx.start_run(["sample"], "jungle", 11, {"p_supplies": 2, "p_lives": 1, "p_elite": 2, "p_greed": 2, "p_reverse": 2})
+	expect_eq(int(Ctx.profile.potions), 0, "Karge Vorräte")
+	expect_eq(int(Ctx.profile.lives), int(Meta.cfg().lives) - 1, "Zerbrechlich")
+	var elites: Array = Ctx.run.map.objects.filter(func(o: Dictionary) -> bool: return o.kind == "enemy" and o.tier == "elite")
+	expect_ge(elites.size(), int(GameConfig.section("level").eliteEnemies.min) + 2, "Elite-Horden")
+	var item := GameData.get_item("iron_sword")
+	expect_eq(Meta.shop_price(item, Ctx.run), Meta.shop_price(item) * 2, "Gierige Händler")
+	var card := (Ctx.run.learning as LearningSession).next_word()
+	var shown := Ctx.prompt_item(card)
+	expect_eq(shown.entry.de, card.entry.en, "Umgekehrte Richtung zeigt Englisch")
+	expect_eq(shown.entry.en, card.entry.de)
+	expect_eq(shown.key, card.key)
+	expect_true(Pact.sanitize({"p_hp": 5, "p_atk": 5}, {"records": {"heatUnlocked": 1}}).size() >= 1)
+	expect_eq(Pact.points(Pact.sanitize({"p_hp": 5, "p_atk": 5}, {"records": {"heatUnlocked": 1}})), 3)
 
 
 func test_zeit_challenge_zeit_und_bonus() -> void:

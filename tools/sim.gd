@@ -9,7 +9,8 @@ extends SceneTree
 ##   class=warrior,rogue    Klassen
 ##   learner=average        fixed | beginner | average | strong
 ##   accuracy=0.8           nur für learner=fixed
-##   heat=0,3               Tempelstufen
+##   heat=0,3               alte Tempelstufen (= Pakt {p_hp: n, p_atk: n})
+##   pact=p_hp:2,p_nohints:1 eigener Pakt (ersetzt heat)
 ##   skills=none,full       Skillbaum leer oder voll
 ##   words=0                0 = Beispielset, sonst ein künstliches Set mit so vielen Wörtern
 ##   hints=1 shop=1 talents=1 blessings=1   Bot-Verhalten an (1) / aus (0)
@@ -20,7 +21,7 @@ extends SceneTree
 
 func _init() -> void:
 	var args := {"runs": "30", "class": "warrior", "learner": "average", "accuracy": "0.8", "heat": "0", "skills": "none",
-		"words": "0", "hints": "1", "shop": "1", "talents": "1", "blessings": "1", "campaign": "0", "seed": "1", "floors": "1"}
+		"words": "0", "hints": "1", "shop": "1", "talents": "1", "blessings": "1", "campaign": "0", "seed": "1", "floors": "1", "pact": ""}
 	# start.bat reicht die Argumente über SIM_ARGS weiter, weil cmd.exe bei „=“ und „,“ trennt.
 	var user_args: Array = Array(OS.get_cmdline_user_args())
 	var raw := OS.get_environment("SIM_ARGS")
@@ -55,6 +56,12 @@ func _batch(args: Dictionary, base: Dictionary) -> void:
 					o.heroClass = cls
 					o.learner = learner
 					o.heat = int(heat)
+					if args.pact != "":
+						var pd := {}
+						for part: String in String(args.pact).split(",", false):
+							var kv := part.split(":")
+							pd[kv[0]] = int(kv[1]) if kv.size() > 1 else 1
+						o.pact = pd
 					o.skills = "full" if skills == "full" else {}
 					var s := BalanceSim.batch(o, int(args.runs))
 					rows.append([cls, learner, int(heat), skills, "%d %%" % roundi(s.winRate * 100.0), s.floorsCleared, s.defeats, s.shards, s.level,

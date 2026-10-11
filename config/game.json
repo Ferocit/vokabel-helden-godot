@@ -150,10 +150,14 @@
       "rare": 90
     },
     "heat": {
-      "max": 5,
-      "enemyHp": 0.35,
-      "enemyAttack": 0.35,
-      "shardBonus": 0.25
+      "max": 5
+    },
+    "pact": {
+      "pointsPerLevel": 3,
+      "hpPerRank": 0.35,
+      "attackPerRank": 0.35,
+      "greedPerRank": 0.5,
+      "shardBonusPerPoint": 0.125
     }
   },
   "enemyAI": {

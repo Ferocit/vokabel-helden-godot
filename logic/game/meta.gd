@@ -216,11 +216,12 @@ static func run_reward(run: Dictionary, victory: bool, profile: Dictionary) -> D
 		var time_bonus := int(floor(subtotal * share))
 		lines.append(["Zeit-Challenge +%d %%" % roundi(share * 100.0), time_bonus])
 		subtotal += time_bonus
-	var heat := int(run.get("heat", 0))
-	if heat > 0:
-		var heat_bonus := int(floor(subtotal * heat_shard_bonus(heat)))
-		lines.append(["Tempelstufe %d +%d %%" % [heat, roundi(heat_shard_bonus(heat) * 100.0)], heat_bonus])
-		subtotal += heat_bonus
+	var pact := run_pact(run)
+	if Pact.points(pact) > 0:
+		var share := Pact.shard_bonus(pact)
+		var pact_bonus := int(floor(subtotal * share))
+		lines.append(["Pakt (%d Punkte) +%d %%" % [Pact.points(pact), roundi(share * 100.0)], pact_bonus])
+		subtotal += pact_bonus
 	var bonus_share := mod(mods(profile, profile.heroClass), "shardBonus")
 	var bonus := int(floor(subtotal * bonus_share))
 	if bonus > 0:
@@ -237,9 +238,9 @@ static func apply_run_end(profile: Dictionary, run: Dictionary, victory: bool) -
 	profile.records.shardsTotal = int(profile.records.shardsTotal) + int(reward.total)
 	if victory or int(run.get("floorsCleared", 0)) > 0:
 		profile.records.victories = int(profile.records.victories) + 1
-		# Ein Sieg auf der höchsten freien Tempelstufe schaltet die nächste frei.
-		if int(run.get("heat", 0)) >= int(profile.records.heatUnlocked):
-			profile.records.heatUnlocked = mini(int(cfg().heat.max), int(run.get("heat", 0)) + 1)
+		# Ein Sieg mit voll ausgeschöpftem Pakt schaltet die nächste Pakt-Stufe frei.
+		if Pact.points(run_pact(run)) >= Pact.cap(profile):
+			profile.records.heatUnlocked = mini(int(cfg().heat.max), int(profile.records.heatUnlocked) + 1)
 	return reward
 
 
@@ -303,43 +304,39 @@ static func shop_offers(run: Dictionary, profile: Dictionary, altar_id: String) 
 	return picks.filter(func(i: Dictionary) -> bool: return not Player.owns_item(profile, i.id))
 
 
-static func shop_price(item: Dictionary) -> int:
-	return int(cfg().shopPrice[item.rarity])
+## Preis beim Händler; der Pakt „Gierige Händler“ macht ihn teurer.
+static func shop_price(item: Dictionary, run: Dictionary = {}) -> int:
+	return CombatService.js_round(int(cfg().shopPrice[item.rarity]) * Pact.price_factor(run_pact(run)))
 
 
-static func can_buy_item(profile: Dictionary, item: Dictionary) -> bool:
-	return int(profile.gold) >= shop_price(item) and not Player.owns_item(profile, item.id)
+static func can_buy_item(profile: Dictionary, item: Dictionary, run: Dictionary = {}) -> bool:
+	return int(profile.gold) >= shop_price(item, run) and not Player.owns_item(profile, item.id)
 
 
 ## Kauft einen Gegenstand in die Tasche.
-static func buy_item(profile: Dictionary, item: Dictionary) -> Dictionary:
-	if not can_buy_item(profile, item):
+static func buy_item(profile: Dictionary, item: Dictionary, run: Dictionary = {}) -> Dictionary:
+	if not can_buy_item(profile, item, run):
 		return profile
 	var next := profile.duplicate(true)
-	next.gold = int(profile.gold) - shop_price(item)
+	next.gold = int(profile.gold) - shop_price(item, run)
 	(next.bag as Array).append(item.id)
 	return next
 
 
 
-# ---------- Tempelstufen (Schwierigkeit) ----------
-## Stufe 0 ist der Normalfall. Jeder Sieg schaltet die nächste Stufe frei (bis heat.max). Höhere Stufen machen
-## Gegner stärker und geben mehr Splitter – Ausgleich für die wachsende Stärke durch Skillbäume.
+# ---------- Pakt-Stufe (Schwierigkeit, Issue #22) ----------
+## records.heatUnlocked = freigeschaltete Pakt-Stufe (0 = noch kein Pakt). Jede Stufe erlaubt weitere Pakt-Punkte
+## (siehe data/pact.gd). Ein Sieg mit voll ausgeschöpftem Pakt schaltet die nächste Stufe frei (bis heat.max).
 
 static func heat_max_unlocked(profile: Dictionary) -> int:
 	return mini(int(cfg().heat.max), int(profile.get("records", {}).get("heatUnlocked", 0)))
 
 
-static func heat_hp_factor(heat: int) -> float:
-	return 1.0 + float(cfg().heat.enemyHp) * heat
-
-
-static func heat_attack_factor(heat: int) -> float:
-	return 1.0 + float(cfg().heat.enemyAttack) * heat
-
-
-static func heat_shard_bonus(heat: int) -> float:
-	return float(cfg().heat.shardBonus) * heat
+## Pakt eines Laufs (ältere Spielstände kennen nur die Tempelstufe `heat`).
+static func run_pact(run: Dictionary) -> Dictionary:
+	if run.get("pact") is Dictionary:
+		return run.pact
+	return Pact.from_heat(int(run.get("heat", 0)))
 
 
 # ---------- Ebenen (Issue #27) ----------
@@ -363,10 +360,3 @@ static func max_floors() -> int:
 
 static func floor_seed(seed: int, floor: int) -> int:
 	return (seed + (floor - 1) * int(floors_cfg().seedStep)) & Rng.MASK
-
-
-static func heat_text(heat: int) -> String:
-	if heat <= 0:
-		return "Tempelstufe 0 – normal"
-	return "Tempelstufe %d – Gegner +%d %% HP, +%d %% Angriff · +%d %% Splitter" % [heat,
-		roundi(float(cfg().heat.enemyHp) * heat * 100.0), roundi(float(cfg().heat.enemyAttack) * heat * 100.0), roundi(heat_shard_bonus(heat) * 100.0)]

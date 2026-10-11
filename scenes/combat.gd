@@ -61,7 +61,7 @@ func _ready() -> void:
 	def = GameData.get_enemy(obj.enemyId)
 	cls = Ctx.hero_class()
 	rng = run.rng
-	state = CombatService.create_combat(Ctx.combat_player(), CombatService.create_enemy(def, int(Ctx.profile.level), rng, int(run.get("heat", 0)), int(run.get("floor", 1))))
+	state = CombatService.create_combat(Ctx.combat_player(), CombatService.create_enemy(def, int(Ctx.profile.level), rng, Meta.run_pact(run), int(run.get("floor", 1))))
 	wallet = Ctx.hint_wallet(int(state.player.focus))
 	Ctx.set_bonus_reached.connect(_on_set_bonus)
 	_build_arena()
@@ -289,10 +289,10 @@ func battle_loop() -> void:
 		var action: String = await choose_command()
 		var label := CombatService.action_label(action, state.player)
 		var mode: String = def.selection
-		say("%s: Erinnere dich an das englische Wort!" % label)
+		say("%s: Erinnere dich an das Wort!" % label)
 		_intent.visible = false
 		var item := learning.next_word(mode)
-		var prompt := VocabPrompt.create({"item": item, "wallet": wallet, "label": label})
+		var prompt := VocabPrompt.create({"item": Ctx.prompt_item(item), "wallet": wallet, "label": label, "hints": Ctx.hints_allowed()})
 		prompt.wallet_changed.connect(func(w: Dictionary) -> void:
 			state.player.focus = int(w.focus)
 			refresh_panels())

@@ -61,22 +61,29 @@ func autosave() -> void:
 		save.save_run(snapshot_run())
 
 
-func _generate_map(seed: int, scale: float, boss_runes: int, world_id: String) -> Dictionary:
+func _generate_map(seed: int, scale: float, boss_runes: int, world_id: String, pact: Dictionary = {}) -> Dictionary:
 	var theme := GameData.get_theme(world_id)
-	var cfg := RunScaling.scale_level_config(GameConfig.section("level"), scale)
+	var cfg := RunScaling.scale_level_config(GameConfig.section("level"), scale).duplicate(true)
+	# Pakt „Elite-Horden“: mehr Elite-Gegner.
+	var extra := Pact.rank(pact, "p_elite")
+	cfg.eliteEnemies = {"min": int(cfg.eliteEnemies.min) + extra, "max": int(cfg.eliteEnemies.max) + extra}
 	return LevelGenerator.generate(seed, cfg, {"bossRunesRequired": boss_runes, "enemies": theme.enemies})
 
 
 ## Neues Abenteuer: Lauf-Werte (Level, Gold, Ausrüstung …) werden zurückgesetzt, Skills wirken ab Start.
-func start_run(unit_ids: Array, world_id: String = "jungle", seed: int = -1, heat: int = 0, time_challenge: bool = false) -> Dictionary:
+## `pact`: Pakt-Dictionary (Issue #22) oder alte Tempelstufe als Zahl; wird auf die freien Punkte begrenzt.
+func start_run(unit_ids: Array, world_id: String = "jungle", seed: int = -1, pact_in: Variant = 0, time_challenge: bool = false) -> Dictionary:
 	if seed < 0:
 		seed = Rng.random_seed()
 	profile = Meta.reset_run_fields(Meta.ensure(profile), GameConfig.section("player"))
+	var pact := Pact.sanitize(Pact.normalize(pact_in), profile)
+	profile.potions = maxi(0, int(profile.potions) - Pact.rank(pact, "p_supplies"))
+	profile.lives = maxi(1, int(profile.lives) - Pact.rank(pact, "p_lives"))
 	var word_count := repo.learning_items(unit_ids).size()
 	var level_scale := RunScaling.level_scale_for(word_count)
 	var time_limit := RunScaling.time_limit_for(word_count) if time_challenge else 0
 	var boss_runes := RunScaling.scaled_boss_runes(int(GameConfig.section("run").bossRunesRequired), level_scale)
-	var map := _generate_map(seed, level_scale, boss_runes, world_id)
+	var map := _generate_map(seed, level_scale, boss_runes, world_id, pact)
 	var s := stats()
 	var start_pos := Vector2(map.start.x + 0.5, map.start.y + 0.5)
 	run = {
@@ -85,7 +92,8 @@ func start_run(unit_ids: Array, world_id: String = "jungle", seed: int = -1, hea
 		"floorsCleared": 0,
 		"pastCounts": {},
 		"levelScale": level_scale,
-		"heat": clampi(heat, 0, Meta.heat_max_unlocked(profile)),
+		"pact": pact,
+		"heat": Pact.points(pact),
 		"bossRunes": boss_runes,
 		"unitIds": unit_ids.duplicate(),
 		"worldId": GameData.get_theme(world_id).id,
@@ -103,7 +111,7 @@ func start_run(unit_ids: Array, world_id: String = "jungle", seed: int = -1, hea
 		"lootGained": [],
 		"levelsGained": 0,
 		"startedAt": Vocab.now_ms(),
-		"learning": _create_learning(unit_ids, seed),
+		"learning": _create_learning(unit_ids, seed, pact),
 		"rng": Rng.create(seed ^ 0x9E3779B9),
 		"completed": false,
 		"timeChallenge": time_challenge,
@@ -136,8 +144,9 @@ func resume_run() -> Dictionary:
 	var floor := int(snap.get("floor", 1))
 	var level_scale := float(snap.get("levelScale", 1.0))
 	var boss_runes := RunScaling.scaled_boss_runes(int(GameConfig.section("run").bossRunesRequired), level_scale)
-	var map := _generate_map(Meta.floor_seed(seed, floor), level_scale, boss_runes, snap.worldId)
-	var learning := _create_learning(unit_ids, seed + int(snap.learning.scheduler.picks))
+	var pact := Pact.normalize(snap.get("pact", snap.get("heat", 0)))
+	var map := _generate_map(Meta.floor_seed(seed, floor), level_scale, boss_runes, snap.worldId, pact)
+	var learning := _create_learning(unit_ids, seed + int(snap.learning.scheduler.picks), pact)
 	learning.restore(snap.learning)
 	var s := stats()
 	var to_set := func(list: Array) -> Dictionary:
@@ -151,7 +160,8 @@ func resume_run() -> Dictionary:
 		"floorsCleared": int(snap.get("floorsCleared", 0)),
 		"pastCounts": (snap.get("pastCounts", {}) as Dictionary).duplicate(),
 		"levelScale": level_scale,
-		"heat": int(snap.get("heat", 0)),
+		"pact": pact,
+		"heat": Pact.points(pact),
 		"bossRunes": boss_runes,
 		"unitIds": unit_ids,
 		"worldId": GameData.get_theme(snap.worldId).id,
@@ -196,7 +206,7 @@ func descend() -> void:
 		return
 	run.pastCounts = Meta.progress_counts(run)
 	run.floor = int(run.floor) + 1
-	var map := _generate_map(Meta.floor_seed(int(run.seed), int(run.floor)), float(run.levelScale), int(run.bossRunes), run.worldId)
+	var map := _generate_map(Meta.floor_seed(int(run.seed), int(run.floor)), float(run.levelScale), int(run.bossRunes), run.worldId, Meta.run_pact(run))
 	run.map = map
 	run.defeated = {}
 	run.opened = {}
@@ -327,8 +337,23 @@ func submit_answer(item: Dictionary, res: Dictionary) -> int:
 	return 0
 
 
-func _create_learning(unit_ids: Array, seed: int) -> LearningSession:
-	return LearningSession.new(repo.learning_items(unit_ids), progress, GameConfig.section("learning"), Rng.create(seed & Rng.MASK), Vocab.now_ms, {"repeatGapReduction": stats().repeatGapReduction})
+func _create_learning(unit_ids: Array, seed: int, pact: Dictionary = {}) -> LearningSession:
+	return LearningSession.new(repo.learning_items(unit_ids), progress, GameConfig.section("learning"), Rng.create(seed & Rng.MASK), Vocab.now_ms,
+		{"repeatGapReduction": stats().repeatGapReduction, "unseenBoost": Pact.rank(pact, "p_new") > 0})
+
+
+## Lernkarte, wie sie gezeigt wird: Pakt „Umgekehrte Richtung“ tauscht Englisch und Deutsch (Issue #22).
+## Gemeldet wird das Ergebnis immer mit der ursprünglichen Karte.
+func prompt_item(item: Dictionary) -> Dictionary:
+	var chance := Pact.reverse_chance(Meta.run_pact(run)) if has_run() else 0.0
+	if chance > 0.0 and (chance >= 1.0 or (run.rng as Callable).call() < chance):
+		return Pact.reversed_item(item)
+	return item
+
+
+## Pakt „Ohne Hilfen“.
+func hints_allowed() -> bool:
+	return not has_run() or Pact.hints_allowed(Meta.run_pact(run))
 
 
 func snapshot_run() -> Dictionary:
@@ -340,6 +365,7 @@ func snapshot_run() -> Dictionary:
 		"pastCounts": run.get("pastCounts", {}),
 		"levelScale": run.levelScale,
 		"heat": run.get("heat", 0),
+		"pact": run.get("pact", {}),
 		"unitIds": run.unitIds,
 		"worldId": run.worldId,
 		"hp": run.hp,

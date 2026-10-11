@@ -126,7 +126,7 @@ func render_menu() -> void:
 	if Ctx.can_resume():
 		start_row.add_child(UI.button("⟲ Abenteuer fortsetzen", _on_resume))
 	start_row.add_child(UI.spacer())
-	var heat_row := UI.hbox([UI.spacer(), _heat_selector(), _time_challenge_toggle(), UI.spacer()], 16)
+	var heat_row := UI.hbox([UI.spacer(), _pact_button(), _time_challenge_toggle(), UI.spacer()], 16)
 	var manage_btn := UI.button("📚 Sets & Statistik", open_unit_manager)
 	var skills_btn := UI.button("🌳 Fertigkeiten", open_skills)
 	var bottom_row := UI.hbox([UI.spacer(), manage_btn, skills_btn])
@@ -143,7 +143,7 @@ func render_menu() -> void:
 		], 14),
 		UI.label("Welche Vokabel-Sets willst du üben?", "H3"),
 		UI.hbox([filter, sort, _toggle_all]),
-		UI.scroll(_list_body, 168 if Meta.heat_max_unlocked(Ctx.profile) <= 0 else 128),
+		UI.scroll(_list_body, 168 if Pact.cap(Ctx.profile) <= 0 else 128),
 		_summary,
 		UI.hbox([import_btn, UI.label("oder JSON-Datei ins Fenster ziehen", "Dim", 14)]),
 		UI.gap(4),
@@ -287,24 +287,77 @@ func _render_list() -> void:
 	_toggle_all.text = "Keine" if not list.is_empty() and list.all(func(u: Dictionary) -> bool: return _selected.has(u.id)) else "Alle"
 
 
-## Gewählte Tempelstufe (gespeichert, auf die freigeschaltete Stufe begrenzt).
-func selected_heat() -> int:
-	return clampi(int(Ctx.settings.get("heat", 0)), 0, Meta.heat_max_unlocked(Ctx.profile))
+## Gewählter Pakt (gespeichert, auf die freigeschalteten Punkte begrenzt, Issue #22).
+## Ältere Einstellungen kennen nur die Tempelstufe `heat`.
+func selected_pact() -> Dictionary:
+	var saved: Variant = Ctx.settings.get("pact", Pact.from_heat(int(Ctx.settings.get("heat", 0))))
+	return Pact.sanitize(Pact.normalize(saved), Ctx.profile)
 
 
-## Auswahl der Tempelstufe; erst sichtbar, wenn nach einem Sieg Stufe 1 freigeschaltet ist.
-func _heat_selector() -> OptionButton:
-	var max_heat := Meta.heat_max_unlocked(Ctx.profile)
-	if max_heat <= 0:
+## Knopf zum Pakt-Fenster; erst sichtbar, wenn nach einem Sieg Pakt-Punkte freigeschaltet sind.
+func _pact_button() -> Button:
+	if Pact.cap(Ctx.profile) <= 0:
 		return null
-	var opt := OptionButton.new()
-	for h in max_heat + 1:
-		opt.add_item(("🔥 " if h > 0 else "") + Meta.heat_text(h))
-	opt.select(selected_heat())
-	opt.item_selected.connect(func(i: int) -> void:
-		Ctx.settings.heat = i
-		Ctx.save_persistent())
-	return opt
+	var pact := selected_pact()
+	var text := "🔥 Pakt: %d Punkte · +%d %% %s" % [Pact.points(pact), roundi(Pact.shard_bonus(pact) * 100.0), Meta.ICON] if Pact.points(pact) > 0 else "🔥 Pakt wählen …"
+	var b := UI.button(text, open_pact)
+	b.name = "PactButton"
+	b.tooltip_text = Pact.summary(pact)
+	return b
+
+
+## Pakt-Fenster: Erschwernisse mit Rängen wählen; jeder Punkt bringt mehr Splitter.
+func open_pact() -> UI.Modal:
+	var m := UI.modal(_ui, "🔥 Pakt mit dem Tempel", 900)
+	m.closed.connect(render_menu)
+	_render_pact(m.body)
+	return m
+
+
+func _render_pact(body: VBoxContainer) -> void:
+	UI.clear(body)
+	var pact := selected_pact()
+	var limit := Pact.cap(Ctx.profile)
+	var pts := Pact.points(pact)
+	body.add_child(UI.para("Wähle Erschwernisse für dein nächstes Abenteuer. Jeder Punkt bringt +%s %% %s. Ein Sieg mit allen freien Punkten schaltet weitere frei." % [String.num(float(Pact.cfg().shardBonusPerPoint) * 100.0, 1).replace(".", ","), Meta.CURRENCY], "Dim", 16))
+	body.add_child(UI.label("Punkte: %d / %d  ·  +%d %% %s" % [pts, limit, roundi(Pact.shard_bonus(pact) * 100.0), Meta.ICON], "Accent", 20))
+	var grid := GridContainer.new()
+	grid.columns = 5
+	grid.add_theme_constant_override("h_separation", 12)
+	grid.add_theme_constant_override("v_separation", 6)
+	for heading: Array in [[false, "Kampf"], [true, "Lernen (sinnvolle Schwierigkeiten)"]]:
+		var h := UI.label(heading[1], "H3")
+		grid.add_child(h)
+		for k in 4:
+			grid.add_child(Control.new())
+		for mod: Dictionary in Pact.ALL:
+			if bool(mod.learning) != heading[0]:
+				continue
+			var r := Pact.rank(pact, mod.id)
+			var name := UI.label("%s %s" % [mod.icon, mod.name], "Bold" if r > 0 else "", 17)
+			name.custom_minimum_size.x = 230
+			grid.add_child(name)
+			grid.add_child(UI.label("●".repeat(r) + "○".repeat(int(mod.max) - r), "Accent", 17))
+			var desc := UI.label(Pact.describe(mod.id, maxi(r, 1)), "" if r > 0 else "Dim", 15)
+			desc.custom_minimum_size.x = 330
+			grid.add_child(desc)
+			var minus := UI.button("−", _change_pact.bind(mod.id, -1, body), "SmallButton")
+			minus.disabled = r <= 0
+			grid.add_child(minus)
+			var plus := UI.button("+%d" % int(mod.points), _change_pact.bind(mod.id, 1, body), "SmallButton")
+			plus.name = "Plus_" + mod.id
+			plus.disabled = r >= int(mod.max) or pts + int(mod.points) > limit
+			grid.add_child(plus)
+	body.add_child(grid)
+
+
+func _change_pact(id: String, delta: int, body: VBoxContainer) -> void:
+	var pact := selected_pact()
+	pact[id] = Pact.rank(pact, id) + delta
+	Ctx.settings.pact = Pact.sanitize(pact, Ctx.profile)
+	Ctx.save_persistent()
+	Sound.play("select")
+	_render_pact(body)
 
 
 var _time_toggle: CheckBox
@@ -361,7 +414,7 @@ func _on_start() -> void:
 			Ctx.save_persistent()
 			Ctx.save.clear_run()
 			Sound.play("encounter")
-			Ctx.start_run(_selected.keys(), "jungle", -1, selected_heat(), bool(Ctx.settings.get("timeChallenge", false)))
+			Ctx.start_run(_selected.keys(), "jungle", -1, selected_pact(), bool(Ctx.settings.get("timeChallenge", false)))
 			_enter_world())
 	if Ctx.can_resume():
 		UI.confirm(_ui, "Ein laufendes Abenteuer wird dabei beendet. Trotzdem neu starten?", go, "Neu starten")

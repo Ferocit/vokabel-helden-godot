@@ -63,7 +63,8 @@ func _ready() -> void:
 	resized.connect(_layout)
 	var box := UI.vbox([], 6)
 	add_child(box)
-	var task := UI.label(("%s · Übersetze ins Englische" % label_text) if label_text != "" else "Übersetze ins Englische", "Dim", 16)
+	var lang := "Deutsche" if entry.get("reversed", false) else "Englische"
+	var task := UI.label(("%s · Übersetze ins %s" % [label_text, lang]) if label_text != "" else "Übersetze ins %s" % lang, "Dim", 16)
 	task.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(task)
 	var q := UI.label(entry.de, "Bold", 34)

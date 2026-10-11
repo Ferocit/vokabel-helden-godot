@@ -81,10 +81,11 @@ static func combat_player_from(base: Dictionary, cls: Dictionary, mods: Dictiona
 
 
 ## Gegnerwerte wachsen leicht mit dem Spielerlevel, damit Kämpfe spannend bleiben.
-## `heat` = Tempelstufe (Rogue-lite-Schwierigkeit), siehe Meta.heat_*; `floor` = Ebene des Abenteuers (Issue #27).
-static func create_enemy(def: Dictionary, player_level: int, rng: Variant = null, heat: int = 0, floor: int = 1) -> Dictionary:
+## `pact` = Pakt-Dictionary oder alte Tempelstufe als Zahl (Issue #22); `floor` = Ebene des Abenteuers (Issue #27).
+static func create_enemy(def: Dictionary, player_level: int, rng: Variant = null, pact: Variant = {}, floor: int = 1) -> Dictionary:
+	var p := Pact.normalize(pact)
 	# enemyHpFactor gleicht die Kombo aus (Issue #21): Gegner halten etwas mehr aus, Serien machen sie schneller platt.
-	var scale := (1.0 + 0.12 * (player_level - 1)) * Meta.heat_hp_factor(heat) * Meta.floor_hp_factor(floor) * float(GameConfig.section("combat").get("enemyHpFactor", 1.0))
+	var scale := (1.0 + 0.12 * (player_level - 1)) * Pact.hp_factor(p) * Meta.floor_hp_factor(floor) * float(GameConfig.section("combat").get("enemyHpFactor", 1.0))
 	var hp := js_round(float(def.hp) * scale)
 	var pattern: Array = def.pattern
 	var start := int(floor((rng as Callable).call() * pattern.size())) if rng is Callable else 0
@@ -92,7 +93,7 @@ static func create_enemy(def: Dictionary, player_level: int, rng: Variant = null
 		"def": def,
 		"hp": hp,
 		"maxHp": hp,
-		"attack": js_round(float(def.attack) * (1.0 + 0.05 * (player_level - 1)) * Meta.heat_attack_factor(heat) * Meta.floor_attack_factor(floor)),
+		"attack": js_round(float(def.attack) * (1.0 + 0.05 * (player_level - 1)) * Pact.attack_factor(p) * Meta.floor_attack_factor(floor)),
 		"phase": 1,
 		"poison": null,
 		"intent": pattern[start],

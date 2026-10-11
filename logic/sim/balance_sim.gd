@@ -5,7 +5,8 @@ extends RefCounted
 ## Kommandozeilen-Werkzeug tools/sim.gd genutzt (`start.bat sim`, `./start.sh sim`).
 ##
 ## Optionen (alle optional, siehe default_options):
-##   seed, heroClass, heat, skills {knoten: rang} oder "full"
+##   seed, heroClass, skills {knoten: rang} oder "full"
+##   pact         – Pakt {id: rang} (data/pact.gd); alternativ heat = alte Tempelstufe (= {p_hp: n, p_atk: n})
 ##   learner      – "fixed" (jede Antwort mit `accuracy` richtig) | "beginner" | "average" | "strong"
 ##                  (Wissen pro Wort, wächst mit Abrufen, Werte unter config/game.json → simulation.learners)
 ##   vocabulary   – Liste von VocabEntry (Standard: data/units/sample_unit.json)
@@ -85,7 +86,8 @@ static func campaign(opts: Dictionary, runs: int) -> Array:
 		ro.progress = progress
 		ro.clockMs = clock
 		# Standard: immer auf der höchsten freien Tempelstufe spielen.
-		ro.heat = Meta.heat_max_unlocked(profile) if o.get("climbHeat", true) else mini(int(o.heat), Meta.heat_max_unlocked(profile))
+		# Standard: immer alle freien Pakt-Punkte für stärkere Gegner einsetzen.
+		ro.pact = Pact.sanitize({"p_hp": 5, "p_atk": 5}, profile) if o.get("climbHeat", true) else Pact.sanitize(Pact.normalize(o.get("pact", o.heat)), profile)
 		var r := run(ro)
 		profile = r.profile
 		clock = int(r.clockMs) + day_ms
@@ -184,6 +186,7 @@ class _Run:
 	var knowledge_before := 0.0
 	var pos := Vector2i.ZERO
 	var level_scale := 1.0
+	var pact := {}
 	var combo := 0
 	var max_combo := 0
 	var last_revenge := false
@@ -204,6 +207,9 @@ class _Run:
 			profile.unlockedClasses = ["warrior", "rogue", "mage"]
 			profile.skills[o.heroClass] = BalanceSim.full_tree(o.heroClass) if o.skills is String and o.skills == "full" else o.skills
 		profile = Meta.reset_run_fields(profile, pc)
+		pact = Pact.normalize(o.get("pact", o.heat))
+		profile.potions = maxi(0, int(profile.potions) - Pact.rank(pact, "p_supplies"))
+		profile.lives = maxi(1, int(profile.lives) - Pact.rank(pact, "p_lives"))
 		clock = int(o.clockMs)
 		knowledge = o.knowledge
 		learner = (sc.learners as Dictionary).get(o.learner, {})
@@ -213,10 +219,10 @@ class _Run:
 		for item: Dictionary in items:
 			knowledge_before += float(knowledge[item.key])
 		knowledge_before /= items.size()
-		learning = LearningSession.new(items, o.progress, c.learning, Rng.create(int(o.seed) + 1), func() -> int: return clock)
+		learning = LearningSession.new(items, o.progress, c.learning, Rng.create(int(o.seed) + 1), func() -> int: return clock, {"unseenBoost": Pact.rank(pact, "p_new") > 0})
 		level_scale = RunScaling.level_scale_for(vocab.size())
 		var s := _stats()
-		run_state = {"seed": int(o.seed), "heat": int(o.heat), "learning": learning, "floor": 1, "floorsCleared": 0, "pastCounts": {},
+		run_state = {"seed": int(o.seed), "pact": pact, "heat": Pact.points(pact), "learning": learning, "floor": 1, "floorsCleared": 0, "pastCounts": {},
 			"hp": int(s.maxHp), "focus": int(s.maxFocus), "runes": 0}
 		_load_floor(1)
 		SetBonus.init_run(run_state, items)
@@ -226,7 +232,10 @@ class _Run:
 	func _load_floor(floor: int) -> void:
 		if floor > 1:
 			run_state.pastCounts = Meta.progress_counts(run_state)
-		map = LevelGenerator.generate(Meta.floor_seed(int(o.seed), floor), RunScaling.scale_level_config(c.level, level_scale), {
+		var level_cfg := RunScaling.scale_level_config(c.level, level_scale).duplicate(true)
+		var extra := Pact.rank(pact, "p_elite")
+		level_cfg.eliteEnemies = {"min": int(level_cfg.eliteEnemies.min) + extra, "max": int(level_cfg.eliteEnemies.max) + extra}
+		map = LevelGenerator.generate(Meta.floor_seed(int(o.seed), floor), level_cfg, {
 			"bossRunesRequired": RunScaling.scaled_boss_runes(int(c.run.bossRunesRequired), level_scale),
 			"enemies": GameData.THEMES[0].enemies,
 		})
@@ -275,7 +284,7 @@ class _Run:
 			other_known.append(p)
 		var used := 0
 		var hc: Dictionary = sc.hints
-		if o.useHints and p < float(hc.useBelow):
+		if o.useHints and Pact.hints_allowed(pact) and p < float(hc.useBelow):
 			for type: String in ["firstLetter", "length"]:
 				var pay := HintService.payment(wallet, type)
 				if pay.is_empty() or (pay.source == "focus" and int(wallet.focus) - int(pay.cost) < reserve_focus):
@@ -398,8 +407,8 @@ class _Run:
 		for item: Dictionary in Meta.shop_offers(run_state, profile, altar.id):
 			var current: Variant = profile.equipment[item.slot]
 			var better := current == null or item_score(item) > item_score(GameData.get_item(current))
-			if better and Meta.can_buy_item(profile, item):
-				profile = Meta.buy_item(profile, item)
+			if better and Meta.can_buy_item(profile, item, run_state):
+				profile = Meta.buy_item(profile, item, run_state)
 				items_bought += 1
 				bought = true
 		while int(profile.potions) < 3 and Player.can_buy_potion(profile):
@@ -420,7 +429,7 @@ class _Run:
 		var s := _stats()
 		var cls := GameData.get_class_def(profile.heroClass)
 		var base := {"hp": run_state.hp, "maxHp": s.maxHp, "focus": run_state.focus, "maxFocus": s.maxFocus, "attack": s.attack, "potions": profile.potions}
-		var state := CombatService.create_combat(CombatService.combat_player_from(base, cls, s.mods), CombatService.create_enemy(def, int(profile.level), rng, int(run_state.heat), int(run_state.floor)))
+		var state := CombatService.create_combat(CombatService.combat_player_from(base, cls, s.mods), CombatService.create_enemy(def, int(profile.level), rng, pact, int(run_state.floor)))
 		var wallet := _wallet(int(run_state.focus))
 		while state.outcome == "ongoing":
 			var p: Dictionary = state.player
