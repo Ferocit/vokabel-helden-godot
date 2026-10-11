@@ -27,6 +27,13 @@ if /i "%~1"=="test" (
   pause
   exit /b %errorlevel%
 )
+if /i "%~1"=="export" (
+  echo Exportiere nach build\windows\Vokabel-Helden.exe ...
+  if not exist "build\windows" mkdir "build\windows"
+  "%GODOT%" --headless --path "%~dp0." --export-release "Windows Desktop" "build/windows/Vokabel-Helden.exe"
+  pause
+  exit /b %errorlevel%
+)
 rem Beim ersten Start einmal importieren (Texturen, Sounds, Schriften).
 if not exist ".godot\imported" (
   echo Erster Start: importiere Ressourcen ...

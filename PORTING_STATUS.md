@@ -57,12 +57,13 @@
 
 - **Nach Phase 6:** Bäume zwischen Kamera und Held werden per `world/foliage.gdshader` durchsichtig gedithert
   (globaler Shader-Parameter `player_world`, gesetzt in `exploration._place_hero`, sonst weit weg = aus).
+- Export-Vorlagen Windows/Linux (`export_presets.cfg`), `start.bat export` / `./start.sh export`. In der Cloud
+  geprüft: beide Exporte erzeugt, Linux-Build startet fehlerfrei bis zum Titel; JSON-Daten sind im Paket.
 
 ## Stand
 Alle sechs Phasen sind portiert. Mögliche nächste Schritte:
 - Auf echter Hardware (Windows, Forward+) spielen und Licht/Kamera feinjustieren; in der Cloud wurde mit
   lavapipe (Software-Vulkan) geprüft.
-- Export-Vorlage (Windows) anlegen.
 
 **Arbeitsweise:**
 - Selbstständig ohne Rückfragen arbeiten.

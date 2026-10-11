@@ -9,5 +9,9 @@ fi
 if [ "$1" = "test" ]; then
   exec "$GODOT" --headless --path . -s res://tests/run_tests.gd
 fi
+if [ "$1" = "export" ]; then
+  mkdir -p build/linux
+  exec "$GODOT" --headless --path . --export-release "Linux" build/linux/Vokabel-Helden.x86_64
+fi
 [ -d .godot/imported ] || "$GODOT" --headless --path . --import
 exec "$GODOT" --path .

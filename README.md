@@ -13,6 +13,14 @@ Port der Phaser-Version auf **Godot 4.7** (GDScript, Forward+).
 - **Linux/macOS:** `./start.sh`
 - **Direkt:** `godot --path .`
 
+### Eigenständige Version (ohne Godot)
+
+`start.bat export` erzeugt `build/windows/Vokabel-Helden.exe` (eine Datei, Daten eingebettet);
+`./start.sh export` entsprechend `build/linux/Vokabel-Helden.x86_64`. Voraussetzung sind die
+Godot-Export-Templates 4.7.2 (im Editor: *Editor → Export-Vorlagen verwalten → Herunterladen*).
+Die Vorlagen stehen in `export_presets.cfg`. In der exportierten Version landen Meldungen unter
+`%APPDATA%\Godot\app_userdata\Vokabel-Helden\reports` und werden nur lokal gespeichert.
+
 ## Steuerung
 
 | Taste | Aktion |
