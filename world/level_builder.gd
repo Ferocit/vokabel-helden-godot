@@ -84,9 +84,19 @@ static func uv_rect(frame_no: int) -> Rect2:
 	return Rect2(px / SHEET_PX, Vector2(15.96, 15.96) / SHEET_PX)
 
 
-func _material(key: String) -> StandardMaterial3D:
+const FOLIAGE_SHADER := preload("res://world/foliage.gdshader")
+
+
+func _material(key: String) -> Material:
 	if _materials.has(key):
 		return _materials[key]
+	if key == "town_sprite":
+		# Urwald: eigener Shader, der Bäume vor dem Helden durchsichtig dithert.
+		var sm := ShaderMaterial.new()
+		sm.shader = FOLIAGE_SHADER
+		sm.set_shader_parameter("albedo_tex", Assets.sheet(Assets.TOWN))
+		_materials[key] = sm
+		return sm
 	var m := StandardMaterial3D.new()
 	m.albedo_texture = Assets.sheet(Assets.TOWN if key.begins_with("town") else Assets.DUNGEON)
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST

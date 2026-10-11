@@ -15,6 +15,13 @@ UiTheme="*res://ui/ui_theme.gd"
 Sound="*res://ui/sound.gd"
 Reporter="*res://ui/reporter.gd"
 
+[shader_globals]
+
+player_world={
+"type": "vec3",
+"value": Vector3(0, -1000, 0)
+}
+
 [display]
 
 window/size/viewport_width=1280

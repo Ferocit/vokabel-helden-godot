@@ -4,7 +4,7 @@
 - **Phaser-Original als Referenz:** `G:\VibeCoding\VokabelHeroes`. Dort nichts ändern.
 - **Godot:** `E:\Spiele\Steam\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe` (4.7.2)
 - **Godot in der Cloud (Linux):** 4.7.2 stable von github.com/godotengine/godot-builds, nach `/usr/local/bin/godot` verlinken.
-- **Tests:** `godot --headless --path . -s res://tests/run_tests.gd [-- filter]`. Erwartet: 85 grün, etwa 25–40 s.
+- **Tests:** `godot --headless --path . -s res://tests/run_tests.gd [-- filter]`. Erwartet: 86 grün, etwa 25–40 s.
 - **Screenshots:** Linux: `tools/shot.sh <name> scene=res://scenes/title.tscn [call=open_unit_manager]` (xvfb + opengl3).
   Ohne GPU: `apt-get install mesa-vulkan-drivers` (lavapipe) für Forward+, sonst `DRIVER=opengl3`.
   Mit `run=1 [class=rogue] [seed=…] [at=x,y]` startet ein Abenteuer im Arbeitsspeicher.
@@ -55,11 +55,13 @@
   - `start.bat` (GODOT-Variable, Steam-Pfad, PATH; `start.bat test`), `start.sh`, `README.md`.
   - Testläufer zählt Script-Fehler über einen `Logger` und wertet sie als Fehlschlag.
 
+- **Nach Phase 6:** Bäume zwischen Kamera und Held werden per `world/foliage.gdshader` durchsichtig gedithert
+  (globaler Shader-Parameter `player_world`, gesetzt in `exploration._place_hero`, sonst weit weg = aus).
+
 ## Stand
 Alle sechs Phasen sind portiert. Mögliche nächste Schritte:
 - Auf echter Hardware (Windows, Forward+) spielen und Licht/Kamera feinjustieren; in der Cloud wurde mit
   lavapipe (Software-Vulkan) geprüft.
-- Bäume vor dem Helden bei Verdeckung transparent machen (derzeit stehen vor Wegen nur niedrige Büsche).
 - Export-Vorlage (Windows) anlegen.
 
 **Arbeitsweise:**

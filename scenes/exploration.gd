@@ -112,8 +112,14 @@ func _build_hero() -> void:
 	add_child(hero_root)
 
 
+## Weit weg = Bäume werden nirgends ausgeblendet (Titel, Kampf).
+const NO_PLAYER := Vector3(0, -1000, 0)
+
+
 func _place_hero() -> void:
 	var p: Vector2 = run.player
+	# Für den Urwald-Shader: Bäume zwischen Kamera und Held werden durchsichtig.
+	_set_shader_player(Vector3(p.x, 0.6, p.y + FEET_OFFSET - 0.25) if hero_root.visible else NO_PLAYER)
 	# Leichtes Hüpfen beim Laufen, sanftes Atmen im Stand.
 	var bob := absf(sin(walk_time * 13.0)) * 0.11 if walk_time > 0.0 else sin(_time * 2.0) * 0.02
 	hero_root.position = Vector3(p.x, 0, p.y + FEET_OFFSET - 0.25)
@@ -422,6 +428,19 @@ func on_combat_return(data: Dictionary) -> void:
 	hud.refresh()
 	if data.get("victory", false):
 		finish_run(true)
+
+
+## Zuletzt an den Urwald-Shader gemeldete Heldenposition.
+var shader_player := NO_PLAYER
+
+
+func _set_shader_player(pos: Vector3) -> void:
+	shader_player = pos
+	RenderingServer.global_shader_parameter_set("player_world", pos)
+
+
+func _exit_tree() -> void:
+	_set_shader_player(NO_PLAYER)
 
 
 func _set_world_active(on: bool) -> void:

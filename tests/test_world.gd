@@ -207,3 +207,21 @@ func test_erkundung_gegnerkontakt_startet_kampf() -> void:
 	e.check_enemy_contact()
 	expect_true(e.busy, "Kampf beginnt")
 	e.free()
+
+
+func test_urwald_nutzt_ausblend_shader() -> void:
+	var map := LevelGenerator.generate(778, GameConfig.section("level"), {"bossRunesRequired": 3, "enemies": GameData.get_theme("jungle").enemies})
+	var lb := LevelBuilder.build(map)
+	var shaders := lb.root.find_children("*", "MeshInstance3D", true, false).filter(func(m: MeshInstance3D) -> bool:
+		return m.material_override is ShaderMaterial)
+	expect_gt(shaders.size(), 0, "Urwald-Meshes mit Shader")
+	lb.root.free()
+	var e := _explore()
+	e._place_hero()
+	expect_near(e.shader_player.x, e.run.player.x, 0.01, "Shader kennt die Heldenposition")
+	e._set_world_active(false)
+	e._place_hero()
+	expect_lt(e.shader_player.y, -100.0, "Im Kampf aus")
+	root().remove_child(e)
+	expect_lt(e.shader_player.y, -100.0, "Nach Verlassen aus")
+	e.free()
