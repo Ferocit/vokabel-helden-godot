@@ -65,6 +65,10 @@ Neue Effekte: Schlüssel in `SkillTrees.EFFECT_TEXT` eintragen und an der passen
   (Tasten 1–3), z. B. +8 HP, +1 Angriff, +5 % Krit. Stapelbar bis zur jeweiligen Höchststufe, kleiner als
   Segnungen, gelten bis zum Ende des Abenteuers (`profile.talents`, offene Wahlen `profile.pendingTalents`).
   Die Wahl erscheint in der Erkundung, sobald man frei ist (auch nach einem Kampf).
+- **Kombo** (`logic/game/combo.gd`, `combat.combo`): Jede auf Anhieb richtige Antwort (ohne Hilfe) erhöht die Kombo,
+  Angriffe und Fähigkeiten machen dann +10 % Schaden je Stufe (bis ×1,5). Mit Hilfe oder „fast richtig“ bleibt sie
+  stehen, ein Fehler setzt sie zurück. Sie gilt für das ganze Abenteuer (auch Truhen und Türen). Ausgleich: Gegner
+  haben ×1,3 HP (`combat.enemyHpFactor`).
 - **Händler am Kristallaltar:** pro Abenteuer und Altar 3 feste Angebote (Seed), Preise nach Seltenheit
   (`meta.shopPrice` 20/45/90), dazu Heiltränke. Gekauftes landet in der Tasche.
 - **Gegenstände** nutzen ebenfalls die Skill-Effektschlüssel (z. B. Wandererring = Tempo, Runenklinge =

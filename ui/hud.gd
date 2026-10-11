@@ -50,6 +50,7 @@ func refresh() -> void:
 		UI.gap(0), UI.label("FP", "Bold", 18), bar(run.focus, s.maxFocus, UI.FP), UI.label("%d/%d" % [int(run.focus), int(s.maxFocus)], "Bold", 18),
 		UI.gap(0), runes(int(run.runes), int(run.bossRunes)),
 		UI.gap(0), _lives(),
+		_combo(),
 		UI.label("🔥 %d" % int(run.get("heat", 0)), "Bad", 18) if int(run.get("heat", 0)) > 0 else null,
 		UI.label("🧪 %d" % int(Ctx.profile.potions), "Bold", 18),
 		UI.label("💰 %d" % int(Ctx.profile.gold), "Bold", 18),
@@ -74,6 +75,17 @@ static func xp_bar(width: int = 80) -> ProgressBar:
 	b.tooltip_text = "XP %d / %d – noch %d bis Level %d" % [int(p.xp), next, next - int(p.xp), int(p.level) + 1] if next >= 0 else "Höchstes Level erreicht"
 	b.mouse_filter = Control.MOUSE_FILTER_PASS
 	return b
+
+
+## Kombo (Issue #21): nur sichtbar, solange sie läuft.
+static func _combo() -> Label:
+	var n := int(Ctx.run.get("combo", 0))
+	if n <= 0:
+		return null
+	var l := UI.label(Combo.text(n), "Accent", 18)
+	l.tooltip_text = "Kombo %d: richtige Antworten in Folge ohne Hilfe – Angriffe machen ×%s Schaden." % [n, String.num(Combo.multiplier(n), 1)]
+	l.mouse_filter = Control.MOUSE_FILTER_PASS
+	return l
 
 
 ## Verbleibende Leben dieses Abenteuers; die letzte Niederlage beendet es.

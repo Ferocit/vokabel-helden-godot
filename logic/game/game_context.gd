@@ -88,6 +88,7 @@ func start_run(unit_ids: Array, world_id: String = "jungle", seed: int = -1, hea
 		"hp": int(s.maxHp),
 		"focus": int(s.maxFocus),
 		"runes": 0,
+		"combo": 0,
 		"player": start_pos,
 		"lastHeal": start_pos,
 		"defeated": {},
@@ -148,6 +149,7 @@ func resume_run() -> Dictionary:
 		"hp": mini(int(snap.hp), int(s.maxHp)),
 		"focus": mini(int(snap.focus), int(s.maxFocus)),
 		"runes": int(snap.runes),
+		"combo": int(snap.get("combo", 0)),
 		"player": Vector2(snap.player.x, snap.player.y),
 		"lastHeal": Vector2(snap.lastHeal.x, snap.lastHeal.y),
 		"defeated": to_set.call(snap.defeated),
@@ -268,6 +270,7 @@ func clamp_run_stats() -> void:
 func submit_answer(item: Dictionary, res: Dictionary) -> int:
 	var learning: LearningSession = run.learning
 	learning.submit(item, res)
+	run.combo = Combo.next(int(run.get("combo", 0)), res)
 	profile.lastLearnedAt = Vocab.now_ms()
 	if res.outcome == "correct":
 		return gain_xp(int(GameConfig.section("xp").correctAnswer))
@@ -291,6 +294,7 @@ func snapshot_run() -> Dictionary:
 		"hp": run.hp,
 		"focus": run.focus,
 		"runes": run.runes,
+		"combo": run.get("combo", 0),
 		"player": {"x": run.player.x, "y": run.player.y},
 		"lastHeal": {"x": run.lastHeal.x, "y": run.lastHeal.y},
 		"defeated": run.defeated.keys(),

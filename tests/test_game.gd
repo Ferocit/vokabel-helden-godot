@@ -45,16 +45,18 @@ func test_kampf_richtig_trifft_falsch_verpufft() -> void:
 	expect_lt(state.enemy.hp, state.enemy.maxHp)
 
 
+## Normale Gegner: höchstens 4 Treffer, mit laufender Kombo (×1.3) höchstens 3 (Issue #21).
 func test_kampf_normale_gegner_1_bis_3_treffer() -> void:
 	for id in ["moss_spirit", "bat", "spider", "jungle_rat", "stone_rat", "temple_ghost"]:
-		var state := CombatService.create_combat(hero("warrior", {"critChance": 0.0}), enemy(id))
-		var hits := 0
-		var rng := Rng.create(3)
-		while state.outcome == "ongoing":
-			CombatService.resolve_player_action(state, "attack", true, cfg(), rng)
-			hits += 1
-		expect_ge(hits, 1, id)
-		expect_le(hits, 3, id)
+		for mult in [1.0, 1.3]:
+			var state := CombatService.create_combat(hero("warrior", {"critChance": 0.0, "comboMult": mult}), enemy(id))
+			var hits := 0
+			var rng := Rng.create(3)
+			while state.outcome == "ongoing":
+				CombatService.resolve_player_action(state, "attack", true, cfg(), rng)
+				hits += 1
+			expect_ge(hits, 1, id)
+			expect_le(hits, 4 if mult == 1.0 else 3, "%s ×%s" % [id, mult])
 
 
 func test_kampf_verteidigen() -> void:

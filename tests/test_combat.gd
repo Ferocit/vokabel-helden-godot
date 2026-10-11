@@ -297,3 +297,41 @@ func test_fast_richtig_halbe_wirkung() -> void:
 	# Heiltrank heilt halb.
 	CombatService.resolve_player_action(half, "item", true, GameConfig.section("combat"), func() -> float: return 0.5, 0.5)
 	expect_eq(int(half.player.hp), 40 + CombatService.js_round(18 * 0.5))
+
+
+func test_kombo_zaehler() -> void:
+	expect_eq(Combo.next(0, Vocab.result("correct")), 1)
+	expect_eq(Combo.next(3, Vocab.result("correct", 1)), 3, "mit Hilfe bleibt die Kombo stehen")
+	expect_eq(Combo.next(3, Vocab.result("almostCorrect")), 3, "fast richtig hält die Kombo")
+	expect_eq(Combo.next(3, Vocab.result("wrongCorrected")), 0)
+	expect_near(Combo.multiplier(0), 1.0)
+	expect_near(Combo.multiplier(3), 1.3)
+	expect_near(Combo.multiplier(99), 1.0 + 0.1 * int(Combo.cfg().max), 0.001, "gedeckelt")
+
+
+func test_kombo_erhoeht_schaden() -> void:
+	var def := GameData.get_enemy("bat")
+	var cls := GameData.get_class_def("warrior")
+	var base := {"hp": 40, "maxHp": 60, "focus": 6, "maxFocus": 6, "attack": 10, "potions": 1}
+	var plain := CombatService.create_combat(CombatService.combat_player_from(base, cls), CombatService.create_enemy(def, 1))
+	var combo := CombatService.create_combat(CombatService.combat_player_from(base, cls), CombatService.create_enemy(def, 1))
+	combo.player.comboMult = 1.5
+	var rng := func() -> float: return 0.99
+	CombatService.resolve_player_action(plain, "attack", true, GameConfig.section("combat"), rng)
+	CombatService.resolve_player_action(combo, "attack", true, GameConfig.section("combat"), rng)
+	var d1: int = int(plain.enemy.maxHp) - int(plain.enemy.hp)
+	var d2: int = int(combo.enemy.maxHp) - int(combo.enemy.hp)
+	expect_eq(d2, mini(int(combo.enemy.maxHp), CombatService.js_round(d1 * 1.5)))
+
+
+func test_kombo_im_abenteuer_und_spielstand() -> void:
+	start_run()
+	var item := (Ctx.run.learning as LearningSession).next_word()
+	Ctx.submit_answer(item, Vocab.result("correct"))
+	Ctx.submit_answer(item, Vocab.result("correct"))
+	expect_eq(int(Ctx.run.combo), 2)
+	Ctx.autosave()
+	Ctx.resume_run()
+	expect_eq(int(Ctx.run.combo), 2, "Kombo wird gespeichert")
+	Ctx.submit_answer(item, Vocab.result("wrongCorrected"))
+	expect_eq(int(Ctx.run.combo), 0)

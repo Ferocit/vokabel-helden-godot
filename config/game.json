@@ -95,7 +95,12 @@
       "length": 1,
       "firstLetter": 2
     },
-    "almostPower": 0.5
+    "almostPower": 0.5,
+    "combo": {
+      "step": 0.1,
+      "max": 5
+    },
+    "enemyHpFactor": 1.3
   },
   "xp": {
     "correctAnswer": 2,

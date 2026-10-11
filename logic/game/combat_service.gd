@@ -4,7 +4,7 @@ extends RefCounted
 ## Aktionen: "attack" | "defend" | "skill" | "item"
 ## CombatState { player, enemy, defending, outcome: "ongoing"|"won"|"lost", round }
 ##   player { hp, maxHp, focus, maxFocus, attack, potions, skill, defendFactor, critChance, critMultiplier, focusOnCorrect,
-##            armor, potionHealBonus, lifeOnWin }
+##            armor, potionHealBonus, lifeOnWin, comboMult (Schadensfaktor der Kombo, Issue #21) }
 ##   enemy  { def, hp, maxHp, attack, phase, poison ({turns, damage} oder null), intent, patternIndex, guarding }
 ## Events sind Dictionaries mit "type": damage | enemyMove | enemyHeal | intent | poisonTick | poisoned |
 ##   heal | focus | defend | fizzle | phase | enemyDefeated | playerDefeated
@@ -26,11 +26,13 @@ static func action_label(action: String, player: Dictionary) -> String:
 static func action_effect(action: String, state: Dictionary, cfg: Dictionary) -> String:
 	var p: Dictionary = state.player
 	var atk := int(p.attack)
+	var mult := float(p.get("comboMult", 1.0))
 	var guarded: bool = state.enemy.guarding
 	var halved := " (halbiert: Gegner ist gepanzert)" if guarded else ""
+	var combo := " (mit Kombo ×%s)" % String.num(mult, 1) if mult > 1.0 else ""
 	match action:
 		"attack":
-			var text := "Trifft für %d–%d Schaden%s." % [atk, atk + 2, halved]
+			var text := "Trifft für %d–%d Schaden%s%s." % [js_round(atk * mult), js_round((atk + 2) * mult), combo, halved]
 			if float(p.critChance) > 0.0:
 				text += " %d %% Chance auf einen kritischen Treffer (×%s)." % [roundi(float(p.critChance) * 100.0), String.num(float(p.critMultiplier), 1)]
 			return text
@@ -39,7 +41,7 @@ static func action_effect(action: String, state: Dictionary, cfg: Dictionary) ->
 		"skill":
 			var skill: Dictionary = p.skill
 			var dmg := js_round(atk * float(skill.multiplier))
-			var text := "Trifft für %d–%d Schaden%s, kostet %d FP." % [dmg, dmg + 2, halved, int(skill.focusCost)]
+			var text := "Trifft für %d–%d Schaden%s%s, kostet %d FP." % [js_round(dmg * mult), js_round((dmg + 2) * mult), combo, halved, int(skill.focusCost)]
 			if skill.has("poisonTurns"):
 				text += " Dazu Gift: %d Runden je %d Schaden." % [int(skill.poisonTurns), maxi(1, js_round(atk * float(skill.get("poisonFactor", 0.5))))]
 			return text
@@ -74,7 +76,8 @@ static func combat_player_from(base: Dictionary, cls: Dictionary, mods: Dictiona
 ## Gegnerwerte wachsen leicht mit dem Spielerlevel, damit Kämpfe spannend bleiben.
 ## `heat` = Tempelstufe (Rogue-lite-Schwierigkeit), siehe Meta.heat_*.
 static func create_enemy(def: Dictionary, player_level: int, rng: Variant = null, heat: int = 0) -> Dictionary:
-	var scale := (1.0 + 0.12 * (player_level - 1)) * Meta.heat_hp_factor(heat)
+	# enemyHpFactor gleicht die Kombo aus (Issue #21): Gegner halten etwas mehr aus, Serien machen sie schneller platt.
+	var scale := (1.0 + 0.12 * (player_level - 1)) * Meta.heat_hp_factor(heat) * float(GameConfig.section("combat").get("enemyHpFactor", 1.0))
 	var hp := js_round(float(def.hp) * scale)
 	var pattern: Array = def.pattern
 	var start := int(floor((rng as Callable).call() * pattern.size())) if rng is Callable else 0
@@ -132,12 +135,12 @@ static func resolve_player_action(state: Dictionary, action: String, answered_co
 			var crit: bool = rng.call() < float(player.critChance)
 			var base: int = int(player.attack) + Rng.rand_int(rng, 0, 2)
 			var dmg: int = js_round(base * float(player.critMultiplier)) if crit else base
-			events.append_array(_damage_enemy(state, maxi(1, js_round(dmg * power)), crit))
+			events.append_array(_damage_enemy(state, maxi(1, js_round(dmg * power * float(player.get("comboMult", 1.0)))), crit))
 		"skill":
 			var skill: Dictionary = player.skill
 			player.focus = int(player.focus) - int(skill.focusCost)
 			var hit: int = js_round(int(player.attack) * float(skill.multiplier)) + Rng.rand_int(rng, 0, 2)
-			events.append_array(_damage_enemy(state, maxi(1, js_round(hit * power)), false))
+			events.append_array(_damage_enemy(state, maxi(1, js_round(hit * power * float(player.get("comboMult", 1.0)))), false))
 			if skill.has("poisonTurns") and state.outcome == "ongoing":
 				var dmg := maxi(1, js_round(int(player.attack) * float(skill.get("poisonFactor", 0.5))))
 				enemy.poison = {"turns": int(skill.poisonTurns), "damage": dmg}

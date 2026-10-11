@@ -259,6 +259,13 @@ func refresh_panels() -> void:
 	var potions := UI.hbox([UI.label("🧪 Heiltränke: %d" % int(p.potions), "Dim", 16)])
 	if state.defending:
 		potions.add_child(UI.label("· 🛡 verteidigt", "Accent", 16))
+	var combo := int(run.get("combo", 0))
+	p.comboMult = Combo.multiplier(combo)
+	if combo > 0:
+		var cl := UI.label("· %s Kombo %d" % [Combo.text(combo), combo], "Accent", 16)
+		cl.tooltip_text = "Richtige Antworten in Folge (ohne Hilfe) machen Angriffe stärker. Ein Fehler setzt die Kombo zurück."
+		cl.mouse_filter = Control.MOUSE_FILTER_PASS
+		potions.add_child(cl)
 	_party_panel.add_child(UI.gap(6))
 	_party_panel.add_child(potions)
 	_party_panel.add_child(UI.para("%s: %s" % [cls.passiveName, cls.passiveDescription], "Dim", 14))
@@ -298,6 +305,7 @@ func battle_loop() -> void:
 			_on_level_up()
 		var outcome: String = out.result.outcome
 		var power := float(GameConfig.section("combat").almostPower) if outcome == "almostCorrect" else 1.0
+		state.player.comboMult = Combo.multiplier(int(run.get("combo", 0)))
 		var events := CombatService.resolve_player_action(state, action, outcome != "wrongCorrected", GameConfig.section("combat"), rng, power)
 		wallet.focus = int(state.player.focus)
 		await play_events(events, action)
@@ -415,7 +423,9 @@ func play_events(events: Array, action: String) -> void:
 				if ev.target == "enemy":
 					var skill := action == "skill"
 					var nm: String = state.player.skill.name if skill else "Treffer"
-					say("%s! %d Schaden%s%s" % [nm, int(ev.amount), " – kritischer Treffer!" if ev.crit else ".", " (halbiert durch Panzer)" if ev.guarded else ""])
+					var mult := float(state.player.get("comboMult", 1.0))
+					var combo_txt := " %s Kombo!" % Combo.text(int(run.get("combo", 0))) if mult > 1.0 else ""
+					say("%s! %d Schaden%s%s%s" % [nm, int(ev.amount), " – kritischer Treffer!" if ev.crit else ".", " (halbiert durch Panzer)" if ev.guarded else "", combo_txt])
 					await hero_attack(skill, ev.crit)
 					Sound.play("hit")
 					_flash_sprite(enemy)

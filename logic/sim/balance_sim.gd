@@ -125,7 +125,7 @@ static func _forget(knowledge: Dictionary, learner: String) -> void:
 ## Durchschnitte und Quoten über mehrere Ergebnisse.
 static func summarize(rows: Array) -> Dictionary:
 	var n := float(maxi(1, rows.size()))
-	var keys := ["shards", "level", "defeats", "questions", "words", "firstTry", "hints", "minutes", "perMinute", "talents", "blessings", "itemsBought", "knowledgeGain", "defendShare", "defendKnowledge", "otherKnowledge"]
+	var keys := ["shards", "level", "defeats", "questions", "words", "firstTry", "hints", "minutes", "perMinute", "talents", "blessings", "itemsBought", "knowledgeGain", "defendShare", "defendKnowledge", "otherKnowledge", "maxCombo"]
 	var sum := {}
 	for k: String in keys:
 		sum[k] = 0.0
@@ -183,6 +183,8 @@ class _Run:
 	var talents_taken := 0
 	var knowledge_before := 0.0
 	var pos := Vector2i.ZERO
+	var combo := 0
+	var max_combo := 0
 
 	func _init(opts: Dictionary) -> void:
 		o = opts
@@ -268,6 +270,8 @@ class _Run:
 		var outcome := "correct" if correct else ("almostCorrect" if rng.call() < float(sc.almostShare) else "wrongCorrected")
 		_spend(float(sc.time.answerSec) + used * float(sc.time.hintSec) + (float(sc.time.wrongExtraSec) if outcome == "wrongCorrected" else 0.0))
 		learning.submit(item, Vocab.result(outcome, used))
+		combo = Combo.next(combo, Vocab.result(outcome, used))
+		max_combo = maxi(max_combo, combo)
 		if o.learner != "fixed":
 			var k := float(knowledge[item.key])
 			knowledge[item.key] = minf(0.98, k + (1.0 - k) * float(learner.gainCorrect if correct else learner.gainWrong))
@@ -414,6 +418,7 @@ class _Run:
 			if action == "skill" and not CombatService.can_use_action(state, "skill"):
 				action = "attack"  # Fokus für eine Hilfe ausgegeben
 			var power := float(c.combat.almostPower) if outcome == "almostCorrect" else 1.0
+			p.comboMult = Combo.multiplier(combo)
 			CombatService.resolve_player_action(state, action, outcome != "wrongCorrected", c.combat, rng, power)
 			CombatService.resolve_enemy_turn(state, rng)
 			_spend(float(sc.time.combatRoundSec))
@@ -522,6 +527,7 @@ class _Run:
 			"minutes": seconds / 60.0,
 			"perMinute": questions / maxf(0.01, seconds / 60.0),
 			"talents": talents_taken,
+			"maxCombo": max_combo,
 			"blessings": blessings_taken,
 			"itemsBought": items_bought,
 			"knowledgeGain": known_after - knowledge_before,
