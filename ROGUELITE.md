@@ -25,14 +25,14 @@ Am Ende jedes Abenteuers (Sieg **oder** vorzeitiges Beenden über das Menü), We
 | je 5 richtig erinnerte Vokabeln | 1 |
 | Tempel bezwungen (Sieg) | 10 |
 
-Ein typischer Sieg bringt grob 20–35 Splitter. Ein abgebrochenes Abenteuer zahlt für das bis dahin Erreichte –
+Ein vollständiger Sieg bringt grob 30–50 Splitter (geschätzt, nicht ausbalanciert getestet). Ein abgebrochenes Abenteuer zahlt für das bis dahin Erreichte –
 es gibt keine Strafe fürs Aufhören (Lernspiel).
 
 ## Ausgeben
 - **Klassen freischalten:** Schurke 25 🔷, Magier 40 🔷 (`meta.classUnlockCost`).
 - **Skillbaum je Klasse:** 3 Zweige × 3 Stufen, Ränge 3/2/2. Preis = Stufenpreis × Rang
   (`meta.tierCost` = 3 / 6 / 10). Stufe 2/3 eines Zweigs braucht mind. Rang 1 der Stufe davor.
-  Einen Baum komplett auszubauen kostet 171 🔷.
+  Einen Baum komplett auszubauen kostet 198 🔷.
 
 | Klasse | Zweige |
 | --- | --- |
