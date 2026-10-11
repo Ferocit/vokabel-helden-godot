@@ -167,7 +167,8 @@ func test_spieler_werte() -> void:
 	profile.bag = ["apprentice_helm", "focus_staff"]
 	profile = Player.equip(Player.equip(profile, "apprentice_helm"), "focus_staff")
 	var stats := Player.compute_stats(profile, pc)
-	expect_eq(stats.freeHints.length, 1)
+	expect_false(stats.freeHints.has("length"), "Gegenstände geben keine Vokabelhilfen")
+	expect_near(Meta.mod(stats.mods, "armor"), 1.0, 0.001, "Lehrlingshelm: Rüstung")
 	expect_eq(stats.maxFocus, int(pc.baseFocus) + 4)
 	expect_eq(profile.bag, ["wooden_sword"])
 	var leveled := Player.add_xp(profile, 100, pc)

@@ -159,3 +159,49 @@ func test_erkundung_kampf_rueckkehr() -> void:
 	expect_true(e.fx.camera.current, "Erkundungskamera aktiv")
 	expect_false(e.level.views.has(obj.id), "Gegner verschwindet")
 	e.free()
+
+
+func test_kampf_letztes_leben_beendet_abenteuer() -> void:
+	start_run()
+	Ctx.profile.lives = 1
+	var c := open_combat("elite")
+	var out := []
+	c.finished.connect(func(d: Dictionary) -> void: out.append(d))
+	c.state.player.hp = 1
+	c.state.enemy.intent = "heavy"
+	act(c, 0, false)
+	c.close_result()
+	expect_true(out[0].get("gameOver", false), "Spielende gemeldet")
+	expect_eq(int(Ctx.profile.lives), 0)
+
+
+func test_kampf_elite_sieg_bietet_segnung() -> void:
+	start_run()
+	var c := open_combat("elite")
+	var out := []
+	c.finished.connect(func(d: Dictionary) -> void: out.append(d))
+	c.state.enemy.hp = 1
+	act(c, 0, true)
+	expect_eq(c.state.outcome, "won")
+	c.close_result()
+	expect_true(c._blessing_modal != null, "Segnungswahl offen")
+	expect_true(out.is_empty(), "Kampf endet erst nach der Wahl")
+	var chosen: Dictionary = c._blessing_options[1]
+	c.choose_blessing(1)
+	expect_eq(Ctx.profile.blessings, [chosen.id])
+	expect_eq(out.size(), 1)
+
+
+func test_erkundung_spielende_fuehrt_zur_auswertung() -> void:
+	start_run()
+	var e: Node3D = EXPLORATION.instantiate()
+	e.fast = true
+	root().add_child(e)
+	e.on_combat_return({"objectId": "x", "outcome": "lost", "messages": [], "gameOver": true})
+	var s: Node = root().get_child(root().get_child_count() - 1)
+	expect_eq(String(s.name), "Summary")
+	expect_false(s.victory)
+	expect_true(Ctx.run.completed)
+	(Engine.get_main_loop() as SceneTree).current_scene = null
+	root().remove_child(s)
+	s.free()

@@ -94,17 +94,25 @@ const SELL_PRICE := {"common": 10, "uncommon": 25, "rare": 60}
 const POTION_PRICE := 20
 const MAX_POTIONS := 9
 
-## Designregel 15.2: Ausrüstung beeinflusst nur Kampfwerte und Hilfe-Ressourcen.
+## Designregel: Ausrüstung verbessert Kampf, Bewegung und Beute, gibt aber keine Vokabelhilfen (keine Gratis-Hilfen).
+## Ausnahme ist der Bibliotheksring: Er lässt falsch beantwortete Wörter früher wiederkommen – das hilft beim Lernen,
+## nicht beim Antworten. Effekte jenseits von attack/maxHp/maxFocus/repeatGapReduction nutzen dieselben Schlüssel wie
+## die Skillbäume (siehe SkillTrees.EFFECT_TEXT) und werden zu den Skill-Effekten addiert.
 const ITEMS: Array[Dictionary] = [
 	{"id": "wooden_sword", "name": "Holzschwert", "slot": "weapon", "rarity": "common", "icon": 104, "description": "Ein einfaches Übungsschwert.", "effects": {"attack": 1}},
 	{"id": "iron_sword", "name": "Eisenschwert", "slot": "weapon", "rarity": "uncommon", "icon": 104, "description": "Solide Klinge.", "effects": {"attack": 3}},
 	{"id": "precision_blade", "name": "Präzisionsklinge", "slot": "weapon", "rarity": "rare", "icon": 104, "description": "Hohe Kampfstärke, aber keine Lernhilfe.", "effects": {"attack": 5}},
+	{"id": "hunter_dagger", "name": "Jägerdolch", "slot": "weapon", "rarity": "uncommon", "icon": 104, "description": "Leicht und tückisch.", "effects": {"attack": 2, "critChance": 0.1}},
+	{"id": "rune_blade", "name": "Runenklinge", "slot": "weapon", "rarity": "rare", "icon": 104, "description": "Verstärkt die Klassenfähigkeit.", "effects": {"attack": 4, "skillPower": 0.3}},
 	{"id": "focus_staff", "name": "Fokusstab", "slot": "weapon", "rarity": "uncommon", "icon": 129, "description": "Erhöht die maximalen Fokus-Punkte deutlich.", "effects": {"attack": 1, "maxFocus": 4}},
 	{"id": "leather_cap", "name": "Lederkappe", "slot": "helmet", "rarity": "common", "icon": 96, "description": "Etwas mehr Lebenspunkte.", "effects": {"maxHp": 6}},
-	{"id": "apprentice_helm", "name": "Lehrlingshelm", "slot": "helmet", "rarity": "uncommon", "icon": 96, "description": "Wortlänge einmal pro Begegnung kostenlos anzeigen.", "effects": {"maxHp": 2, "freeHints": {"length": 1}}},
+	{"id": "apprentice_helm", "name": "Lehrlingshelm", "slot": "helmet", "rarity": "uncommon", "icon": 96, "description": "Gut gepolstert: Jeder Treffer schmerzt etwas weniger.", "effects": {"maxHp": 4, "armor": 1}},
+	{"id": "healer_circlet", "name": "Heilerreif", "slot": "helmet", "rarity": "uncommon", "icon": 96, "description": "Nach jedem Sieg kehrt etwas Kraft zurück.", "effects": {"maxHp": 3, "lifeOnWin": 3}},
 	{"id": "knight_helm", "name": "Ritterhelm", "slot": "helmet", "rarity": "rare", "icon": 96, "description": "Viele zusätzliche Lebenspunkte.", "effects": {"maxHp": 14}},
 	{"id": "copper_ring", "name": "Kupferring", "slot": "ring", "rarity": "common", "icon": 101, "description": "Ein wenig mehr Fokus.", "effects": {"maxFocus": 1}},
-	{"id": "ring_of_beginning", "name": "Ring des Anfangs", "slot": "ring", "rarity": "uncommon", "icon": 101, "description": "Ersten Buchstaben zweimal pro Begegnung kostenlos anzeigen.", "effects": {"freeHints": {"firstLetter": 2}}},
+	{"id": "ring_of_beginning", "name": "Ring des Anfangs", "slot": "ring", "rarity": "uncommon", "icon": 101, "description": "Schärft den Blick für Schwachstellen.", "effects": {"maxFocus": 1, "critChance": 0.08}},
+	{"id": "wanderer_ring", "name": "Wandererring", "slot": "ring", "rarity": "common", "icon": 101, "description": "Leichte Schritte durch den Tempel.", "effects": {"moveSpeed": 0.12}},
+	{"id": "greed_ring", "name": "Ring der Gier", "slot": "ring", "rarity": "uncommon", "icon": 101, "description": "Gold findet seinen Weg zu dir.", "effects": {"goldFind": 0.4}},
 	{"id": "library_ring", "name": "Bibliotheksring", "slot": "ring", "rarity": "rare", "icon": 101, "description": "Nach einem Fehler wird das Wort schneller erneut abgefragt.", "effects": {"maxFocus": 1, "repeatGapReduction": 1}},
 ]
 

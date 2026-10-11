@@ -300,9 +300,9 @@ func interact(obj: Dictionary) -> void:
 			run.focus = int(s.maxFocus)
 			run.lastHeal = Vector2(obj.x + 0.5, obj.y + 0.5)
 			Sound.play("heal")
-			toast("Der Kristall leuchtet: HP und Fokus sind wieder voll. Hier erwachst du, falls du besiegt wirst.")
 			hud.refresh()
 			Ctx.autosave()
+			open_altar(obj)
 		"bossDoor":
 			if int(run.runes) < int(obj.runes):
 				toast("Das Siegeltor braucht %d Runen. Besiege Gegner und öffne Türen, um Runen zu sammeln." % int(obj.runes))
@@ -428,6 +428,8 @@ func on_combat_return(data: Dictionary) -> void:
 	hud.refresh()
 	if data.get("victory", false):
 		finish_run(true)
+	elif data.get("gameOver", false):
+		finish_run(false)
 
 
 ## Zuletzt an den Urwald-Shader gemeldete Heldenposition.
@@ -558,6 +560,46 @@ func _shake(seconds: float, strength: float) -> void:
 	tw.parallel().tween_property(cam, "v_offset", 0.0, 0.04)
 
 
+# ---------- Kristallaltar mit Händler ----------
+
+## Rast am Altar: HP/Fokus sind schon aufgefüllt; der Händler bietet Gegenstände und Tränke für Gold an.
+func open_altar(obj: Dictionary) -> UI.Modal:
+	busy = true
+	walk_time = 0.0
+	var m := UI.modal(ui, "Kristallaltar", 900)
+	m.closed.connect(func() -> void:
+		busy = false
+		_target_dirty = true
+		hud.refresh()
+		Ctx.autosave())
+	var content := UI.vbox()
+	m.body.add_child(content)
+	_render_altar(content, obj)
+	return m
+
+
+func _render_altar(content: VBoxContainer, obj: Dictionary) -> void:
+	UI.clear(content)
+	var rerender := func() -> void:
+		hud.refresh()
+		_render_altar(content, obj)
+	content.add_child(UI.para("Der Kristall leuchtet: HP und Fokus sind wieder voll. Hier erwachst du, falls du besiegt wirst.", "Good", 17))
+	content.add_child(UI.hbox([UI.label("Händler", "H3"), UI.spacer(), UI.label("💰 %d Gold" % int(Ctx.profile.gold), "Accent", 18)]))
+	var offers := Meta.shop_offers(run, Ctx.profile, obj.id)
+	if offers.is_empty():
+		content.add_child(UI.label("Der Händler hat nichts mehr für dich.", "Dim", 16))
+	for item: Dictionary in offers:
+		var price := Meta.shop_price(item)
+		var buy := UI.button("Kaufen −%d 💰" % price, func() -> void:
+			Ctx.set_profile(Meta.buy_item(Ctx.profile, item))
+			Sound.play("coins")
+			toast("Gekauft: %s (in der Tasche, anlegen über Esc → Ausrüstung)" % item.name)
+			rerender.call(), "SmallButton")
+		buy.disabled = not Meta.can_buy_item(Ctx.profile, item)
+		content.add_child(EquipmentView._item_card(item, buy))
+	content.add_child(EquipmentView._merchant(rerender))
+
+
 # ---------- Menü ----------
 
 func open_menu() -> UI.Modal:
@@ -620,3 +662,12 @@ func _render_learning(content: VBoxContainer) -> void:
 			chip.add_child(UI.label(i.entry.de, "", 16))
 			flow.add_child(chip)
 		content.add_child(flow)
+
+
+## Nur für Screenshots/Debugging: Altar-Fenster am ersten Altar öffnen.
+func debug_open_altar() -> void:
+	for o: Dictionary in run.map.objects:
+		if o.kind == "heal":
+			Ctx.profile.gold = 60
+			open_altar(o)
+			return

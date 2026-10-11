@@ -183,3 +183,56 @@ func test_skillbaum_oberflaeche_kaufen() -> void:
 	expect_eq(unlock.size(), 1, "Freischalten angeboten")
 	expect_true((unlock[0] as Button).disabled, "Zu wenige Splitter")
 	box.free()
+
+
+func test_keine_gegenstaende_mit_gratis_hilfen() -> void:
+	for item: Dictionary in GameData.ITEMS:
+		expect_false((item.effects as Dictionary).has("freeHints"), "%s gibt Gratis-Hilfen" % item.id)
+		for key: String in item.effects:
+			expect_true(key in Player.BASE_KEYS or SkillTrees.EFFECT_TEXT.has(key), "%s: unbekannter Effekt %s" % [item.id, key])
+
+
+func test_gegenstand_effekte_wirken_wie_skills() -> void:
+	var p := rich()
+	p.equipment.ring = "wanderer_ring"
+	p.equipment.weapon = "rune_blade"
+	var s := Player.compute_stats(p, pc())
+	expect_near(Meta.mod(s.mods, "moveSpeed"), 0.12)
+	expect_near(Meta.mod(s.mods, "skillPower"), 0.3)
+
+
+func test_leben_und_segnungen() -> void:
+	Ctx.setup(KeyValueStore.new())
+	Ctx.start_run(["sample"], "jungle", 3)
+	expect_eq(int(Ctx.profile.lives), int(Meta.cfg().lives))
+	expect_true(Meta.lose_life(Ctx.profile))
+	expect_true(Meta.lose_life(Ctx.profile))
+	expect_false(Meta.lose_life(Ctx.profile), "Drittes Mal: vorbei")
+	var hp := int(Ctx.run.hp)
+	var base := int(Ctx.stats().maxHp)
+	Meta.add_blessing(Ctx.profile, Ctx.run, "b_oak")
+	Meta.add_blessing(Ctx.profile, Ctx.run, "b_oak")
+	expect_eq(Ctx.profile.blessings, ["b_oak"], "Keine doppelte Segnung")
+	expect_eq(int(Ctx.stats().maxHp), base + 8)
+	expect_eq(int(Ctx.run.hp), hp + 8)
+	var choices := Blessings.roll(Rng.create(5), Ctx.profile.blessings, 3)
+	expect_eq(choices.size(), 3)
+	expect_false(choices.any(func(b: Dictionary) -> bool: return b.id == "b_oak"))
+	Ctx.start_run(["sample"], "jungle", 4)
+	expect_eq(Ctx.profile.blessings, [], "Segnungen verfallen mit dem Abenteuer")
+	expect_eq(int(Ctx.profile.lives), int(Meta.cfg().lives))
+
+
+func test_haendler_angebote_fest_und_kaufbar() -> void:
+	Ctx.setup(KeyValueStore.new())
+	Ctx.start_run(["sample"], "jungle", 11)
+	var a := Meta.shop_offers(Ctx.run, Ctx.profile, "o0")
+	expect_eq(a.size(), int(Meta.cfg().shopOffers))
+	expect_eq(Meta.shop_offers(Ctx.run, Ctx.profile, "o0"), a, "Gleiche Angebote beim erneuten Besuch")
+	var item: Dictionary = a.filter(func(i: Dictionary) -> bool: return i.id != "wooden_sword")[0]
+	expect_false(Meta.can_buy_item(Ctx.profile, item), "Ohne Gold nicht kaufbar")
+	Ctx.profile.gold = 200
+	Ctx.set_profile(Meta.buy_item(Ctx.profile, item))
+	expect_eq(int(Ctx.profile.gold), 200 - Meta.shop_price(item))
+	expect_true((Ctx.profile.bag as Array).has(item.id))
+	expect_false(Meta.shop_offers(Ctx.run, Ctx.profile, "o0").has(item), "Gekauftes verschwindet")

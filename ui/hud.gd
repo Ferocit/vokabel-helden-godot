@@ -49,9 +49,19 @@ func refresh() -> void:
 		UI.label("HP", "Bold", 18), bar(run.hp, s.maxHp, UI.HP_LOW if hp_low else UI.HP), UI.label("%d/%d" % [int(run.hp), int(s.maxHp)], "Bold", 18),
 		UI.gap(0), UI.label("FP", "Bold", 18), bar(run.focus, s.maxFocus, UI.FP), UI.label("%d/%d" % [int(run.focus), int(s.maxFocus)], "Bold", 18),
 		UI.gap(0), runes(int(run.runes), int(run.bossRunes)),
-		UI.gap(0), UI.label("🧪 %d" % int(Ctx.profile.potions), "Bold", 18),
+		UI.gap(0), _lives(),
+		UI.label("🧪 %d" % int(Ctx.profile.potions), "Bold", 18),
 		UI.label("💰 %d" % int(Ctx.profile.gold), "Bold", 18),
 		UI.label("Lv %d" % int(Ctx.profile.level), "Accent", 18),
 		q,
 	], 10))
 	reset_size()
+
+
+## Verbleibende Leben dieses Abenteuers; die letzte Niederlage beendet es.
+static func _lives() -> Label:
+	var n := int(Ctx.profile.get("lives", 0))
+	var l := UI.label("❤ %d" % n, "Bad" if n <= 1 else "Bold", 18)
+	l.tooltip_text = "Leben: Bei 0 endet das Abenteuer."
+	l.mouse_filter = Control.MOUSE_FILTER_PASS
+	return l

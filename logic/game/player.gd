@@ -3,7 +3,7 @@ extends RefCounted
 ## Spielerprofil (Dictionary):
 ##   Dauerhaft:  heroClass, shards, unlockedClasses, skills, records, unlockedWorlds, lastLearnedAt
 ##   Pro Abenteuer (siehe Meta.reset_run_fields): level, xp, gold, equipment: {weapon, helmet, ring},
-##               bag: Array[String], potions
+##               bag: Array[String], potions, blessings: Array[String]
 ## Alle Funktionen liefern neue Profile zurück, das übergebene bleibt unverändert.
 
 
@@ -63,7 +63,25 @@ static func compute_stats(profile: Dictionary, cfg: Dictionary) -> Dictionary:
 		var hints: Dictionary = fx.get("freeHints", {})
 		for type: String in hints:
 			stats.freeHints[type] = int(stats.freeHints.get(type, 0)) + int(hints[type])
+		_add_mods(m, fx)
+	# Segnungen gelten nur im laufenden Abenteuer (Meta.reset_run_fields leert sie).
+	for id: String in profile.get("blessings", []):
+		var b := Blessings.get_blessing(id)
+		if not b.is_empty():
+			stats.maxHp += int(b.effect.get("maxHp", 0))
+			stats.attack += int(b.effect.get("attack", 0))
+			_add_mods(m, b.effect)
 	return stats
+
+
+const BASE_KEYS := ["attack", "maxHp", "maxFocus", "repeatGapReduction", "freeHints"]
+
+
+## Weitere Effekte (Skill-Schlüssel wie moveSpeed, armor …) zu den Skill-Effekten addieren.
+static func _add_mods(m: Dictionary, fx: Dictionary) -> void:
+	for key: String in fx:
+		if key not in BASE_KEYS:
+			m[key] = float(m.get(key, 0.0)) + float(fx[key])
 
 
 ## XP-Schwelle für das nächste Level oder -1, wenn das Maximum erreicht ist.

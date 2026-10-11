@@ -6,6 +6,7 @@ extends Node3D
 signal finished(data: Dictionary)
 signal command_chosen(action: String)
 signal result_closed
+signal blessing_chosen(id: String)
 
 const COMMANDS: Array[String] = ["attack", "defend", "skill", "item"]
 const ENEMY_POS := Vector3(7.2, 0, 6.6)
@@ -367,6 +368,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			_command_buttons[next].grab_focus()
 			Sound.play("select", 0.3)
 			get_viewport().set_input_as_handled()
+	elif _blessing_modal != null and k.keycode in [KEY_1, KEY_2, KEY_3]:
+		get_viewport().set_input_as_handled()
+		choose_blessing([KEY_1, KEY_2, KEY_3].find(k.keycode))
 	elif _result_open and k.keycode in [KEY_ENTER, KEY_KP_ENTER, KEY_SPACE, KEY_E]:
 		get_viewport().set_input_as_handled()
 		close_result()
@@ -499,6 +503,8 @@ func victory() -> void:
 	_victory_hop()
 	await result_window("Sieg!", lines)
 	var messages: Array[String] = ["%s besiegt: %s%s" % [def.name, describe_loot(loot), ", +1 Rune" if got_rune else ""]]
+	if def.tier == "elite":
+		await choose_blessing_window()
 	if def.tier != "boss":
 		Ctx.autosave()
 	_finish({"objectId": obj.id, "outcome": "won", "messages": messages, "victory": def.tier == "boss"})
@@ -510,12 +516,24 @@ func defeat() -> void:
 	run.focus = int(s.maxFocus)
 	Ctx.profile.potions = int(state.player.potions)
 	say("Du wurdest besiegt …")
-	await result_window("Besiegt …", [
-		UI.label("Kein Problem! Du erwachst am letzten Kristallaltar.", "", 20),
-		UI.label("Alles, was du gelernt hast, bleibt erhalten.", "Good", 20),
-	])
-	Ctx.autosave()
-	_finish({"objectId": obj.id, "outcome": "lost", "messages": ["Du bist am Kristallaltar erwacht. Tipp: Achte auf die Ankündigung des Gegners und verteidige dich vor schweren Schlägen!"]})
+	# Rogue-lite: Jede Niederlage kostet ein Leben; ohne Leben endet das Abenteuer.
+	var alive := Meta.lose_life(Ctx.profile)
+	if alive:
+		var lives := int(Ctx.profile.lives)
+		await result_window("Besiegt …", [
+			UI.label("Du erwachst am letzten Kristallaltar.", "", 20),
+			UI.label("Noch %d Leben ❤" % lives, "Accent" if lives > 1 else "Bad", 22),
+			UI.label("Alles, was du gelernt hast, bleibt erhalten.", "Good", 20),
+		])
+		Ctx.autosave()
+		_finish({"objectId": obj.id, "outcome": "lost", "messages": ["Du bist am Kristallaltar erwacht (noch %d Leben). Tipp: Achte auf die Ankündigung des Gegners und verteidige dich vor schweren Schlägen!" % lives]})
+	else:
+		await result_window("Abenteuer vorbei", [
+			UI.label("Deine Kräfte sind erschöpft.", "", 20),
+			UI.label("Für alles Erreichte bekommst du trotzdem %s." % Meta.CURRENCY, "Accent", 20),
+			UI.label("Alles, was du gelernt hast, bleibt erhalten.", "Good", 20),
+		])
+		_finish({"objectId": obj.id, "outcome": "lost", "messages": [], "gameOver": true})
 
 
 static func describe_loot(loot: Dictionary) -> String:
@@ -528,6 +546,8 @@ static func describe_loot(loot: Dictionary) -> String:
 
 
 var _result_open := false
+var _blessing_modal: UI.Modal
+var _blessing_options: Array = []
 var _result_modal: UI.Modal
 
 
@@ -552,6 +572,42 @@ func result_window(title: String, lines: Array) -> void:
 	else:
 		get_tree().create_timer(0.5).timeout.connect(func() -> void: _result_open = true)
 	await result_closed
+
+
+## Nach einem Elite-Sieg: eine von mehreren Segnungen wählen (gilt nur in diesem Abenteuer).
+func choose_blessing_window() -> void:
+	var options := Blessings.roll(rng, Ctx.profile.blessings, int(Meta.cfg().blessingChoices))
+	if options.is_empty():
+		return
+	var m := UI.modal(ui, "Wähle eine Segnung", 900, false)
+	_blessing_modal = m
+	_blessing_options = options
+	m.body.add_child(UI.label("Der Tempel belohnt deinen Mut. Die Segnung wirkt bis zum Ende dieses Abenteuers.", "Dim", 16))
+	var row := UI.hbox([], 12)
+	for i in options.size():
+		var b: Dictionary = options[i]
+		var btn := Button.new()
+		btn.theme_type_variation = "CardButton"
+		btn.custom_minimum_size = Vector2(270, 150)
+		btn.text = "%d  %s %s\n\n%s" % [i + 1, b.icon, b.name, Blessings.text(b)]
+		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		btn.pressed.connect(choose_blessing.bind(i))
+		row.add_child(btn)
+	m.body.add_child(row)
+	UI.focus_later(row.get_child(0) as Control)
+	await blessing_chosen
+
+
+func choose_blessing(i: int) -> void:
+	if _blessing_modal == null or i < 0 or i >= _blessing_options.size():
+		return
+	var b: Dictionary = _blessing_options[i]
+	Meta.add_blessing(Ctx.profile, run, b.id)
+	Sound.play("levelup")
+	var m := _blessing_modal
+	_blessing_modal = null
+	m.close()
+	blessing_chosen.emit(b.id)
 
 
 func close_result() -> void:

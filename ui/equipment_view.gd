@@ -20,6 +20,18 @@ static func render(container: Control) -> void:
 		UI.label("💰 %d Gold" % int(p.gold), "", 18),
 		UI.label("🧪 %d Heiltränke" % int(p.potions), "", 18),
 	], 22))
+	var blessings: Array = p.get("blessings", [])
+	if not blessings.is_empty():
+		var flow := HFlowContainer.new()
+		flow.add_theme_constant_override("h_separation", 6)
+		flow.add_child(UI.label("Segnungen:", "Accent", 15))
+		for id: String in blessings:
+			var b := Blessings.get_blessing(id)
+			var chip := PanelContainer.new()
+			chip.theme_type_variation = "Card"
+			chip.add_child(UI.label("%s %s – %s" % [b.icon, b.name, Blessings.text(b)], "", 14))
+			flow.add_child(chip)
+		container.add_child(flow)
 	container.add_child(UI.para("Ausrüstung, Gold und Level gelten nur für dieses Abenteuer. Dauerhaft bleiben %s und deine Fertigkeiten." % Meta.CURRENCY, "Dim", 14))
 	container.add_child(UI.gap(4))
 
@@ -98,6 +110,9 @@ static func effect_text(item: Dictionary) -> String:
 		parts.append("HP +%d" % int(fx.maxHp))
 	if fx.has("maxFocus"):
 		parts.append("FP +%d" % int(fx.maxFocus))
+	for key: String in fx:
+		if SkillTrees.EFFECT_TEXT.has(key) and key not in ["attack", "maxHp"]:
+			parts.append(SkillTrees.effect_text({"effect": {key: fx[key]}}, 1))
 	return " (%s)" % ", ".join(parts) if not parts.is_empty() else ""
 
 

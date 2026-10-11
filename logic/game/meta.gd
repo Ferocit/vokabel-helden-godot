@@ -4,7 +4,8 @@ extends RefCounted
 ##
 ## Dauerhaft (im Profil):  shards (Tempelsplitter 🔷), unlockedClasses, skills {klasse: {knoten: rang}},
 ##                         records {runs, victories, shardsTotal}
-## Pro Abenteuer (werden bei jedem Start zurückgesetzt): level, xp, gold, potions, equipment, bag
+## Pro Abenteuer (werden bei jedem Start zurückgesetzt): level, xp, gold, potions, equipment, bag,
+##                         blessings (Segnungen), lives (verbleibende Leben)
 ##
 ## Splitter gibt es am Ende jedes Abenteuers (Sieg oder vorzeitiges Ende) für besiegte Gegner, geöffnete
 ## Truhen und Türen, richtig erinnerte Vokabeln und einen Sieg über den Boss.
@@ -23,6 +24,9 @@ static func ensure(profile: Dictionary) -> Dictionary:
 	if not profile.has("shards"):
 		profile.shards = 0
 	profile.shards = int(profile.shards)
+	if not profile.get("blessings") is Array:
+		profile.blessings = []
+	profile.lives = int(profile.get("lives", cfg().lives))
 	if not profile.get("unlockedClasses") is Array or (profile.unlockedClasses as Array).is_empty():
 		profile.unlockedClasses = ["warrior"]
 	if not profile.get("skills") is Dictionary:
@@ -143,6 +147,8 @@ static func reset_run_fields(profile: Dictionary, player_cfg: Dictionary) -> Dic
 	next.potions = int(player_cfg.startPotions) + int(mod(m, "startPotions"))
 	next.equipment = START_EQUIPMENT.duplicate()
 	next.bag = []
+	next.blessings = []
+	next.lives = int(cfg().lives)
 	return next
 
 
@@ -183,3 +189,48 @@ static func run_reward(run: Dictionary, victory: bool, profile: Dictionary) -> D
 	if bonus > 0:
 		lines.append(["Fertigkeiten-Bonus +%d %%" % roundi(bonus_share * 100.0), bonus])
 	return {"total": subtotal + bonus, "lines": lines}
+
+
+
+# ---------- Leben, Segnungen, Händler (nur im laufenden Abenteuer) ----------
+
+## Eine Niederlage kostet ein Leben. Liefert true, wenn noch Leben übrig sind (Erwachen am Altar).
+static func lose_life(profile: Dictionary) -> bool:
+	profile.lives = maxi(0, int(profile.lives) - 1)
+	return int(profile.lives) > 0
+
+
+## Segnung annehmen; ein HP-Bonus füllt auch die aktuellen HP entsprechend auf.
+static func add_blessing(profile: Dictionary, run: Dictionary, id: String) -> void:
+	var b := Blessings.get_blessing(id)
+	if b.is_empty() or (profile.blessings as Array).has(id):
+		return
+	(profile.blessings as Array).append(id)
+	if not run.is_empty():
+		run.hp = int(run.hp) + int(b.effect.get("maxHp", 0))
+
+
+## Händler am Kristallaltar: je Abenteuer und Altar feste Angebote (Seed), ohne bereits besessene Gegenstände.
+static func shop_offers(run: Dictionary, profile: Dictionary, altar_id: String) -> Array:
+	var rng := Rng.create((int(run.seed) * 31 + altar_id.hash()) & Rng.MASK)
+	# Erst feste Auswahl ziehen, dann Gekauftes/Besessenes ausblenden – Gekauftes wird nicht nachgefüllt.
+	var picks := Rng.shuffle(rng, GameData.ITEMS.duplicate()).slice(0, int(cfg().shopOffers))
+	return picks.filter(func(i: Dictionary) -> bool: return not Player.owns_item(profile, i.id))
+
+
+static func shop_price(item: Dictionary) -> int:
+	return int(cfg().shopPrice[item.rarity])
+
+
+static func can_buy_item(profile: Dictionary, item: Dictionary) -> bool:
+	return int(profile.gold) >= shop_price(item) and not Player.owns_item(profile, item.id)
+
+
+## Kauft einen Gegenstand in die Tasche.
+static func buy_item(profile: Dictionary, item: Dictionary) -> Dictionary:
+	if not can_buy_item(profile, item):
+		return profile
+	var next := profile.duplicate(true)
+	next.gold = int(profile.gold) - shop_price(item)
+	(next.bag as Array).append(item.id)
+	return next

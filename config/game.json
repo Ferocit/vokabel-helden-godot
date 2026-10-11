@@ -105,6 +105,14 @@
       "door": 2,
       "correctPer": 5,
       "victory": 10
+    },
+    "lives": 3,
+    "blessingChoices": 3,
+    "shopOffers": 3,
+    "shopPrice": {
+      "common": 20,
+      "uncommon": 45,
+      "rare": 90
     }
   }
 }

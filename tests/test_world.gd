@@ -144,6 +144,9 @@ func test_erkundung_altar_heilt() -> void:
 	expect_eq(int(Ctx.run.hp), int(Ctx.stats().maxHp))
 	expect_eq(int(Ctx.run.focus), int(Ctx.stats().maxFocus))
 	expect_eq(Ctx.run.lastHeal, Vector2(heal.x + 0.5, heal.y + 0.5))
+	expect_true(e.busy, "Altar-Fenster mit Händler offen")
+	var buys: Array = e.ui.find_children("*", "Button", true, false).filter(func(b: Button) -> bool: return b.text.begins_with("Kaufen −"))
+	expect_ge(buys.size(), 2, "Gegenstände und Trank im Angebot")
 	e.free()
 
 
