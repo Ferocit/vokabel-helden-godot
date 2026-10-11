@@ -31,6 +31,9 @@ Die Vorlagen stehen in `export_presets.cfg`. In der exportierten Version landen 
 | 1–4, ↑↓ / W S + Enter | Kampfbefehl wählen |
 | Alt+1 / Alt+2 | Hilfe: Wortlänge / erster Buchstabe |
 | F8 oder 🐞 unten rechts | etwas melden |
+| Controller | Stick/Steuerkreuz bewegen, A interagieren, Start Menü |
+
+Einstellungen (Ton, Lautstärke, Vollbild) und eine Spielanleitung gibt es im Titel über ⚙ und ❔.
 
 ## Spielablauf
 
@@ -45,7 +48,8 @@ Die Vorlagen stehen in `export_presets.cfg`. In der exportierten Version landen 
 
 **Rogue-lite:** Jedes Abenteuer beginnt auf Level 1 mit Holzschwert; Ausrüstung, Gold und Level verfallen am
 Ende. Mit Tempelsplittern werden dauerhaft Klassen freigeschaltet (anfangs nur der Krieger) und Skillbäume
-ausgebaut (Titel → „🌳 Fertigkeiten“). Details: `ROGUELITE.md`.
+ausgebaut (Titel → „🌳 Fertigkeiten“). Pro Abenteuer gibt es 3 Leben, Segnungen nach Elite-Siegen und einen
+Händler am Kristallaltar; nach Siegen werden schwerere Tempelstufen frei. Details: `ROGUELITE.md`.
 
 Es gibt kein Zeitlimit und keinen Strafsound – Fehler sind Teil des Lernens.
 

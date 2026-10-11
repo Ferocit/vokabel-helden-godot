@@ -1,4 +1,4 @@
-# Rogue-lite-System (Stand 1)
+# Rogue-lite-System (Stand 2)
 
 ## Grundidee
 Jedes Abenteuer beginnt bei null: **Level 1, Holzschwert, kein Gold, keine Tasche**. Was im Lauf gefunden
@@ -9,7 +9,7 @@ wird (Ausrüstung, Gold, Level), verfällt am Ende. Dauerhaft bleiben nur:
 | 🔷 Tempelsplitter (Meta-Währung) | `profile.shards` |
 | Freigeschaltete Klassen | `profile.unlockedClasses` (Start: nur Krieger) |
 | Skillbaum-Ränge je Klasse | `profile.skills[klasse][knoten] = rang` |
-| Statistik (Abenteuer, Siege, Splitter gesamt) | `profile.records` |
+| Statistik (Abenteuer, Siege, Splitter gesamt, freie Tempelstufe) | `profile.records` |
 | Lernfortschritt der Vokabeln | unverändert (`progress`) |
 
 ## Splitter verdienen
@@ -56,11 +56,37 @@ kein zusätzlicher Fokus. Die Klassen-Passiven (Schurke: 1× erster Buchstabe, M
 Neue Effekte: Schlüssel in `SkillTrees.EFFECT_TEXT` eintragen und an der passenden Stelle mit
 `Meta.mod(stats.mods, "schluessel")` auswerten. `tests/test_meta.gd` prüft u. a., dass jeder Effekt bekannt ist.
 
+## Im Abenteuer (Stand 2)
+- **3 Leben** (`meta.lives`): Jede Niederlage kostet eins; man erwacht am Kristallaltar. Ohne Leben endet das
+  Abenteuer – Splitter gibt es trotzdem für alles Erreichte (ohne Siegbonus). HUD: ❤.
+- **Segnungen** (`data/blessings.gd`): Nach jedem Elite-Sieg eine von 3 zufälligen Segnungen wählen (Tasten 1–3).
+  Gelten bis zum Ende des Abenteuers (`profile.blessings`), nutzen die Skill-Effektschlüssel.
+- **Händler am Kristallaltar:** pro Abenteuer und Altar 3 feste Angebote (Seed), Preise nach Seltenheit
+  (`meta.shopPrice` 20/45/90), dazu Heiltränke. Gekauftes landet in der Tasche.
+- **Gegenstände** nutzen ebenfalls die Skill-Effektschlüssel (z. B. Wandererring = Tempo, Runenklinge =
+  Fähigkeitsschaden). Keine Gratis-Vokabelhilfen mehr; einzige Lern-Ausnahme bleibt der Bibliotheksring
+  (falsch beantwortete Wörter kommen früher wieder – hilft beim Lernen, nicht beim Antworten).
+
+## Tempelstufen (Schwierigkeit)
+Ein Sieg auf der höchsten freien Stufe schaltet die nächste frei (bis 5). Vor dem Abenteuer im Titel wählbar.
+Pro Stufe: Gegner +25 % HP, +20 % Angriff, +25 % Splitter (`meta.heat`). Gegenstück zur wachsenden Stärke durch
+Skillbäume.
+
+## Gemessene Balance (Bot-Simulation, `tests/test_balance.gd`)
+Der Bot weiß 80 % der Wörter und heilt sich vor Elite und Boss – echte Spieler sind eher schwächer.
+
+| Fall | Läufe verloren | Ø Splitter |
+| --- | --- | --- |
+| Stufe 0, keine Skills, 80 % | 0/40 | ≈ 42 |
+| Stufe 0, keine Skills, 60 % | 0/40 | ≈ 42 |
+| Stufe 3, keine Skills | 19/30 | – |
+| Stufe 3, voller Krieger-Baum | 0/30 | ≈ 76 |
+| Stufe 5, voller Krieger-Baum | 2/30 | ≈ 108 |
+
+Folgerung: Schurke nach dem ersten Sieg, Magier nach dem zweiten freischaltbar; ein Baum braucht ≈ 5 Siege.
+Die Tests sichern diese Eckwerte ab (Splitter 30–60 pro Sieg, Stufe 3 braucht Skills, Stufe 5 bleibt schaffbar).
+
 ## Offene Ideen zum Weiterentwickeln
-- **Niederlage beendet den Lauf?** Aktuell erwacht man weiter am Kristallaltar (lernfreundlich). Echte
-  Rogue-lite-Spannung: Niederlage = Ende, aber Splitter für das Erreichte.
-- **Händler im Lauf:** Gold hat nur noch innerhalb des Laufs Wert (Heiltränke). Ein Händler-Raum mit Ausrüstung
-  oder Segnungen pro Lauf würde Gold wichtiger machen.
-- **Lauf-Segnungen:** zufällige Boni zur Auswahl nach Elite-Kämpfen (klassisches Rogue-lite-Element).
-- **Schwierigkeitsstufen** („Tempelfluch“) für mehr Splitter.
+- Balance mit echten Spielern prüfen (der Bot spielt nahezu optimal).
+- Weitere Welten mit eigenen Gegnern und Bossen (Freischaltung über Splitter oder Tempelstufen).
 - Weitere Freischaltungen: Welten, kosmetische Helden, neue Startwaffen.

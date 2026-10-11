@@ -27,6 +27,8 @@ var minimap_timer := 0.0
 var current_target: Variant = null
 var _target_dirty := true
 var _time := 0.0
+## Laufgeschwindigkeit aus Skills, Gegenständen und Segnungen; wird bei Profiländerungen neu berechnet.
+var _speed_factor := 1.0
 
 var ui: CanvasLayer
 var hud: Hud
@@ -43,6 +45,8 @@ func _ready() -> void:
 		return
 	Controls.ensure()
 	run = Ctx.run
+	_refresh_speed()
+	Ctx.profile_changed.connect(_refresh_speed)
 	level = LevelBuilder.build(run.map, is_gone)
 	add_child(level.root)
 	fx = WorldFx.new()
@@ -172,7 +176,7 @@ func _typing() -> bool:
 ## Bewegung in Bildschirmrichtung; blockierte Achsen gleiten an Wänden entlang.
 func move(input_dir: Vector2, dt: float) -> void:
 	var g := input_dir.normalized()
-	var step := SPEED * Ctx.move_speed_factor() * dt
+	var step := SPEED * _speed_factor * dt
 	var p: Vector2 = run.player
 	var nx := p.x + g.x * step
 	var ny := p.y + g.y * step
@@ -412,6 +416,7 @@ func start_combat(obj: Dictionary) -> void:
 ## data: { objectId, outcome: "won" | "lost", messages: Array[String] }
 func on_combat_return(data: Dictionary) -> void:
 	_set_world_active(true)
+	_refresh_speed()
 	busy = false
 	contact_cooldown = 1.2
 	_target_dirty = true
@@ -441,7 +446,13 @@ func _set_shader_player(pos: Vector3) -> void:
 	RenderingServer.global_shader_parameter_set("player_world", pos)
 
 
+func _refresh_speed() -> void:
+	_speed_factor = Ctx.move_speed_factor()
+
+
 func _exit_tree() -> void:
+	if Ctx.profile_changed.is_connected(_refresh_speed):
+		Ctx.profile_changed.disconnect(_refresh_speed)
 	_set_shader_player(NO_PLAYER)
 
 
@@ -608,6 +619,7 @@ func open_menu() -> UI.Modal:
 	var m := UI.modal(ui, "Menü", 980)
 	m.closed.connect(func() -> void:
 		busy = false
+		_refresh_speed()
 		hud.refresh())
 	var content := UI.vbox()
 	var show_equipment := func() -> void: EquipmentView.render(content)
