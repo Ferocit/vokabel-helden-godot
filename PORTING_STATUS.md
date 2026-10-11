@@ -4,7 +4,7 @@
 - **Phaser-Original als Referenz:** `G:\VibeCoding\VokabelHeroes`. Dort nichts ändern.
 - **Godot:** `E:\Spiele\Steam\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe` (4.7.2)
 - **Godot in der Cloud (Linux):** 4.7.2 stable von github.com/godotengine/godot-builds, nach `/usr/local/bin/godot` verlinken.
-- **Tests:** `godot --headless --path . -s res://tests/run_tests.gd [-- filter]`. Erwartet: 77 grün, etwa 25–40 s.
+- **Tests:** `godot --headless --path . -s res://tests/run_tests.gd [-- filter]`. Erwartet: 81 grün, etwa 25–40 s.
 - **Screenshots:** Linux: `tools/shot.sh <name> scene=res://scenes/title.tscn [call=open_unit_manager]` (xvfb + opengl3).
   Ohne GPU: `apt-get install mesa-vulkan-drivers` (lavapipe) für Forward+, sonst `DRIVER=opengl3`.
   Mit `run=1 [class=rogue] [seed=…] [at=x,y]` startet ein Abenteuer im Arbeitsspeicher.
@@ -43,10 +43,13 @@
     Kreuzhiebe + Giftwolke, Magier-Zauberkreis + Feuerball mit Licht und Funkenspur), Sieg/Niederlage-Fenster.
   - `static var fast` in Kampf und Erkundung (sowie `VocabPrompt.instant`) macht Abläufe für Tests synchron.
   - Theme wird in das Standard-Theme gemischt (gilt so auch unter CanvasLayer/3D). `UI.pin()` verankert Overlays.
+- **Phase 5:** Auswertung und Sound, 4 Tests.
+  - `scenes/summary.tscn`: Sternenhimmel, Kennzahlen, Wort-Chips (sofort gewusst, mit Hilfe, üben), schwierigste
+    Wörter mit Mastery, Zeit/XP/Gold/Beute, „Zurück zum Titel“ (setzt `Ctx.run = {}`).
+  - Test prüft, dass jede im Code verwendete Sound-ID als Datei unter `assets/audio` existiert.
 
 ## Nächste Schritte (siehe Plan, Abschnitt „Reihenfolge“)
-1. **Phase 5:** Auswertung (`scenes/summary.tscn`, Knoten mit Eigenschaft `victory`, siehe `exploration.finish_run`), Sound
-2. **Phase 6:** Melden via gh, start.bat, README
+1. **Phase 6:** Melden via gh, start.bat, README
 
 **Arbeitsweise:**
 - Selbstständig ohne Rückfragen arbeiten.

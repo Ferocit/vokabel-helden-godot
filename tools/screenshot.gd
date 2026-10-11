@@ -14,11 +14,18 @@ func _ready() -> void:
 		Ctx.setup(KeyValueStore.new())
 		Ctx.profile.heroClass = args.get("class", "warrior")
 		Ctx.start_run(["sample"], "jungle", int(args.get("seed", "12345")))
+		# answers=N simuliert N Abfragen (jede dritte falsch, jede fünfte mit Hilfe).
+		for i in int(args.get("answers", "0")):
+			var item: Dictionary = (Ctx.run.learning as LearningSession).next_word("normal")
+			var outcome := "wrongCorrected" if i % 3 == 2 else "correct"
+			Ctx.submit_answer(item, Vocab.result(outcome, 1 if i % 5 == 4 else 0))
 		if args.has("at"):
 			var at: PackedStringArray = String(args.at).split(",")
 			Ctx.run.player = Vector2(float(at[0]), float(at[1]))
 	var scene: PackedScene = load(args.get("scene", "res://scenes/title.tscn"))
 	var node := scene.instantiate()
+	if args.has("victory"):
+		node.set("victory", true)
 	# enemy=normal|elite|boss wählt für die Kampfszene einen Gegner dieser Stufe.
 	if args.has("enemy"):
 		for o: Dictionary in Ctx.run.map.objects:
