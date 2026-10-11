@@ -54,9 +54,7 @@ func _ready() -> void:
 	name = "VocabPrompt"
 	hints = HintService.create_state()
 	custom_minimum_size.x = 660
-	set_anchors_preset(Control.PRESET_CENTER_TOP)
-	grow_horizontal = Control.GROW_DIRECTION_BOTH
-	position.y = 76
+	resized.connect(_layout)
 	var box := UI.vbox([], 6)
 	add_child(box)
 	var task := UI.label(("%s · Übersetze ins Englische" % label_text) if label_text != "" else "Übersetze ins Englische", "Dim", 16)
@@ -66,6 +64,7 @@ func _ready() -> void:
 	q.add_theme_color_override("font_color", UI.HEADING)
 	q.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	q.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	q.custom_minimum_size.x = 620
 	box.add_child(q)
 	_body = UI.vbox([], 6)
 	box.add_child(_body)
@@ -84,9 +83,23 @@ func _ready() -> void:
 	_hint_bar = UI.hbox([], 8)
 	_hint_bar.alignment = BoxContainer.ALIGNMENT_CENTER
 	_feedback = UI.para("", "", 18)
+	_feedback.custom_minimum_size.x = 620
 	_feedback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_render_answer_phase()
+	_shrink.call_deferred()
 	UI.focus_later(input)
+
+
+## Nach Inhaltswechsel auf die nötige Höhe schrumpfen.
+func _shrink() -> void:
+	if is_inside_tree():
+		reset_size()
+		_layout()
+
+
+## Waagerecht zentriert, 76 px unter dem oberen Rand.
+func _layout() -> void:
+	position = Vector2(roundf((get_viewport_rect().size.x - size.x) / 2.0), 76)
 
 
 func _render_answer_phase() -> void:
@@ -102,6 +115,7 @@ func _render_answer_phase() -> void:
 	footer.scroll_active = false
 	footer.add_theme_font_size_override("normal_font_size", 14)
 	footer.add_theme_color_override("default_color", UI.DIM)
+	footer.autowrap_mode = TextServer.AUTOWRAP_OFF
 	var parts := ""
 	if footer_text != "":
 		parts += "[color=#f1c96b]%s[/color] · " % footer_text
@@ -198,6 +212,7 @@ func _show_correction(wrong_input: String) -> void:
 		t += "[font_size=17][color=#b9b29c]Auch richtig: %s[/color][/font_size]\n" % _escape(", ".join(PackedStringArray(others)))
 	t += "Tippe „%s“ einmal korrekt ein:[/center]" % _escape(entry.en)
 	info.text = t
+	info.custom_minimum_size.x = 620
 	_body.add_child(info)
 	_body.add_child(input)
 	_feedback.text = ""
@@ -205,6 +220,7 @@ func _show_correction(wrong_input: String) -> void:
 	var footer := UI.label("Enter bestätigen", "Dim", 14)
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_body.add_child(footer)
+	_shrink.call_deferred()
 	input.grab_focus()
 
 

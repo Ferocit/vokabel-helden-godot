@@ -108,6 +108,25 @@ static func scroll(child: Control, height: int) -> ScrollContainer:
 	return s
 
 
+## Hängt `c` an `parent` und verankert es (z. B. PRESET_CENTER_BOTTOM) mit Versatz in Pixeln.
+## Wachstumsrichtungen passend zum Anker, damit spätere Größenänderungen am Rand bleiben.
+static func pin(parent: Node, c: Control, preset: Control.LayoutPreset, offset := Vector2.ZERO) -> Control:
+	if c.get_parent() == null:
+		parent.add_child(c)
+	var right := preset in [Control.PRESET_TOP_RIGHT, Control.PRESET_CENTER_RIGHT, Control.PRESET_BOTTOM_RIGHT]
+	var center_x := preset in [Control.PRESET_CENTER_TOP, Control.PRESET_CENTER, Control.PRESET_CENTER_BOTTOM]
+	var bottom := preset in [Control.PRESET_BOTTOM_LEFT, Control.PRESET_CENTER_BOTTOM, Control.PRESET_BOTTOM_RIGHT]
+	var center_y := preset in [Control.PRESET_CENTER_LEFT, Control.PRESET_CENTER, Control.PRESET_CENTER_RIGHT]
+	c.grow_horizontal = Control.GROW_DIRECTION_BOTH if center_x else (Control.GROW_DIRECTION_BEGIN if right else Control.GROW_DIRECTION_END)
+	c.grow_vertical = Control.GROW_DIRECTION_BOTH if center_y else (Control.GROW_DIRECTION_BEGIN if bottom else Control.GROW_DIRECTION_END)
+	c.set_anchors_and_offsets_preset(preset, Control.PRESET_MODE_MINSIZE)
+	c.offset_left += offset.x
+	c.offset_right += offset.x
+	c.offset_top += offset.y
+	c.offset_bottom += offset.y
+	return c
+
+
 ## Fokus im nächsten Frame setzen (erst dann sind neu gebaute Controls im Baum).
 static func focus_later(c: Control) -> void:
 	var id := c.get_instance_id()
@@ -178,11 +197,7 @@ static func toast(parent: Node, text: String, seconds: float = 2.4) -> void:
 	p.theme_type_variation = "Toast"
 	p.add_child(label(text, "", 18))
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	p.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	p.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	p.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	p.position.y -= 70
-	parent.add_child(p)
+	pin(parent, p, Control.PRESET_CENTER_BOTTOM, Vector2(0, -70))
 	p.modulate.a = 0.0
 	var tw := p.create_tween()
 	tw.tween_property(p, "modulate:a", 1.0, 0.2)

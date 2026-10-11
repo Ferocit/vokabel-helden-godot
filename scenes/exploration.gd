@@ -11,6 +11,9 @@ const COMBAT := "res://scenes/combat.tscn"
 const SUMMARY := "res://scenes/summary.tscn"
 const TITLE := "res://scenes/title.tscn"
 
+## Für Tests: Übergänge ohne Wartezeit.
+static var fast := false
+
 var run: Dictionary
 var level: LevelBuilder
 var fx: WorldFx
@@ -384,9 +387,10 @@ func start_combat(obj: Dictionary) -> void:
 	walk_time = 0.0
 	Sound.play("encounter")
 	_flash_screen(Color(1, 1, 1, 0.85), 0.25)
-	var tw := create_tween()
-	tw.tween_property(fx, "zoom", 1.5, 0.38).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	await tw.finished
+	if not fast:
+		var tw := create_tween()
+		tw.tween_property(fx, "zoom", 1.5, 0.38).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		await tw.finished
 	fx.zoom = 1.0
 	if not ResourceLoader.exists(COMBAT):
 		toast("Der Kampf wird gerade gebaut.")
@@ -395,17 +399,13 @@ func start_combat(obj: Dictionary) -> void:
 	var combat: Node = (load(COMBAT) as PackedScene).instantiate()
 	combat.set("object_id", obj.id)
 	combat.connect("finished", on_combat_return)
-	ui.visible = false
-	level.root.visible = false
-	hero_root.visible = false
+	_set_world_active(false)
 	get_tree().root.add_child(combat)
 
 
 ## data: { objectId, outcome: "won" | "lost", messages: Array[String] }
 func on_combat_return(data: Dictionary) -> void:
-	ui.visible = true
-	level.root.visible = true
-	hero_root.visible = true
+	_set_world_active(true)
 	busy = false
 	contact_cooldown = 1.2
 	_target_dirty = true
@@ -422,6 +422,13 @@ func on_combat_return(data: Dictionary) -> void:
 	hud.refresh()
 	if data.get("victory", false):
 		finish_run(true)
+
+
+func _set_world_active(on: bool) -> void:
+	ui.visible = on
+	level.root.visible = on
+	hero_root.visible = on
+	fx.set_active(on)
 
 
 func finish_run(victory: bool) -> void:
@@ -455,10 +462,7 @@ func _build_ui() -> void:
 	kt.add_theme_font_size_override("normal_font_size", 15)
 	kt.text = "[color=#f1c96b]E[/color] Interagieren · [color=#f1c96b]Esc[/color] Menü"
 	keyhint.add_child(kt)
-	keyhint.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	keyhint.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	keyhint.position = Vector2(-12, 12)
-	ui.add_child(keyhint)
+	UI.pin(ui, keyhint, Control.PRESET_TOP_RIGHT, Vector2(-12, 12))
 
 	_prompt = PanelContainer.new()
 	_prompt_text = RichTextLabel.new()
@@ -469,26 +473,18 @@ func _build_ui() -> void:
 	_prompt_text.custom_minimum_size.x = 520
 	_prompt_text.add_theme_font_size_override("normal_font_size", 20)
 	_prompt.add_child(_prompt_text)
-	_prompt.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_prompt.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_prompt.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_prompt.position.y -= 28
+	UI.pin(ui, _prompt, Control.PRESET_CENTER_BOTTOM, Vector2(0, -28))
 	_prompt.visible = false
-	ui.add_child(_prompt)
 
 	_toasts = VBoxContainer.new()
-	_toasts.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_toasts.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	_toasts.position = Vector2(-16, 80)
 	_toasts.alignment = BoxContainer.ALIGNMENT_BEGIN
 	_toasts.add_theme_constant_override("separation", 8)
 	_toasts.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ui.add_child(_toasts)
+	UI.pin(ui, _toasts, Control.PRESET_TOP_RIGHT, Vector2(-16, 80))
 
 	minimap = Minimap.new()
-	minimap.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	minimap.position = Vector2(-14 - Minimap.SIZE, -52 - Minimap.SIZE)
 	ui.add_child(minimap)
+	UI.pin(ui, minimap, Control.PRESET_BOTTOM_RIGHT, Vector2(-14, -52))
 	minimap.reveal_around(run.player)
 
 	_flash = ColorRect.new()

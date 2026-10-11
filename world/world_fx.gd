@@ -6,10 +6,13 @@ extends Node3D
 
 const BACKGROUND := Color("#0e1a12")
 const AMBIENT := Color("#b4c8b0")
-## Blickwinkel und Abstand der Kamera (Grad über dem Boden, Einheiten).
-const PITCH := 52.0
-const DISTANCE := 21.0
 const FOV := 34.0
+
+## Blickwinkel und Abstand der Kamera (Grad über dem Boden, Einheiten).
+var pitch := 52.0
+var distance := 21.0
+## Höhe des Blickpunkts über dem Ziel.
+var look_height := 0.6
 
 var camera: Camera3D
 var environment: Environment
@@ -20,14 +23,12 @@ var follow_speed := 7.0
 var zoom := 1.0
 
 var _atmosphere: Node3D
+var _vignette_layer: CanvasLayer
 
 
 func _init(density: float = 1.0) -> void:
 	name = "WorldFx"
 	environment = _make_environment()
-	var we := WorldEnvironment.new()
-	we.environment = environment
-	add_child(we)
 
 	sun = DirectionalLight3D.new()
 	sun.light_color = Color("#c8dcff")
@@ -44,6 +45,8 @@ func _init(density: float = 1.0) -> void:
 	camera.near = 0.5
 	camera.far = 120.0
 	camera.current = true
+	# Environment an der Kamera statt WorldEnvironment: Erkundung und Kampf können nebeneinander existieren.
+	camera.environment = environment
 	add_child(camera)
 
 	_atmosphere = Node3D.new()
@@ -51,10 +54,19 @@ func _init(density: float = 1.0) -> void:
 	_atmosphere.add_child(_leaves(density))
 	add_child(_atmosphere)
 
-	var layer := CanvasLayer.new()
-	layer.layer = -1
-	layer.add_child(_vignette())
-	add_child(layer)
+	_vignette_layer = CanvasLayer.new()
+	_vignette_layer.layer = -1
+	_vignette_layer.add_child(_vignette())
+	add_child(_vignette_layer)
+
+
+## Kamera, Licht und Effekte ein- oder ausschalten (z. B. während eines Kampfes).
+func set_active(on: bool) -> void:
+	camera.current = on
+	sun.visible = on
+	_atmosphere.visible = on
+	_vignette_layer.visible = on
+	set_process(on)
 
 
 static func _make_environment() -> Environment:
@@ -109,10 +121,11 @@ var _cam_pos := Vector3.ZERO
 
 func _update_camera(t: float) -> void:
 	_cam_pos = _cam_pos.lerp(target, t)
-	var pitch := deg_to_rad(PITCH)
-	var dist := DISTANCE / zoom
-	camera.position = _cam_pos + Vector3(0, sin(pitch) * dist, cos(pitch) * dist)
-	camera.look_at(_cam_pos + Vector3(0, 0.6, 0), Vector3.UP)
+	var a := deg_to_rad(pitch)
+	var dist := distance / zoom
+	var look := _cam_pos + Vector3(0, look_height, 0)
+	camera.position = look + Vector3(0, sin(a) * dist, cos(a) * dist)
+	camera.look_at(look, Vector3.UP)
 
 
 static func _vignette() -> TextureRect:

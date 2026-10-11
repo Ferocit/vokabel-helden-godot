@@ -19,15 +19,26 @@ func _ready() -> void:
 			Ctx.run.player = Vector2(float(at[0]), float(at[1]))
 	var scene: PackedScene = load(args.get("scene", "res://scenes/title.tscn"))
 	var node := scene.instantiate()
+	# enemy=normal|elite|boss wählt für die Kampfszene einen Gegner dieser Stufe.
+	if args.has("enemy"):
+		for o: Dictionary in Ctx.run.map.objects:
+			if o.kind == "enemy" and o.tier == args.enemy:
+				node.set("object_id", o.id)
+				break
 	get_tree().root.add_child.call_deferred(node)
 	await get_tree().process_frame
 	await get_tree().process_frame
+	# delay=Sekunden: vor den Aufrufen warten (z. B. bis das Kampfmenü bereit ist).
+	if args.has("delay"):
+		await get_tree().create_timer(float(args.delay)).timeout
 	for m: String in String(args.get("call", "")).split(",", false):
 		var parts := m.split("|")
 		if parts.size() > 1:
 			# Argumente mit @ am Anfang sind Dateipfade, deren Inhalt übergeben wird.
-			var call_args := Array(parts.slice(1)).map(func(x: String) -> String:
-				return FileAccess.get_file_as_string(x.substr(1)) if x.begins_with("@") else x)
+			var call_args := Array(parts.slice(1)).map(func(x: String) -> Variant:
+				if x.begins_with("@"):
+					return FileAccess.get_file_as_string(x.substr(1))
+				return int(x) if x.is_valid_int() else x)
 			node.callv(parts[0], call_args)
 		else:
 			node.call(m)

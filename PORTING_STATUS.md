@@ -4,7 +4,7 @@
 - **Phaser-Original als Referenz:** `G:\VibeCoding\VokabelHeroes`. Dort nichts ändern.
 - **Godot:** `E:\Spiele\Steam\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe` (4.7.2)
 - **Godot in der Cloud (Linux):** 4.7.2 stable von github.com/godotengine/godot-builds, nach `/usr/local/bin/godot` verlinken.
-- **Tests:** `godot --headless --path . -s res://tests/run_tests.gd [-- filter]`. Erwartet: 70 grün, etwa 25–40 s.
+- **Tests:** `godot --headless --path . -s res://tests/run_tests.gd [-- filter]`. Erwartet: 77 grün, etwa 25–40 s.
 - **Screenshots:** Linux: `tools/shot.sh <name> scene=res://scenes/title.tscn [call=open_unit_manager]` (xvfb + opengl3).
   Ohne GPU: `apt-get install mesa-vulkan-drivers` (lavapipe) für Forward+, sonst `DRIVER=opengl3`.
   Mit `run=1 [class=rogue] [seed=…] [at=x,y]` startet ein Abenteuer im Arbeitsspeicher.
@@ -35,11 +35,18 @@
   - `ui/controls.gd`: Input-Actions zur Laufzeit. Titel-Kulisse ist jetzt ein schwenkendes 3D-Level.
   - Kampfstart ruft `res://scenes/combat.tscn` auf (Knoten mit `object_id` und Signal `finished(data)`),
     Rückgabe über `on_combat_return({objectId, outcome, messages, victory?})`.
+- **Phase 4:** Kampf, 7 Kampf-Tests.
+  - `scenes/combat.tscn`: Tempelhalle als 3D-Arena (LevelBuilder mit kleiner Karte, flache Kamera 24°),
+    Gegner links (Größe nach Stufe), Held rechts, Absichtsblase über dem Gegner (unproject), Panels unten,
+    Befehle 1–4 / ↑↓ / W/S + Enter, Vokabel je Aktion, Ereignisse mit Effekten (Schadenszahlen als Label3D,
+    Funken, Ringe, Schild, Blitz, Wackeln), Klassenangriffe (Krieger-Sturm + Schockwelle, Schurken-Nachbilder +
+    Kreuzhiebe + Giftwolke, Magier-Zauberkreis + Feuerball mit Licht und Funkenspur), Sieg/Niederlage-Fenster.
+  - `static var fast` in Kampf und Erkundung (sowie `VocabPrompt.instant`) macht Abläufe für Tests synchron.
+  - Theme wird in das Standard-Theme gemischt (gilt so auch unter CanvasLayer/3D). `UI.pin()` verankert Overlays.
 
 ## Nächste Schritte (siehe Plan, Abschnitt „Reihenfolge“)
-1. **Phase 4:** Kampf
-2. **Phase 5:** Auswertung, Sound
-3. **Phase 6:** Melden via gh, start.bat, README
+1. **Phase 5:** Auswertung (`scenes/summary.tscn`, Knoten mit Eigenschaft `victory`, siehe `exploration.finish_run`), Sound
+2. **Phase 6:** Melden via gh, start.bat, README
 
 **Arbeitsweise:**
 - Selbstständig ohne Rückfragen arbeiten.

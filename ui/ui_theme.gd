@@ -18,6 +18,11 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	# In das Standard-Theme einmischen: so gilt es auch unter CanvasLayer- und 3D-Knoten,
+	# wo die Theme-Vererbung vom Fenster aus endet.
+	ThemeDB.get_default_theme().merge_with(theme)
+	ThemeDB.fallback_font = font_text
+	ThemeDB.fallback_font_size = 18
 	get_tree().root.theme = theme
 
 
