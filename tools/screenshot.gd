@@ -9,9 +9,14 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		var kv := a.split("=", true, 1)
 		args[kv[0]] = kv[1] if kv.size() > 1 else ""
+	# shards=N setzt Tempelsplitter (Spielstand nur im Arbeitsspeicher), z. B. für den Skillbaum.
+	if args.has("shards"):
+		Ctx.setup(KeyValueStore.new())
+		Ctx.profile.shards = int(args.shards)
 	# run=1 startet ein Abenteuer mit dem Beispiel-Set (Spielstand nur im Arbeitsspeicher).
 	if args.has("run"):
 		Ctx.setup(KeyValueStore.new())
+		Ctx.profile.unlockedClasses = ["warrior", "rogue", "mage"] if args.has("class") else ["warrior"]
 		Ctx.profile.heroClass = args.get("class", "warrior")
 		Ctx.start_run(["sample"], "jungle", int(args.get("seed", "12345")))
 		# answers=N simuliert N Abfragen (jede dritte falsch, jede fünfte mit Hilfe).
@@ -19,6 +24,12 @@ func _ready() -> void:
 			var item: Dictionary = (Ctx.run.learning as LearningSession).next_word("normal")
 			var outcome := "wrongCorrected" if i % 3 == 2 else "correct"
 			Ctx.submit_answer(item, Vocab.result(outcome, 1 if i % 5 == 4 else 0))
+		# end=1 beendet das Abenteuer als Sieg (Belohnung für die Auswertung).
+		if args.has("end"):
+			for o: Dictionary in Ctx.run.map.objects:
+				if o.kind in ["chest", "door"]:
+					Ctx.run.opened[o.id] = true
+			Ctx.end_run(true)
 		if args.has("at"):
 			var at: PackedStringArray = String(args.at).split(",")
 			Ctx.run.player = Vector2(float(at[0]), float(at[1]))

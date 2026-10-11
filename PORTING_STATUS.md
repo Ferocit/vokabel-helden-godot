@@ -4,7 +4,7 @@
 - **Phaser-Original als Referenz:** `G:\VibeCoding\VokabelHeroes`. Dort nichts ändern.
 - **Godot:** `E:\Spiele\Steam\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe` (4.7.2)
 - **Godot in der Cloud (Linux):** 4.7.2 stable von github.com/godotengine/godot-builds, nach `/usr/local/bin/godot` verlinken.
-- **Tests:** `godot --headless --path . -s res://tests/run_tests.gd [-- filter]`. Erwartet: 86 grün, etwa 25–40 s.
+- **Tests:** `godot --headless --path . -s res://tests/run_tests.gd [-- filter]`. Erwartet: 97 grün, etwa 25–40 s.
 - **Screenshots:** Linux: `tools/shot.sh <name> scene=res://scenes/title.tscn [call=open_unit_manager]` (xvfb + opengl3).
   Ohne GPU: `apt-get install mesa-vulkan-drivers` (lavapipe) für Forward+, sonst `DRIVER=opengl3`.
   Mit `run=1 [class=rogue] [seed=…] [at=x,y]` startet ein Abenteuer im Arbeitsspeicher.
@@ -59,6 +59,8 @@
   (globaler Shader-Parameter `player_world`, gesetzt in `exploration._place_hero`, sonst weit weg = aus).
 - Export-Vorlagen Windows/Linux (`export_presets.cfg`), `start.bat export` / `./start.sh export`. In der Cloud
   geprüft: beide Exporte erzeugt, Linux-Build startet fehlerfrei bis zum Titel; JSON-Daten sind im Paket.
+- **Rogue-lite-System** (siehe `ROGUELITE.md`): Tempelsplitter, Klassen-Freischaltung, Skillbäume, Reset der
+  Lauf-Werte pro Abenteuer, 11 Tests in `tests/test_meta.gd`.
 
 ## Stand
 Alle sechs Phasen sind portiert. Mögliche nächste Schritte:

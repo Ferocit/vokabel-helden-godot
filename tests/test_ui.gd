@@ -84,6 +84,9 @@ func test_klassenwahl_per_taste() -> void:
 	var m: UI.Modal = t.choose_class(func(id: String) -> void: chosen.append(id))
 	var keys: Node = m.get_child(m.get_child_count() - 1)
 	expect_true(keys.on_key.call(KEY_2), "Taste 2 erkannt")
+	expect_eq(chosen, [], "Schurke ist anfangs gesperrt")
+	Ctx.profile.unlockedClasses = ["warrior", "rogue"]
+	expect_true(keys.on_key.call(KEY_2))
 	expect_eq(chosen, ["rogue"])
 	expect_false(keys.on_key.call(KEY_A), "Andere Tasten ignoriert")
 	close(t)

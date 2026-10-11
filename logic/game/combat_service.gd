@@ -3,7 +3,8 @@ extends RefCounted
 ## Reine Rundenlogik ohne Darstellung.
 ## Aktionen: "attack" | "defend" | "skill" | "item"
 ## CombatState { player, enemy, defending, outcome: "ongoing"|"won"|"lost", round }
-##   player { hp, maxHp, focus, maxFocus, attack, potions, skill, defendFactor, critChance, critMultiplier, focusOnCorrect }
+##   player { hp, maxHp, focus, maxFocus, attack, potions, skill, defendFactor, critChance, critMultiplier, focusOnCorrect,
+##            armor, potionHealBonus, lifeOnWin }
 ##   enemy  { def, hp, maxHp, attack, phase, poison ({turns, damage} oder null), intent, patternIndex, guarding }
 ## Events sind Dictionaries mit "type": damage | enemyMove | enemyHeal | intent | poisonTick | poisoned |
 ##   heal | focus | defend | fizzle | phase | enemyDefeated | playerDefeated
@@ -25,14 +26,22 @@ static func js_round(x: float) -> int:
 	return int(floor(x + 0.5))
 
 
-## Kampfwerte des Helden aus Grundwerten {hp, maxHp, focus, maxFocus, attack, potions} und Klasse.
-static func combat_player_from(base: Dictionary, cls: Dictionary) -> Dictionary:
+## Kampfwerte des Helden aus Grundwerten {hp, maxHp, focus, maxFocus, attack, potions}, Klasse und
+## optional den Skillbaum-Effekten (Meta.mods).
+static func combat_player_from(base: Dictionary, cls: Dictionary, mods: Dictionary = {}) -> Dictionary:
 	var p := base.duplicate()
-	p.skill = cls.skill
-	p.defendFactor = cls.defendFactor
-	p.critChance = cls.critChance
-	p.critMultiplier = cls.critMultiplier
+	var skill: Dictionary = (cls.skill as Dictionary).duplicate()
+	skill.multiplier = float(skill.multiplier) + Meta.mod(mods, "skillPower")
+	if skill.has("poisonTurns"):
+		skill.poisonTurns = int(skill.poisonTurns) + int(Meta.mod(mods, "poisonTurns"))
+	p.skill = skill
+	p.defendFactor = maxf(0.05, float(cls.defendFactor) - Meta.mod(mods, "defend"))
+	p.critChance = minf(0.9, float(cls.critChance) + Meta.mod(mods, "critChance"))
+	p.critMultiplier = float(cls.critMultiplier) + Meta.mod(mods, "critMult")
 	p.focusOnCorrect = cls.focusOnCorrect
+	p.armor = int(Meta.mod(mods, "armor"))
+	p.potionHealBonus = int(Meta.mod(mods, "potionHeal"))
+	p.lifeOnWin = int(Meta.mod(mods, "lifeOnWin"))
 	return p
 
 
@@ -105,7 +114,7 @@ static func resolve_player_action(state: Dictionary, action: String, answered_co
 			events.append({"type": "defend"})
 		"item":
 			player.potions = int(player.potions) - 1
-			var healed := mini(int(cfg.potionHeal), int(player.maxHp) - int(player.hp))
+			var healed := mini(int(cfg.potionHeal) + int(player.get("potionHealBonus", 0)), int(player.maxHp) - int(player.hp))
 			player.hp = int(player.hp) + healed
 			events.append({"type": "heal", "amount": healed})
 
@@ -153,6 +162,7 @@ static func resolve_enemy_turn(state: Dictionary, rng: Callable) -> Array:
 	while hit < int(move.hits) and int(player.hp) > 0:
 		var raw := maxi(1, js_round(int(enemy.attack) * float(move.power)) + Rng.rand_int(rng, -1, 1))
 		var amount := maxi(1, int(floor(raw * float(player.defendFactor))) if state.defending else raw)
+		amount = maxi(1, amount - int(player.get("armor", 0)))
 		player.hp = maxi(0, int(player.hp) - amount)
 		events.append({"type": "damage", "target": "player", "amount": amount, "blocked": state.defending})
 		hit += 1

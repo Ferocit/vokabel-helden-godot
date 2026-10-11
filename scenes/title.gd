@@ -128,13 +128,12 @@ func render_menu() -> void:
 		start_row.add_child(UI.button("⟲ Abenteuer fortsetzen", _on_resume))
 	start_row.add_child(UI.spacer())
 	var manage_btn := UI.button("📚 Sets & Statistik", open_unit_manager)
-	var equip_btn := UI.button("🛡 Ausrüstung", open_equipment)
+	var skills_btn := UI.button("🌳 Fertigkeiten", open_skills)
 
 	var win := UI.window(640, [
 		UI.hbox([
-			UI.label("Held · Level %d" % int(p.level), "Accent", 18),
-			UI.label("💰 %d" % int(p.gold), "", 18),
-			UI.label("🧪 %d" % int(p.potions), "", 18),
+			UI.label("%s %d %s" % [Meta.ICON, int(p.shards), Meta.CURRENCY], "Accent", 18),
+			UI.label("Abenteuer: %d · Siege: %d" % [int(p.records.runs), int(p.records.victories)], "Dim", 15),
 			UI.spacer(), sound_btn,
 		], 14),
 		UI.label("Welche Vokabel-Sets willst du üben?", "H3"),
@@ -144,7 +143,7 @@ func render_menu() -> void:
 		UI.hbox([import_btn, UI.label("oder JSON-Datei ins Fenster ziehen", "Dim", 14)]),
 		UI.gap(4),
 		start_row,
-		UI.hbox([UI.spacer(), manage_btn, equip_btn, UI.spacer()]),
+		UI.hbox([UI.spacer(), manage_btn, skills_btn, UI.spacer()]),
 	])
 
 	var column := UI.vbox([logo, sub, UI.gap(10), _center(win)], 2)
@@ -283,15 +282,19 @@ func _enter_world() -> void:
 		render_menu()
 
 
-## Klassenwahl vor jedem Abenteuer – Level, Gold und Ausrüstung bleiben erhalten.
+## Klassenwahl vor jedem Abenteuer. Gesperrte Klassen werden unter „Fertigkeiten“ freigeschaltet.
 func choose_class(on_choose: Callable = Callable()) -> UI.Modal:
 	var m := UI.modal(_ui, "Wähle deine Klasse", 1100)
 	m.name = "ClassSelect"
-	var sub := UI.label("Level, Gold und Ausrüstung behältst du – du kannst vor jedem Abenteuer neu wählen.", "Dim", 16)
+	var sub := UI.label("Jedes Abenteuer beginnt auf Level 1 mit Holzschwert. Gesperrte Klassen schaltest du unter „Fertigkeiten“ frei.", "Dim", 16)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	m.body.add_child(sub)
 	m.body.add_child(UI.gap(6))
 	var pick := func(id: String) -> void:
+		if not Meta.is_class_unlocked(Ctx.profile, id):
+			Sound.play("wrong")
+			UI.toast(m, "%s ist noch gesperrt (%d %s unter „Fertigkeiten“)." % [GameData.get_class_def(id).name, Meta.unlock_cost(id), Meta.ICON])
+			return
 		m.close()
 		if on_choose.is_valid():
 			on_choose.call(id)
@@ -302,7 +305,7 @@ func choose_class(on_choose: Callable = Callable()) -> UI.Modal:
 		var card := _class_card(cls, i + 1)
 		card.pressed.connect(pick.bind(cls.id))
 		row.add_child(card)
-		if cls.id == Ctx.profile.heroClass or focus_btn == null:
+		if Meta.is_class_unlocked(Ctx.profile, cls.id) and (cls.id == Ctx.profile.heroClass or focus_btn == null):
 			focus_btn = card
 	m.body.add_child(row)
 	# Tasten 1–3 wählen direkt.
@@ -350,6 +353,15 @@ func _class_card(cls: Dictionary, key: int) -> Button:
 	box.add_child(stats)
 	box.add_child(_rich("[b][color=#f1c96b]%s (%d FP)[/color][/b] – %s" % [cls.skill.name, int(cls.skill.focusCost), cls.skill.description]))
 	box.add_child(_rich("[b][color=#f1c96b]%s[/color][/b] – %s" % [cls.passiveName, cls.passiveDescription]))
+	var ranks := 0
+	for node: Dictionary in SkillTrees.tree(cls.id).nodes:
+		ranks += Meta.rank(Ctx.profile, cls.id, node.id)
+	var status := UI.label("🌳 %d Fertigkeitsränge" % ranks, "Dim", 14) if Meta.is_class_unlocked(Ctx.profile, cls.id) \
+		else UI.label("🔒 Gesperrt – %d %s" % [Meta.unlock_cost(cls.id), Meta.ICON], "Bad", 16)
+	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(status)
+	if not Meta.is_class_unlocked(Ctx.profile, cls.id):
+		card.modulate = Color(1, 1, 1, 0.55)
 	for c in box.find_children("*", "Control", true, false):
 		(c as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.add_child(box)
@@ -421,10 +433,12 @@ func edit_set(unit_id: String, on_done: Callable = Callable()) -> void:
 	})
 
 
-func open_equipment() -> UI.Modal:
-	var m := UI.modal(_ui, "Ausrüstung", 940)
+func open_skills(class_id: String = "") -> UI.Modal:
+	var m := UI.modal(_ui, "Fertigkeiten", 1140)
 	m.closed.connect(render_menu)
-	EquipmentView.render(m.body)
+	var body := UI.vbox()
+	m.body.add_child(body)
+	SkillTreeView.render(body, class_id)
 	return m
 
 

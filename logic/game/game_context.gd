@@ -64,9 +64,11 @@ func _generate_map(seed: int, scale: float, boss_runes: int, world_id: String) -
 	return LevelGenerator.generate(seed, cfg, {"bossRunesRequired": boss_runes, "enemies": theme.enemies})
 
 
+## Neues Abenteuer: Lauf-Werte (Level, Gold, Ausrüstung …) werden zurückgesetzt, Skills wirken ab Start.
 func start_run(unit_ids: Array, world_id: String = "jungle", seed: int = -1) -> Dictionary:
 	if seed < 0:
 		seed = Rng.random_seed()
+	profile = Meta.reset_run_fields(Meta.ensure(profile), GameConfig.section("player"))
 	var level_scale := RunScaling.level_scale_for(repo.learning_items(unit_ids).size())
 	var boss_runes := RunScaling.scaled_boss_runes(int(GameConfig.section("run").bossRunesRequired), level_scale)
 	var map := _generate_map(seed, level_scale, boss_runes, world_id)
@@ -154,11 +156,39 @@ func resume_run() -> Dictionary:
 	return run
 
 
-func end_run() -> void:
-	if has_run():
+## Beendet das Abenteuer und schreibt die Tempelsplitter gut. Liefert die Belohnung
+## ({ total, lines }); ein zweiter Aufruf für denselben Lauf zahlt nichts mehr aus.
+func end_run(victory: bool = false) -> Dictionary:
+	var reward := {"total": 0, "lines": []}
+	if has_run() and not run.completed:
+		reward = Meta.run_reward(run, victory, profile)
+		profile.shards = int(profile.shards) + int(reward.total)
+		profile.records.runs = int(profile.records.runs) + 1
+		profile.records.shardsTotal = int(profile.records.shardsTotal) + int(reward.total)
+		if victory:
+			profile.records.victories = int(profile.records.victories) + 1
 		run.completed = true
+		run.victory = victory
+		run.reward = reward
+		profile_changed.emit()
+	elif has_run():
+		reward = run.get("reward", reward)
 	save.clear_run()
 	save_persistent()
+	return reward
+
+
+## Kampfwerte des Helden für den aktuellen Lauf (inklusive Skillbaum).
+func combat_player() -> Dictionary:
+	var s := stats()
+	return CombatService.combat_player_from(
+		{"hp": run.hp, "maxHp": s.maxHp, "focus": run.focus, "maxFocus": s.maxFocus, "attack": s.attack, "potions": profile.potions},
+		hero_class(), s.mods)
+
+
+## Laufgeschwindigkeits-Faktor aus dem Skillbaum (1.0 = normal).
+func move_speed_factor() -> float:
+	return 1.0 + Meta.mod(stats().mods, "moveSpeed")
 
 
 ## XP gutschreiben; liefert die Anzahl neuer Level.
@@ -178,7 +208,11 @@ func gain_xp(amount: int) -> int:
 	return gained
 
 
+## Beute gutschreiben; Gold wird um den Skill-Bonus „goldFind“ erhöht (der Bonus steht danach in loot.gold).
 func apply_loot(loot: Dictionary) -> void:
+	var find := Meta.mod(stats().mods, "goldFind")
+	if find > 0.0:
+		loot.gold = int(round(int(loot.gold) * (1.0 + find)))
 	profile.gold = int(profile.gold) + int(loot.gold)
 	profile.potions = int(profile.potions) + int(loot.potions)
 	if loot.itemId != null and not owns(loot.itemId):

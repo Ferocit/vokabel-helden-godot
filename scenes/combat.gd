@@ -54,10 +54,7 @@ func _ready() -> void:
 	def = GameData.get_enemy(obj.enemyId)
 	cls = Ctx.hero_class()
 	rng = run.rng
-	var s := Ctx.stats()
-	state = CombatService.create_combat(
-		CombatService.combat_player_from({"hp": run.hp, "maxHp": s.maxHp, "focus": run.focus, "maxFocus": s.maxFocus, "attack": s.attack, "potions": Ctx.profile.potions}, cls),
-		CombatService.create_enemy(def, int(Ctx.profile.level), rng))
+	state = CombatService.create_combat(Ctx.combat_player(), CombatService.create_enemy(def, int(Ctx.profile.level), rng))
 	wallet = Ctx.hint_wallet(int(state.player.focus))
 	_build_arena()
 	_build_combatants()
@@ -477,7 +474,9 @@ func play_events(events: Array, action: String) -> void:
 func victory() -> void:
 	Sound.play("victory")
 	run.defeated[obj.id] = true
-	run.hp = int(state.player.hp)
+	# Skill „HP nach jedem Sieg“ (lifeOnWin).
+	var life := mini(int(state.player.get("lifeOnWin", 0)), int(state.player.maxHp) - int(state.player.hp))
+	run.hp = int(state.player.hp) + life
 	run.focus = mini(int(state.player.maxFocus), int(state.player.focus) + 1)
 	Ctx.profile.potions = int(state.player.potions)
 	var xp_cfg := GameConfig.section("xp")
@@ -491,6 +490,8 @@ func victory() -> void:
 	var lines: Array = [UI.label("+%d XP" % xp, "", 22), UI.label(describe_loot(loot), "", 22)]
 	if got_rune:
 		lines.append(UI.label("+1 Rune ◆", "Accent", 22))
+	if life > 0:
+		lines.append(UI.label("+%d HP" % life, "Good", 22))
 	if levels > 0:
 		Sound.play("levelup")
 		lines.append(UI.label("⭐ Level up! Jetzt Level %d" % int(Ctx.profile.level), "Good", 26))

@@ -172,7 +172,7 @@ func _typing() -> bool:
 ## Bewegung in Bildschirmrichtung; blockierte Achsen gleiten an Wänden entlang.
 func move(input_dir: Vector2, dt: float) -> void:
 	var g := input_dir.normalized()
-	var step := SPEED * dt
+	var step := SPEED * Ctx.move_speed_factor() * dt
 	var p: Vector2 = run.player
 	var nx := p.x + g.x * step
 	var ny := p.y + g.y * step
@@ -451,7 +451,7 @@ func _set_world_active(on: bool) -> void:
 
 
 func finish_run(victory: bool) -> void:
-	Ctx.end_run()
+	Ctx.end_run(victory)
 	if ResourceLoader.exists(SUMMARY):
 		var s: Node = (load(SUMMARY) as PackedScene).instantiate()
 		s.set("victory", victory)

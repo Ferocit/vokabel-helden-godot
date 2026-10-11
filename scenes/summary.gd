@@ -60,7 +60,9 @@ func _build() -> void:
 	grid.add_child(_stat(str((s.firstTryCorrect as Array).size()), "beim ersten Versuch richtig", "Good"))
 	grid.add_child(_stat("%s%d %%" % ["+" if avg_delta >= 0 else "", roundi(avg_delta)], "Ø Mastery-Zuwachs pro Wort", "Accent"))
 	body.add_child(grid)
-	body.add_child(UI.gap(6))
+	body.add_child(UI.gap(4))
+	body.add_child(_reward_card(run))
+	body.add_child(UI.gap(4))
 
 	var left := UI.vbox([UI.label("✔ Beim ersten Versuch gewusst", "H3")])
 	left.add_child(_chips(s.firstTryCorrect, false, "–"))
@@ -87,7 +89,7 @@ func _build() -> void:
 		right.add_child(table)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var cols := UI.hbox([left, right], 16)
-	body.add_child(UI.scroll(cols, 320))
+	body.add_child(UI.scroll(cols, 250))
 
 	var back := UI.button("Zurück zum Titel", back_to_title)
 	back.add_theme_font_size_override("font_size", 22)
@@ -109,6 +111,22 @@ func _build() -> void:
 	center.add_child(win)
 	add_child(center)
 	UI.focus_later(back)
+
+
+## Tempelsplitter dieses Abenteuers mit Aufschlüsselung; Ausrüstung und Gold verfallen.
+func _reward_card(run: Dictionary) -> PanelContainer:
+	var reward: Dictionary = run.get("reward", {"total": 0, "lines": []})
+	var parts: Array[String] = []
+	for l: Array in reward.lines:
+		parts.append("%s: +%d" % [l[0], int(l[1])])
+	var big := UI.label("%s +%d %s" % [Meta.ICON, int(reward.total), Meta.CURRENCY], "Accent", 24)
+	big.add_theme_font_override("font", UiTheme.font_bold)
+	var total := UI.label("Jetzt: %d %s – ausgeben unter „Fertigkeiten“" % [int(Ctx.profile.shards), Meta.ICON], "", 16)
+	var detail := UI.para(" · ".join(parts) + ("\n" if not parts.is_empty() else "") + "Ausrüstung, Gold und Level dieses Abenteuers verfallen.", "Dim", 14)
+	var card := PanelContainer.new()
+	card.theme_type_variation = "CardSelected"
+	card.add_child(UI.vbox([UI.hbox([big, UI.spacer(), total]), detail], 2))
+	return card
 
 
 func _stat(big: String, label: String, variation: String) -> PanelContainer:

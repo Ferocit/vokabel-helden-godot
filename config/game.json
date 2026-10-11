@@ -5,16 +5,37 @@
     "bossRunesRequired": 4
   },
   "level": {
-    "rooms": { "min": 9, "max": 12 },
-    "roomSize": { "min": 4, "max": 7 },
+    "rooms": {
+      "min": 9,
+      "max": 12
+    },
+    "roomSize": {
+      "min": 4,
+      "max": 7
+    },
     "bossRoomSize": 8,
     "gridSize": 38,
     "extraLoops": 2,
-    "normalEnemies": { "min": 4, "max": 6 },
-    "eliteEnemies": { "min": 1, "max": 2 },
-    "chests": { "min": 3, "max": 5 },
-    "doors": { "min": 1, "max": 3 },
-    "doorAnswers": { "min": 1, "max": 3 },
+    "normalEnemies": {
+      "min": 4,
+      "max": 6
+    },
+    "eliteEnemies": {
+      "min": 1,
+      "max": 2
+    },
+    "chests": {
+      "min": 3,
+      "max": 5
+    },
+    "doors": {
+      "min": 1,
+      "max": 3
+    },
+    "doorAnswers": {
+      "min": 1,
+      "max": 3
+    },
     "minEnemyDistanceFromStart": 6
   },
   "learning": {
@@ -37,12 +58,26 @@
     "hpPerLevel": 6,
     "focusPerLevel": 1,
     "attackPerLevel": 1,
-    "xpPerLevel": [0, 40, 100, 180, 280, 400, 550, 730, 950, 1200],
+    "xpPerLevel": [
+      0,
+      40,
+      100,
+      180,
+      280,
+      400,
+      550,
+      730,
+      950,
+      1200
+    ],
     "startPotions": 2
   },
   "combat": {
     "potionHeal": 18,
-    "hintFocusCost": { "length": 1, "firstLetter": 2 }
+    "hintFocusCost": {
+      "length": 1,
+      "firstLetter": 2
+    }
   },
   "xp": {
     "correctAnswer": 2,
@@ -50,5 +85,26 @@
     "eliteEnemy": 15,
     "boss": 40,
     "chest": 3
+  },
+  "meta": {
+    "classUnlockCost": {
+      "warrior": 0,
+      "rogue": 25,
+      "mage": 40
+    },
+    "tierCost": [
+      3,
+      6,
+      10
+    ],
+    "shards": {
+      "normalEnemy": 1,
+      "eliteEnemy": 3,
+      "boss": 10,
+      "chest": 1,
+      "door": 2,
+      "correctPer": 5,
+      "victory": 10
+    }
   }
 }

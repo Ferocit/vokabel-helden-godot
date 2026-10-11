@@ -12,6 +12,7 @@ static func root() -> Window:
 static func start_run(hero_class: String = "warrior") -> void:
 	VocabPrompt.instant = true
 	Ctx.setup(KeyValueStore.new())
+	Ctx.profile.unlockedClasses = ["warrior", "rogue", "mage"]
 	Ctx.profile.heroClass = hero_class
 	Ctx.start_run(["sample"], "jungle", 4242)
 

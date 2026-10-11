@@ -35,13 +35,17 @@ Die Vorlagen stehen in `export_presets.cfg`. In der exportierten Version landen 
 ## Spielablauf
 
 1. **Titel:** Vokabel-Sets auswählen (Filter, Sortierung, Mastery), importieren oder bearbeiten.
-2. **Klasse wählen** (Tasten 1–3): Krieger, Schurke oder Magier. Level, Gold und Ausrüstung bleiben.
+2. **Klasse wählen** (Tasten 1–3): Krieger, Schurke oder Magier (Schurke und Magier müssen erst freigeschaltet werden).
 3. **Erkunden:** Runen ◆ sammeln (Gegner, Türen), um das Siegeltor zum Boss zu öffnen.
    Der Kristallaltar heilt und ist der Rückkehrpunkt nach einer Niederlage.
 4. **Kämpfen:** Jede Aktion verlangt eine richtig erinnerte Vokabel. Falsch → die Aktion verpufft, die
    Lösung wird gezeigt und einmal abgetippt; das Wort kommt bald wieder. Gegner kündigen ihre nächste
    Aktion an (z. B. „Schwerer Schlag“ → jetzt verteidigen).
-5. **Auswertung:** Was sofort saß, was mit Hilfe, was weiter geübt wird.
+5. **Auswertung:** Was sofort saß, was mit Hilfe, was weiter geübt wird – und die verdienten 🔷 Tempelsplitter.
+
+**Rogue-lite:** Jedes Abenteuer beginnt auf Level 1 mit Holzschwert; Ausrüstung, Gold und Level verfallen am
+Ende. Mit Tempelsplittern werden dauerhaft Klassen freigeschaltet (anfangs nur der Krieger) und Skillbäume
+ausgebaut (Titel → „🌳 Fertigkeiten“). Details: `ROGUELITE.md`.
 
 Es gibt kein Zeitlimit und keinen Strafsound – Fehler sind Teil des Lernens.
 

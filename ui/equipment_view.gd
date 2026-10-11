@@ -20,7 +20,8 @@ static func render(container: Control) -> void:
 		UI.label("💰 %d Gold" % int(p.gold), "", 18),
 		UI.label("🧪 %d Heiltränke" % int(p.potions), "", 18),
 	], 22))
-	container.add_child(UI.gap(6))
+	container.add_child(UI.para("Ausrüstung, Gold und Level gelten nur für dieses Abenteuer. Dauerhaft bleiben %s und deine Fertigkeiten." % Meta.CURRENCY, "Dim", 14))
+	container.add_child(UI.gap(4))
 
 	var left := UI.vbox([UI.label("Angelegt", "H3")])
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL

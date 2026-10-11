@@ -1,8 +1,9 @@
 class_name Player
 extends RefCounted
-## Dauerhafter Spielerfortschritt zwischen Runs (PlayerProfile als Dictionary):
-##   { heroClass, level, xp, gold, equipment: {weapon, helmet, ring}, bag: Array[String], potions,
-##     unlockedWorlds, lastLearnedAt }
+## Spielerprofil (Dictionary):
+##   Dauerhaft:  heroClass, shards, unlockedClasses, skills, records, unlockedWorlds, lastLearnedAt
+##   Pro Abenteuer (siehe Meta.reset_run_fields): level, xp, gold, equipment: {weapon, helmet, ring},
+##               bag: Array[String], potions
 ## Alle Funktionen liefern neue Profile zurück, das übergebene bleibt unverändert.
 
 
@@ -17,6 +18,10 @@ static func new_profile(cfg: Dictionary) -> Dictionary:
 		"potions": int(cfg.startPotions),
 		"unlockedWorlds": ["jungle"],
 		"lastLearnedAt": null,
+		"shards": 0,
+		"unlockedClasses": ["warrior"],
+		"skills": {},
+		"records": {"runs": 0, "victories": 0, "shardsTotal": 0},
 	}
 
 
@@ -30,19 +35,22 @@ static func normalize(p: Dictionary, cfg: Dictionary) -> Dictionary:
 	if base.equipment is Dictionary:
 		eq.merge(base.equipment, true)
 	base.equipment = eq
-	return base
+	return Meta.ensure(base)
 
 
-## { maxHp, maxFocus, attack, freeHints: {length?, firstLetter?}, repeatGapReduction }
+## { maxHp, maxFocus, attack, freeHints: {length?, firstLetter?}, repeatGapReduction, mods }
+## `mods` sind die Effekte des Skillbaums der aktuellen Klasse (siehe Meta.mods).
 static func compute_stats(profile: Dictionary, cfg: Dictionary) -> Dictionary:
 	var lv: int = int(profile.level) - 1
 	var cls := GameData.get_class_def(profile.heroClass)
+	var m := Meta.mods(profile, cls.id)
 	var stats := {
-		"maxHp": int(cfg.baseHp) + lv * int(cfg.hpPerLevel) + int(cls.hpBonus),
+		"maxHp": int(cfg.baseHp) + lv * int(cfg.hpPerLevel) + int(cls.hpBonus) + int(Meta.mod(m, "maxHp")),
 		"maxFocus": int(cfg.baseFocus) + lv * int(cfg.focusPerLevel) + int(cls.focusBonus),
-		"attack": int(cfg.baseAttack) + lv * int(cfg.attackPerLevel) + int(cls.attackBonus),
+		"attack": int(cfg.baseAttack) + lv * int(cfg.attackPerLevel) + int(cls.attackBonus) + int(Meta.mod(m, "attack")),
 		"freeHints": (cls.freeHints as Dictionary).duplicate(),
 		"repeatGapReduction": 0,
+		"mods": m,
 	}
 	for id: Variant in profile.equipment.values():
 		if id == null or not GameData.has_item(id):
