@@ -13,7 +13,7 @@ static func _item_card(item: Dictionary, action: Control) -> PanelContainer:
 	var desc := UI.para(item.description + effect_text(item), "Dim", 15)
 	var info := UI.vbox([UI.hbox([name, meta]), desc], 2)
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var row := UI.hbox([UI.sprite(int(item.icon), 40), info])
+	var row := UI.hbox([UI.icon(Assets.item_icon(item), 40), info])
 	if action:
 		action.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(action)

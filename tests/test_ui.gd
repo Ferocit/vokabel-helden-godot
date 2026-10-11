@@ -265,3 +265,16 @@ func test_training_bis_alle_sitzen() -> void:
 	expect_eq(int(Ctx.profile.shards), shards + TrainingSession.reward_for(3), "Tempelsplitter gutgeschrieben")
 	expect_true(Ctx.progress.has(Vocab.item_key("u_t", "w0")), "Lernstand gespeichert")
 	close(tr)
+
+
+## Issue #10: Helme haben eigene Symbole statt der ganzen Figur.
+func test_helme_haben_eigene_symbole() -> void:
+	var seen := {}
+	for item: Dictionary in GameData.ITEMS:
+		if item.slot != "helmet":
+			continue
+		var tex := Assets.item_icon(item) as AtlasTexture
+		expect_eq(tex.atlas.resource_path, Assets.ITEMS, "%s aus items.png" % item.name)
+		expect_false(seen.has(tex.region), "%s hat ein eigenes Symbol" % item.name)
+		seen[tex.region] = true
+	expect_eq(seen.size(), 4)

@@ -202,7 +202,7 @@ func _cell(item: Dictionary, is_selected: bool) -> Button:
 		b.disabled = true
 		return b
 	var icon := TextureRect.new()
-	icon.texture = Assets.frame(int(item.icon))
+	icon.texture = Assets.item_icon(item)
 	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -240,7 +240,7 @@ func _details() -> Control:
 		info.add_child(UI.label("Angelegt", "Good", 14))
 		actions.add_child(UI.button("Ablegen", unequip.bind(item.slot), "SmallButton"))
 	actions.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	card.add_child(UI.hbox([UI.sprite(int(item.icon), 56), info, actions], 12))
+	card.add_child(UI.hbox([UI.icon(Assets.item_icon(item), 56), info, actions], 12))
 	return card
 
 

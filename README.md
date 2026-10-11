@@ -131,3 +131,5 @@ Spielstände liegen unter `user://save/` (Windows: `%APPDATA%\Godot\app_userdata
 
 Grafik und Sounds: [Kenney.nl](https://kenney.nl) (CC0). Schriften: Cinzel und Nunito (SIL Open Font
 License, siehe `assets/fonts`).
+Die Helm-Symbole in `assets/tiles/items.png` sind eigene Pixel-Art im Kenney-Stil, erzeugt mit
+`python tools/item_icons.py` (dort als Pixelraster beschrieben und leicht anpassbar).

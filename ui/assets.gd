@@ -4,6 +4,8 @@ extends RefCounted
 
 const DUNGEON := "res://assets/tiles/dungeon.png"
 const TOWN := "res://assets/tiles/town.png"
+## Eigene Gegenstandssymbole (tools/item_icons.py), z. B. Helme, die es bei Kenney nicht einzeln gibt.
+const ITEMS := "res://assets/tiles/items.png"
 const COLS := 12
 const TILE := 16
 
@@ -65,6 +67,11 @@ static func frame(frame_no: int, path: String = DUNGEON) -> AtlasTexture:
 	t.filter_clip = true
 	_cache[key] = t
 	return t
+
+
+## Symbol eines Gegenstands: Kachel aus dem Dungeon-Sheet oder – mit "iconSheet": "items" – aus items.png.
+static func item_icon(item: Dictionary) -> Texture2D:
+	return frame(int(item.icon), ITEMS if item.get("iconSheet") == "items" else DUNGEON)
 
 
 ## Frame als eigenes Image (für 3D-Texturen, die Wiederholung brauchen).

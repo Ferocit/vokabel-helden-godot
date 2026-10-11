@@ -1,7 +1,7 @@
 class_name LootView
 extends RefCounted
 ## Beute übersichtlich als Liste: eine Zeile pro Fund mit Symbol, Name, Details und Menge.
-## Eintrag: { icon: int (Kachel im Dungeon-Sheet) oder String (Emoji), title, detail, amount, color, highlight }
+## Eintrag: { icon: int (Kachel im Dungeon-Sheet), Texture2D oder String (Emoji), title, detail, amount, color, highlight }
 
 const POTION_ICON := 115
 
@@ -23,7 +23,7 @@ static func entries(loot: Dictionary, xp: int = 0) -> Array:
 static func item_entry(item: Dictionary) -> Dictionary:
 	var fx := EquipmentView.effect_text(item).trim_prefix(" (").trim_suffix(")")
 	return {
-		"icon": int(item.icon),
+		"icon": Assets.item_icon(item),
 		"title": item.name,
 		"detail": "%s · %s%s" % [GameData.SLOT_LABELS[item.slot], GameData.RARITY_LABELS[item.rarity], " – " + fx if fx != "" else ""],
 		"amount": "Neu!",
@@ -46,6 +46,8 @@ static func row(e: Dictionary, compact: bool = false) -> PanelContainer:
 	var icon: Control
 	if e.icon is int:
 		icon = UI.sprite(e.icon, size)
+	elif e.icon is Texture2D:
+		icon = UI.icon(e.icon, size)
 	else:
 		var l := UI.label(e.icon, "", size - 8)
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

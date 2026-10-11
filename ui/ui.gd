@@ -174,8 +174,13 @@ static func fill_button(b: Button, content: Control, margin := Vector4(10, 4, 10
 
 ## Kenney-Sprite als skalierte Pixelgrafik.
 static func sprite(frame_no: int, px: int = 40) -> TextureRect:
+	return icon(Assets.frame(frame_no), px)
+
+
+## Beliebige Pixelgrafik (z. B. Assets.item_icon) als skaliertes, scharfes Symbol.
+static func icon(tex: Texture2D, px: int = 40) -> TextureRect:
 	var r := TextureRect.new()
-	r.texture = Assets.frame(frame_no)
+	r.texture = tex
 	r.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	r.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	r.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
