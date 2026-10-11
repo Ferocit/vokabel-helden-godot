@@ -1,6 +1,6 @@
 class_name Hud
 extends PanelContainer
-## Statuszeile oben links: HP, Fokus, Runen, Tränke, Gold, Level, Lernabfragen.
+## Statuszeile oben links: HP, Fokus, Runen, Tränke, Gold, Level, Lernabfragen, in der Zeit-Challenge die Restzeit.
 
 
 func _ready() -> void:
@@ -55,6 +55,7 @@ func refresh() -> void:
 		UI.label("💰 %d" % int(Ctx.profile.gold), "Bold", 18),
 		UI.label("Lv %d" % int(Ctx.profile.level), "Accent", 18),
 		q,
+		Clock.new() if run.get("timeChallenge", false) else null,
 	], 10))
 	reset_size()
 
@@ -66,3 +67,30 @@ static func _lives() -> Label:
 	l.tooltip_text = "Leben: Bei 0 endet das Abenteuer."
 	l.mouse_filter = Control.MOUSE_FILTER_PASS
 	return l
+
+
+static func format_time(seconds: float) -> String:
+	var s := ceili(maxf(0.0, seconds))
+	return "%d:%02d" % [s / 60, s % 60]
+
+
+## Restzeit der Zeit-Challenge; aktualisiert sich selbst und wird in der letzten Minute rot.
+class Clock extends Label:
+	func _init() -> void:
+		theme_type_variation = "Bold"
+		add_theme_font_size_override("font_size", 18)
+		tooltip_text = "Zeit-Challenge: Restzeit für das ganze Abenteuer"
+		mouse_filter = Control.MOUSE_FILTER_PASS
+		_update()
+
+	func _process(_delta: float) -> void:
+		_update()
+
+	func _update() -> void:
+		if not Ctx.has_run():
+			return
+		var left := float(Ctx.run.get("timeLeft", 0.0))
+		text = "⏱ " + Hud.format_time(left)
+		var urgent := left < 60.0
+		add_theme_color_override("font_color", UI.HP_LOW if urgent else UI.TEXT)
+		modulate.a = 0.55 + 0.45 * absf(cos(Time.get_ticks_msec() / 300.0)) if urgent and left > 0.0 else 1.0

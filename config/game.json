@@ -4,6 +4,16 @@
     "minVocabularyInteractions": 25,
     "bossRunesRequired": 4
   },
+  "training": {
+    "wordsPerShard": 5
+  },
+  "timeChallenge": {
+    "baseSeconds": 360,
+    "secondsPerWord": 15,
+    "minSeconds": 600,
+    "maxSeconds": 2400,
+    "shardBonus": 0.3
+  },
   "level": {
     "rooms": {
       "min": 9,

@@ -37,7 +37,8 @@ Einstellungen (Ton, Lautstärke, Vollbild) und eine Spielanleitung gibt es im Ti
 
 ## Spielablauf
 
-1. **Titel:** Vokabel-Sets auswählen (Filter, Sortierung, Mastery), importieren oder bearbeiten.
+1. **Titel:** Vokabel-Sets auswählen (Filter, Sortierung, Mastery), importieren, bearbeiten oder trainieren.
+   „🚪 Spiel verlassen“ beendet das Spiel.
 2. **Klasse wählen** (Tasten 1–3): Krieger, Schurke oder Magier (Schurke und Magier müssen erst freigeschaltet werden).
 3. **Erkunden:** Runen ◆ sammeln (Gegner, Türen), um das Siegeltor zum Boss zu öffnen.
    Der Kristallaltar heilt und ist der Rückkehrpunkt nach einer Niederlage.
@@ -52,6 +53,17 @@ ausgebaut (Titel → „🌳 Fertigkeiten“). Pro Abenteuer gibt es 3 Leben, Se
 Händler am Kristallaltar; nach Siegen werden schwerere Tempelstufen frei. Details: `ROGUELITE.md`.
 
 Es gibt kein Zeitlimit und keinen Strafsound – Fehler sind Teil des Lernens.
+
+**⏱ Zeit-Challenge (optional):** Im Titel unter „Neues Abenteuer“ einschaltbar. Dann muss das ganze Abenteuer
+in einer festen Zeit geschafft werden: 6 Minuten + 15 Sekunden pro Vokabel der gewählten Sets, mindestens
+10 und höchstens 40 Minuten (`timeChallenge` in `config/game.json`). Die Uhr läuft auch in Kämpfen und
+Abfragen und steht nur im Menü (Esc) still. Läuft sie ab, wird die laufende Aktion noch beendet, dann endet
+das Abenteuer. Ein Sieg in der Zeit bringt +30 % Tempelsplitter.
+
+**🎯 Training:** Mit 🎯 neben einem Set (oder „🎯 Training“ unter „Sets & Statistik“) übt man ohne Spiel:
+Karte mit dem deutschen Wort, englisch eintippen, keine Hilfen. Falsche Wörter kommen am Ende der Runde
+noch einmal, bis alle sitzen. Jede Antwort zählt für Statistik und Mastery; wer alle schafft, bekommt
+einen 🔷 Tempelsplitter je 5 Wörter (mindestens einen, `training.wordsPerShard`).
 
 ## Vokabeln importieren
 

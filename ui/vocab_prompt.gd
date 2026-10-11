@@ -21,6 +21,8 @@ var wallet: Dictionary
 var label_text := ""
 var footer_text := ""
 var allow_cancel := false
+## Im Training gibt es keine Hilfen (kein Fokus, kein Kampf).
+var show_hints := true
 var phase := "answer"  # answer | correction | done
 var hints: Dictionary
 
@@ -32,7 +34,7 @@ var _hint_bar: HBoxContainer
 var _feedback: Label
 
 
-## opts: { item, wallet, label, footer, allow_cancel }
+## opts: { item, wallet, label, footer, allow_cancel, hints (Standard true) }
 static func ask(parent: Node, opts: Dictionary) -> Dictionary:
 	var p := create(opts)
 	parent.add_child(p)
@@ -47,6 +49,7 @@ static func create(opts: Dictionary) -> VocabPrompt:
 	p.label_text = opts.get("label", "")
 	p.footer_text = opts.get("footer", "")
 	p.allow_cancel = opts.get("allow_cancel", false)
+	p.show_hints = opts.get("hints", true)
 	return p
 
 
@@ -75,6 +78,9 @@ func _ready() -> void:
 	input.custom_minimum_size.y = 50
 	input.context_menu_enabled = false
 	input.virtual_keyboard_enabled = true
+	# Nach Enter weiter tippen können (sonst verlässt das Feld den Bearbeitungsmodus, und beim
+	# Abtippen nach einem Fehler müsste man erst hineinklicken – Issue #6).
+	input.keep_editing_on_text_submit = true
 	input.text_submitted.connect(func(_t: String) -> void: _submit())
 	_mask = UI.label("", "Accent", 28)
 	_mask.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -141,6 +147,9 @@ func _render_hints() -> void:
 	_length.text = HintService.describe_length(entry) if hints.lengthShown else ""
 	_length.visible = _length.text != ""
 	UI.clear(_hint_bar)
+	_hint_bar.visible = show_hints
+	if not show_hints:
+		return
 	for i in HINT_TYPES.size():
 		var type := HINT_TYPES[i]
 		var pay := HintService.payment(wallet, type)
@@ -154,7 +163,7 @@ func _render_hints() -> void:
 
 
 func use_hint(type: String) -> void:
-	if phase != "answer" or not HintService.is_useful(entry, hints, type):
+	if not show_hints or phase != "answer" or not HintService.is_useful(entry, hints, type):
 		return
 	var paid := HintService.pay(wallet, type)
 	if paid.is_empty():
@@ -221,7 +230,15 @@ func _show_correction(wrong_input: String) -> void:
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_body.add_child(footer)
 	_shrink.call_deferred()
+	_focus_input()
+
+
+## Fokus ins Eingabefeld und sofort tippbereit (auch nachdem es kurz aus dem Baum genommen wurde).
+func _focus_input() -> void:
+	if not input.is_inside_tree():
+		return
 	input.grab_focus()
+	input.edit()
 
 
 static func _escape(s: String) -> String:

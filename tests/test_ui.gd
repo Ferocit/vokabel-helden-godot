@@ -202,3 +202,47 @@ func test_einstieg_beim_ersten_start() -> void:
 	var modals: Array = t._ui.get_children().filter(func(c: Node) -> bool: return c is UI.Modal)
 	expect_eq(modals.size(), 1, "Hilfe geöffnet")
 	close(t)
+
+
+func test_titel_spiel_verlassen_und_zeit_challenge() -> void:
+	fresh_ctx()
+	var t := open_title()
+	var buttons := t.find_children("*", "Button", true, false).map(func(b: Button) -> String: return b.text)
+	expect_true(buttons.has("🚪 Spiel verlassen"), "Knopf zum Beenden (Issue #4)")
+	expect_eq(t._time_toggle.text, "⏱ Zeit-Challenge (%s Min.)" % Hud.format_time(RunScaling.time_limit_for(27)))
+	t._time_toggle.button_pressed = true
+	expect_true(Ctx.settings.timeChallenge, "Einstellung gespeichert")
+	close(t)
+
+
+func test_training_bis_alle_sitzen() -> void:
+	fresh_ctx()
+	VocabPrompt.instant = true
+	Ctx.repo.upsert(unit("u_t", "Training", 1000, 3))
+	TrainingScreen.unit_id = "u_t"
+	var tr: Control = load("res://scenes/training.tscn").instantiate()
+	root().add_child(tr)
+	var shards := int(Ctx.profile.shards)
+	var prompt := func() -> VocabPrompt:
+		for n in tr.get_children():
+			if n is VocabPrompt and not n.is_queued_for_deletion():
+				return n
+		return null
+	var guard := 0
+	var first := true
+	while not tr.session.is_finished() and guard < 20:
+		var p: VocabPrompt = prompt.call()
+		expect_false(p.show_hints, "Keine Hilfen im Training")
+		if first:
+			p.input.text = "falsch"
+			p._submit()
+			first = false
+		p.input.text = p.entry.en
+		p._submit()
+		tr.next_card()  # sonst erst im nächsten Frame (call_deferred)
+		guard += 1
+	expect_true(tr.session.is_finished(), "Alle geschafft")
+	expect_eq(tr.session.answered, 4, "Die falsche Karte kam noch einmal")
+	expect_eq(int(Ctx.profile.shards), shards + TrainingSession.reward_for(3), "Tempelsplitter gutgeschrieben")
+	expect_true(Ctx.progress.has(Vocab.item_key("u_t", "w0")), "Lernstand gespeichert")
+	close(tr)

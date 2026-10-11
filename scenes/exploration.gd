@@ -29,6 +29,8 @@ var _target_dirty := true
 var _time := 0.0
 ## Laufgeschwindigkeit aus Skills, Gegenständen und Segnungen; wird bei Profiländerungen neu berechnet.
 var _speed_factor := 1.0
+## Zeit-Challenge: Im Menü steht die Uhr still.
+var _clock_paused := false
 ## Bewegliche Gegner (Objekt-ID → EnemyAgent); besiegte fehlen.
 var agents := {}
 
@@ -141,6 +143,13 @@ func _process(delta: float) -> void:
 	if run.is_empty():
 		return
 	_time += delta
+	# Zeit-Challenge: Die Uhr läuft auch in Kämpfen und Abfragen; ist sie abgelaufen, wird die
+	# laufende Aktion noch beendet, danach endet das Abenteuer.
+	if not _clock_paused:
+		Ctx.tick_time(delta)
+	if Ctx.time_up() and not busy:
+		time_over()
+		return
 	if busy:
 		_place_hero()
 		return
@@ -517,6 +526,21 @@ func _set_world_active(on: bool) -> void:
 	fx.set_active(on)
 
 
+func time_over() -> UI.Modal:
+	busy = true
+	walk_time = 0.0
+	Sound.play("wrong")
+	var m := UI.modal(ui, "⏱ Die Zeit ist abgelaufen!", 600, false)
+	m.body.add_child(UI.para("Der Tempel hat dich diesmal noch nicht ganz durchgelassen. Für alles Erreichte bekommst du trotzdem %s." % Meta.CURRENCY, "", 18))
+	m.body.add_child(UI.label("Alles, was du gelernt hast, bleibt erhalten.", "Good", 18))
+	var btn := UI.button("Zur Auswertung", func() -> void:
+		m.close()
+		finish_run(false))
+	m.body.add_child(UI.hbox([UI.spacer(), btn, UI.spacer()]))
+	UI.focus_later(btn)
+	return m
+
+
 func finish_run(victory: bool) -> void:
 	Ctx.end_run(victory)
 	if ResourceLoader.exists(SUMMARY):
@@ -672,7 +696,9 @@ func open_menu() -> UI.Modal:
 	busy = true
 	walk_time = 0.0
 	var m := UI.modal(ui, "Menü", 980)
+	_clock_paused = true
 	m.closed.connect(func() -> void:
+		_clock_paused = false
 		busy = false
 		_refresh_speed()
 		hud.refresh())

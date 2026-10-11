@@ -228,3 +228,44 @@ func test_urwald_nutzt_ausblend_shader() -> void:
 	root().remove_child(e)
 	expect_lt(e.shader_player.y, -100.0, "Nach Verlassen aus")
 	e.free()
+
+
+func test_zeit_challenge_endet_in_der_erkundung() -> void:
+	VocabPrompt.instant = true
+	Ctx.setup(KeyValueStore.new())
+	Ctx.start_run(["sample"], "jungle", 4242, 0, true)
+	expect_eq(int(Ctx.run.timeLimit), RunScaling.time_limit_for(27), "Zeit nach Vokabelzahl")
+	var e: Node3D = EXPLORATION.instantiate()
+	root().add_child(e)
+	Ctx.run.timeLeft = 2.0
+	e.open_menu()
+	e._process(5.0)
+	expect_eq(float(Ctx.run.timeLeft), 2.0, "Im Menü steht die Uhr")
+	for m in e.ui.get_children():
+		if m is UI.Modal:
+			(m as UI.Modal).close()
+	e._process(1.0)
+	expect_near(float(Ctx.run.timeLeft), 1.0, 0.01)
+	expect_false(e.busy)
+	e._process(1.5)
+	expect_true(Ctx.time_up(), "Zeit abgelaufen")
+	expect_true(e.busy, "Zeit-abgelaufen-Fenster blockiert")
+	expect_true(e.ui.get_children().any(func(n: Node) -> bool: return n is UI.Modal and not n.is_queued_for_deletion()), "Fenster offen")
+	e.free()
+
+
+func test_abfrage_nach_fehler_sofort_tippbereit() -> void:
+	var p := prompt(item(), wallet())
+	p.input.grab_focus()
+	p.input.edit()
+	p.input.text = "falsch"
+	# Echtes Enter, damit das Eingabefeld wie im Spiel reagiert.
+	var enter := InputEventKey.new()
+	enter.keycode = KEY_ENTER
+	enter.physical_keycode = KEY_ENTER
+	enter.pressed = true
+	p.get_viewport().push_input(enter)
+	expect_eq(p.phase, "correction")
+	expect_true(p.input.has_focus(), "Fokus im Eingabefeld (Issue #6)")
+	expect_true(p.input.is_editing(), "Eingabefeld ist tippbereit")
+	p.free()

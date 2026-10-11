@@ -22,6 +22,32 @@ static func action_label(action: String, player: Dictionary) -> String:
 			return "Heiltrank"
 
 
+## Was eine Aktion gerade bewirken würde, mit den aktuellen Werten (Issue #7).
+static func action_effect(action: String, state: Dictionary, cfg: Dictionary) -> String:
+	var p: Dictionary = state.player
+	var atk := int(p.attack)
+	var guarded: bool = state.enemy.guarding
+	var halved := " (halbiert: Gegner ist gepanzert)" if guarded else ""
+	match action:
+		"attack":
+			var text := "Trifft für %d–%d Schaden%s." % [atk, atk + 2, halved]
+			if float(p.critChance) > 0.0:
+				text += " %d %% Chance auf einen kritischen Treffer (×%s)." % [roundi(float(p.critChance) * 100.0), String.num(float(p.critMultiplier), 1)]
+			return text
+		"defend":
+			return "Der nächste gegnerische Angriff macht nur %d %% Schaden. Ideal vor einem schweren Schlag." % roundi(float(p.defendFactor) * 100.0)
+		"skill":
+			var skill: Dictionary = p.skill
+			var dmg := js_round(atk * float(skill.multiplier))
+			var text := "Trifft für %d–%d Schaden%s, kostet %d FP." % [dmg, dmg + 2, halved, int(skill.focusCost)]
+			if skill.has("poisonTurns"):
+				text += " Dazu Gift: %d Runden je %d Schaden." % [int(skill.poisonTurns), maxi(1, js_round(atk * float(skill.get("poisonFactor", 0.5))))]
+			return text
+		_:
+			var heal := int(cfg.potionHeal) + int(p.get("potionHealBonus", 0))
+			return "Heilt bis zu %d HP. Noch %d Heiltränke." % [heal, int(p.potions)]
+
+
 static func js_round(x: float) -> int:
 	return int(floor(x + 0.5))
 

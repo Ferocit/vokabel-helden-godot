@@ -261,3 +261,23 @@ func test_session_speichern_und_laden() -> void:
 	b.restore(snap)
 	expect_eq(b.scheduler.owed_repeats().map(func(i: Dictionary) -> String: return i.key), [w.key])
 	expect_eq(b.run.summary().withHints.size(), 1)
+
+
+func test_training_falsche_karten_kommen_wieder() -> void:
+	var t := TrainingSession.new(items(4), Rng.create(7))
+	var wrong_key: String = t.current().key
+	t.submit(Vocab.result("wrongCorrected"))
+	for i in 3:
+		t.submit(Vocab.result("correct"))
+	expect_false(t.is_finished(), "Falsche Karte steht noch aus")
+	expect_eq(t.round, 2)
+	expect_eq(t.current().key, wrong_key, "Falsche Karte kommt am Ende wieder")
+	t.submit(Vocab.result("wrongCorrected"))
+	expect_eq(t.current().key, wrong_key, "… so lange, bis sie sitzt")
+	t.submit(Vocab.result("correct"))
+	expect_true(t.is_finished())
+	expect_eq(t.first_try, 3)
+	expect_eq(t.wrong, 2)
+	expect_eq(t.answered, 6)
+	expect_eq(TrainingSession.reward_for(27), 5)
+	expect_eq(TrainingSession.reward_for(3), 1, "Mindestens ein Splitter")

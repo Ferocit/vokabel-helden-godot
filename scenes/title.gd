@@ -1,6 +1,7 @@
 extends Control
 ## Titelbildschirm: Set-Auswahl (Filter, Sortierung, Datum, Mastery, ✎, Alle/Keine), Import und
-## Drag & Drop, Klassenwahl (Tasten 1–3), Sets & Statistik, Ausrüstung, Fortsetzen.
+## Drag & Drop, Klassenwahl (Tasten 1–3), Sets & Statistik, Ausrüstung, Fortsetzen, Training,
+## Zeit-Challenge und Spiel verlassen.
 
 const EXPLORATION := "res://scenes/exploration.tscn"
 
@@ -125,9 +126,14 @@ func render_menu() -> void:
 	if Ctx.can_resume():
 		start_row.add_child(UI.button("⟲ Abenteuer fortsetzen", _on_resume))
 	start_row.add_child(UI.spacer())
-	var heat_row := _heat_selector()
+	var heat_row := UI.hbox([UI.spacer(), _heat_selector(), _time_challenge_toggle(), UI.spacer()], 16)
 	var manage_btn := UI.button("📚 Sets & Statistik", open_unit_manager)
 	var skills_btn := UI.button("🌳 Fertigkeiten", open_skills)
+	var bottom_row := UI.hbox([UI.spacer(), manage_btn, skills_btn])
+	# Im Browser lässt sich das Spiel nicht beenden – dort schließt man einfach den Tab.
+	if not OS.has_feature("web"):
+		bottom_row.add_child(UI.button("🚪 Spiel verlassen", quit_game))
+	bottom_row.add_child(UI.spacer())
 
 	var win := UI.window(640, [
 		UI.hbox([
@@ -143,7 +149,7 @@ func render_menu() -> void:
 		UI.gap(4),
 		start_row,
 		heat_row,
-		UI.hbox([UI.spacer(), manage_btn, skills_btn, UI.spacer()]),
+		bottom_row,
 	])
 
 	var column := UI.vbox([logo, sub, UI.gap(10), _center(win)], 2)
@@ -175,6 +181,11 @@ func render_menu() -> void:
 		_show_intro.call_deferred()
 
 
+func quit_game() -> void:
+	Ctx.save_persistent()
+	get_tree().quit()
+
+
 func _show_intro() -> void:
 	if not is_inside_tree() or bool(Ctx.settings.get("seenIntro", false)):
 		return
@@ -193,7 +204,9 @@ func open_settings() -> UI.Modal:
 
 const HELP := [
 	["⚔ Ziel", "Erkunde den Dschungeltempel, sammle Runen ◆ (besiegte Gegner, geöffnete Türen) und öffne damit das Siegeltor zum Boss."],
-	["📖 Lernen", "Jede Aktion im Kampf, jede Truhe und jede Tür verlangt ein englisches Wort. Falsch ist nicht schlimm: Du siehst die Lösung, tippst sie einmal ab und das Wort kommt bald wieder. Es gibt kein Zeitlimit."],
+	["📖 Lernen", "Jede Aktion im Kampf, jede Truhe und jede Tür verlangt ein englisches Wort. Falsch ist nicht schlimm: Du siehst die Lösung, tippst sie einmal ab und das Wort kommt bald wieder. Es gibt kein Zeitlimit – außer du wählst die ⏱ Zeit-Challenge."],
+	["🎯 Training", "Mit 🎯 neben einem Set übst du ohne Spiel: Du siehst das deutsche Wort und tippst das englische ein. Falsche Wörter kommen am Ende noch einmal, bis alle sitzen. Schaffst du alle, gibt es Tempelsplitter."],
+	["⏱ Zeit-Challenge", "Wer mag, schaltet sie vor dem Start ein: Dann muss das ganze Abenteuer in einer festen Zeit geschafft werden. Je mehr Vokabeln du übst, desto mehr Zeit gibt es. Im Menü (Esc) steht die Uhr still. Ein Sieg bringt extra Tempelsplitter."],
 	["💡 Hilfen", "Alt+1 zeigt die Wortlänge, Alt+2 den ersten Buchstaben. Hilfen kosten Fokus (FP)."],
 	["❤ Leben", "Jedes Abenteuer hat 3 Leben. Bei einer Niederlage erwachst du am Kristallaltar; ist das letzte Leben weg, endet das Abenteuer."],
 	["🔷 Tempelsplitter", "Jedes Abenteuer beginnt auf Level 1 mit Holzschwert – Ausrüstung, Gold und Level verfallen am Ende. Dafür bekommst du Tempelsplitter für alles Erreichte. Damit schaltest du unter „🌳 Fertigkeiten“ neue Klassen frei und baust Skillbäume aus."],
@@ -260,9 +273,11 @@ func _render_list() -> void:
 		var count := UI.label("%d W." % (unit.vocabulary as Array).size(), "Dim", 14)
 		count.custom_minimum_size.x = 48
 		count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		var train := UI.button("🎯", func() -> void: start_training(unit.id), "SmallButton")
+		train.tooltip_text = "Training: Vokabeln als Karten üben, ohne Spiel"
 		var edit := UI.button("✎", func() -> void: edit_set(unit.id), "SmallButton")
 		edit.tooltip_text = "Als eigene Kopie bearbeiten" if built_in else "Set bearbeiten und erweitern"
-		row.add_child(UI.hbox([cb, date, count, UI.mastery_bar(StatsView.average_mastery(unit.id), 70), edit], 10))
+		row.add_child(UI.hbox([cb, date, count, UI.mastery_bar(StatsView.average_mastery(unit.id), 70), train, edit], 10))
 		_list_body.add_child(row)
 	if list.is_empty():
 		_list_body.add_child(UI.label("Kein Set passt zum Filter.", "Dim", 16))
@@ -275,7 +290,7 @@ func selected_heat() -> int:
 
 
 ## Auswahl der Tempelstufe; erst sichtbar, wenn nach einem Sieg Stufe 1 freigeschaltet ist.
-func _heat_selector() -> Control:
+func _heat_selector() -> OptionButton:
 	var max_heat := Meta.heat_max_unlocked(Ctx.profile)
 	if max_heat <= 0:
 		return null
@@ -286,8 +301,27 @@ func _heat_selector() -> Control:
 	opt.item_selected.connect(func(i: int) -> void:
 		Ctx.settings.heat = i
 		Ctx.save_persistent())
-	var row := UI.hbox([UI.spacer(), opt, UI.spacer()])
-	return row
+	return opt
+
+
+var _time_toggle: CheckBox
+
+
+## Zeit-Challenge an/aus; die angezeigte Zeit richtet sich nach den gewählten Vokabeln.
+func _time_challenge_toggle() -> CheckBox:
+	_time_toggle = CheckBox.new()
+	_time_toggle.button_pressed = bool(Ctx.settings.get("timeChallenge", false))
+	_time_toggle.add_theme_font_size_override("font_size", 17)
+	_time_toggle.tooltip_text = "Das ganze Abenteuer muss in der angezeigten Zeit geschafft werden.
+Mehr Vokabeln = mehr Zeit. Ein Sieg bringt +%d %% %s." % [roundi(float(GameConfig.section("timeChallenge").shardBonus) * 100.0), Meta.CURRENCY]
+	_time_toggle.toggled.connect(func(on: bool) -> void:
+		Ctx.settings.timeChallenge = on
+		Ctx.save_persistent())
+	return _time_toggle
+
+
+func time_limit() -> int:
+	return RunScaling.time_limit_for(Ctx.repo.learning_items(_selected.keys()).size())
 
 
 func _toggle_all_visible() -> void:
@@ -311,6 +345,8 @@ func _update_start() -> void:
 		words += (Ctx.repo.get_unit(id).get("vocabulary", []) as Array).size()
 	var n := _selected.size()
 	_summary.text = "Kein Set ausgewählt." if n == 0 else "%d %s ausgewählt · %d Wörter" % [n, "Set" if n == 1 else "Sets", words]
+	if _time_toggle:
+		_time_toggle.text = "⏱ Zeit-Challenge (%s Min.)" % Hud.format_time(time_limit())
 
 
 # ---------- Abenteuer ----------
@@ -322,7 +358,7 @@ func _on_start() -> void:
 			Ctx.save_persistent()
 			Ctx.save.clear_run()
 			Sound.play("encounter")
-			Ctx.start_run(_selected.keys(), "jungle", -1, selected_heat())
+			Ctx.start_run(_selected.keys(), "jungle", -1, selected_heat(), bool(Ctx.settings.get("timeChallenge", false)))
 			_enter_world())
 	if Ctx.can_resume():
 		UI.confirm(_ui, "Ein laufendes Abenteuer wird dabei beendet. Trotzdem neu starten?", go, "Neu starten")
@@ -334,6 +370,12 @@ func _on_resume() -> void:
 	if not Ctx.resume_run().is_empty():
 		Sound.play("select")
 		_enter_world()
+
+
+## Trainingsmodus für ein Set: Karten üben ohne Spiel.
+func start_training(unit_id: String) -> void:
+	Sound.play("select")
+	TrainingScreen.start(get_tree(), unit_id)
 
 
 func _enter_world() -> void:
@@ -531,6 +573,7 @@ func _render_units(m: UI.Modal) -> void:
 		grid.add_child(UI.label(str((unit.vocabulary as Array).size()), "", 17))
 		grid.add_child(UI.mastery_bar(StatsView.average_mastery(unit.id), 120))
 		var actions := UI.hbox([
+			UI.button("🎯 Training", func() -> void: start_training(unit.id), "SmallButton"),
 			UI.button("Statistik", func() -> void: _open_stats(m, unit.id), "SmallButton"),
 			UI.button("Als Kopie bearbeiten" if built_in else "Bearbeiten", func() -> void: edit_set(unit.id, rerender), "SmallButton"),
 		])

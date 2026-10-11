@@ -11,11 +11,13 @@ const CHUNK := 8
 const WALL_H := 2.0
 ## Neigung aller aufrechten Sprites zur Kamera hin (gegen die Verkürzung durch den Kamerawinkel).
 const TILT := deg_to_rad(-20.0)
+## Drehung (Grad) von Türen in Ost-West-Gängen, siehe _turn_sideways.
+const SIDE_DOOR_YAW := 62.0
 
 const TD := {
 	"floor": [48, 48, 48, 48, 48, 48, 48, 48, 42], "wall": [40, 40, 40, 57, 59, 58, 28], "wall_plain": 40,
 	"banner": 29, "skull": 41, "door": 45, "door_open": 9, "chest": 89, "chest_rare": 90, "chest_special": 92,
-	"altar": 32, "pillar_mid": 18, "pillar_base": 30, "pots": [54, 55, 56, 43, 44],
+	"altar": 32, "pots": [54, 55, 56, 43, 44],
 }
 const TT := {"grass": [0, 0, 0, 0, 1, 1, 2], "dirt": 25, "trees": [4, 16, 28, 5], "bush": [5, 17], "mushrooms": 29}
 const SHEET_PX := Vector2(192.0, 176.0)
@@ -103,6 +105,13 @@ func _material(key: String) -> Material:
 	m.vertex_color_use_as_albedo = true
 	m.roughness = 0.92
 	m.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	if key == "dungeon_pillar":
+		# Säulen stehen vor den Fackeln und bekommen deren Licht nur von hinten: leicht selbstleuchtend,
+		# wie vom Fackelschein angestrahlt.
+		m.emission_enabled = true
+		m.emission = Color("#ffcf9a")
+		m.emission_texture = m.albedo_texture
+		m.emission_energy_multiplier = 0.25
 	if key.ends_with("sprite"):
 		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 		m.alpha_scissor_threshold = 0.5
@@ -278,8 +287,7 @@ func _decorate_room(room: Dictionary) -> void:
 	for x: int in [room.x, room.x + room.w - 1]:
 		if not free.call(x, top) or not _wall_tiles.has(Vector2i(x, top - 1)) or rng.call() < 0.25:
 			continue
-		_upright(x + 0.5, top + 0.75, 1.0, 1.0, TD.pillar_base, "dungeon_sprite")
-		_upright(x + 0.5, top + 0.75 + sin(TILT) * 0.94, 1.0, 1.0, TD.pillar_mid, "dungeon_sprite", Color.WHITE, false, cos(TILT) * 0.94)
+		_pillar(x, top)
 		_mark_solid(x, top)
 
 	# Fackeln an der Rückwand.
@@ -304,6 +312,41 @@ func _decorate_room(room: Dictionary) -> void:
 		var cx: float = room.x + room.w * (0.3 + rng.call() * 0.4)
 		var cz: float = room.y + room.h / 2.0
 		_add_light_shaft(Vector3(cx, 0, cz), room.h * 1.1)
+
+
+## Steinsäule als echter Block vor der Rückwand (die Säulen-Kacheln des Tilesets haben einen deckenden
+## Bodenhintergrund und sahen als aufrechtes Sprite falsch aus, Issue #5).
+func _pillar(x: int, z: int) -> void:
+	var st := _st(x, z, "dungeon_pillar")
+	var x0 := x + 0.18
+	var x1 := x + 0.82
+	var z0 := float(z)
+	var z1 := z + 0.6
+	var stone := uv_rect(TD.wall_plain)
+	var cap_h := 0.18
+	for seg in [[0.0, 1.0, Color("#d6d2c4")], [1.0, WALL_H - cap_h, Color("#bfbbae")]]:
+		var y0: float = seg[0]
+		var y1: float = seg[1]
+		var c: Color = seg[2]
+		_quad(st, Vector3(x0, y1, z1), Vector3(x1, y1, z1), Vector3(x1, y0, z1), Vector3(x0, y0, z1), stone, Vector3.BACK, c)
+		_quad(st, Vector3(x0, y1, z0), Vector3(x0, y1, z1), Vector3(x0, y0, z1), Vector3(x0, y0, z0), stone, Vector3.LEFT, c.darkened(0.25))
+		_quad(st, Vector3(x1, y1, z1), Vector3(x1, y1, z0), Vector3(x1, y0, z0), Vector3(x1, y0, z1), stone, Vector3.RIGHT, c.darkened(0.25))
+	# Kapitell: etwas breiter als der Schaft, mit Deckplatte.
+	var cx0 := x0 - 0.08
+	var cx1 := x1 + 0.08
+	var cz1 := z1 + 0.08
+	var y0 := WALL_H - cap_h
+	var cap := Color("#e2ddcd")
+	_quad(st, Vector3(cx0, WALL_H, cz1), Vector3(cx1, WALL_H, cz1), Vector3(cx1, y0, cz1), Vector3(cx0, y0, cz1), stone, Vector3.BACK, cap)
+	_quad(st, Vector3(cx0, WALL_H, z0), Vector3(cx0, WALL_H, cz1), Vector3(cx0, y0, cz1), Vector3(cx0, y0, z0), stone, Vector3.LEFT, cap.darkened(0.25))
+	_quad(st, Vector3(cx1, WALL_H, cz1), Vector3(cx1, WALL_H, z0), Vector3(cx1, y0, z0), Vector3(cx1, y0, cz1), stone, Vector3.RIGHT, cap.darkened(0.25))
+	_quad(st, Vector3(cx0, WALL_H, z0), Vector3(cx1, WALL_H, z0), Vector3(cx1, WALL_H, cz1), Vector3(cx0, WALL_H, cz1), stone, Vector3.UP, Color("#8d9184"))
+	# Sockel.
+	_quad(st, Vector3(cx0, 0.2, cz1), Vector3(cx1, 0.2, cz1), Vector3(cx1, 0.0, cz1), Vector3(cx0, 0.0, cz1), stone, Vector3.BACK, Color("#a9a597"))
+	_quad(st, Vector3(cx0, 0.2, z1), Vector3(cx1, 0.2, z1), Vector3(cx1, 0.2, cz1), Vector3(cx0, 0.2, cz1), stone, Vector3.UP, Color("#8d9184"))
+	var sh := Fx.shadow_quad(0.9)
+	sh.position = Vector3(x + 0.5, 0.01, z + 0.55)
+	root.add_child(sh)
 
 
 func _mark_solid(x: int, y: int) -> void:
@@ -435,6 +478,8 @@ func _create_view(obj: Dictionary) -> void:
 		"door", "bossDoor":
 			var s := Fx.sprite(Assets.frame(TD.door_open if gone else TD.door))
 			s.scale = Vector3(1.0, 1.25, 1.0)
+			if door_faces_side(map, int(obj.x), int(obj.y)):
+				_turn_sideways(s)
 			node.add_child(s)
 			if obj.kind == "bossDoor":
 				s.modulate = Color("#8a6a8a") if gone else Color("#e0a0ff")
@@ -457,6 +502,19 @@ func _create_view(obj: Dictionary) -> void:
 			node.add_child(_sparkles(Color("#b8ffd4")))
 	objects_root.add_child(node)
 	views[obj.id] = node
+
+
+## Tür in einem Ost-West-Gang: Man läuft von der Seite auf sie zu, also muss sie quer zum Gang stehen.
+static func door_faces_side(level: Dictionary, x: int, y: int) -> bool:
+	var east_west := MapModel.is_floor(level, x - 1, y) or MapModel.is_floor(level, x + 1, y)
+	var north_south := MapModel.is_floor(level, x, y - 1) and MapModel.is_floor(level, x, y + 1)
+	return east_west and not north_south
+
+
+## Dreht ein aufrechtes Sprite quer zum Ost-West-Gang. Genau 90° stünde es auf der Kante zur Kamera
+## und wäre unsichtbar, deshalb steht die Tür schräg im Gang – aufrecht, so bleibt sie gut erkennbar.
+static func _turn_sideways(s: Sprite3D) -> void:
+	s.basis = Basis(Vector3.UP, deg_to_rad(SIDE_DOOR_YAW)).scaled_local(s.scale)
 
 
 static func _light(c: Color, energy: float, range_: float, pos: Vector3) -> OmniLight3D:

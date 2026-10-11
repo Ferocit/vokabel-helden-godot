@@ -258,3 +258,21 @@ func test_tempelstufen_freischalten_und_belohnung() -> void:
 	var e2 := CombatService.create_enemy(GameData.get_enemy("bat"), 1, null, 2)
 	expect_gt(int(e2.hp), int(e0.hp))
 	expect_gt(int(e2.attack), int(e0.attack))
+
+
+func test_zeit_challenge_zeit_und_bonus() -> void:
+	var c := GameConfig.section("timeChallenge")
+	expect_eq(RunScaling.time_limit_for(1), int(c.minSeconds), "Untergrenze")
+	expect_eq(RunScaling.time_limit_for(10000), int(c.maxSeconds), "Obergrenze")
+	expect_gt(RunScaling.time_limit_for(80), RunScaling.time_limit_for(40), "Mehr Vokabeln, mehr Zeit")
+	Ctx.setup(KeyValueStore.new())
+	Ctx.start_run(["sample"], "jungle", 99, 0, true)
+	var normal := Meta.run_reward(Ctx.run, true, Ctx.profile)
+	expect_true((normal.lines as Array).any(func(l: Array) -> bool: return String(l[0]).begins_with("Zeit-Challenge")), "Bonus bei Sieg")
+	expect_false((Meta.run_reward(Ctx.run, false, Ctx.profile).lines as Array).any(func(l: Array) -> bool: return String(l[0]).begins_with("Zeit-Challenge")), "kein Bonus ohne Sieg")
+	Ctx.tick_time(12.5)
+	var snap := Ctx.snapshot_run()
+	Ctx.save.save_run(snap)
+	Ctx.resume_run()
+	expect_true(Ctx.run.timeChallenge, "Modus bleibt beim Fortsetzen")
+	expect_near(float(Ctx.run.timeLeft), float(Ctx.run.timeLimit) - 12.5, 0.01, "Restzeit bleibt erhalten")

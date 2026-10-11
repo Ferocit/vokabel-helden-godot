@@ -1,5 +1,6 @@
 extends Node3D
-## Rundenbasierter Kampf im Stil klassischer JRPGs, in HD-2D-Optik und ohne jeden Zeitdruck.
+## Rundenbasierter Kampf im Stil klassischer JRPGs, in HD-2D-Optik und ohne Zeitdruck pro Zug
+## (nur in der Zeit-Challenge läuft eine Uhr für das ganze Abenteuer).
 ## Jede Aktion verlangt eine richtig erinnerte Vokabel. Gegner kündigen ihre nächste Aktion an.
 ## Wird von der Erkundung erzeugt: `object_id` setzen, Signal `finished(data)` abwarten.
 
@@ -9,8 +10,10 @@ signal result_closed
 signal blessing_chosen(id: String)
 
 const COMMANDS: Array[String] = ["attack", "defend", "skill", "item"]
-const ENEMY_POS := Vector3(7.2, 0, 6.6)
-const HERO_POS := Vector3(14.8, 0, 6.6)
+const HERO_POS := Vector3(7.2, 0, 6.6)
+const ENEMY_POS := Vector3(14.8, 0, 6.6)
+## Richtung vom Helden zum Gegner auf der x-Achse (Held links, Gegner rechts).
+const TOWARD_ENEMY := 1.0 if ENEMY_POS.x > HERO_POS.x else -1.0
 const ARENA_W := 22
 const ARENA_H := 12
 
@@ -44,6 +47,8 @@ var _intent_label: Label
 var _flash_rect: ColorRect
 var _menu_active := false
 var _command_buttons: Array[Button] = []
+## Erklärt den gerade gewählten Befehl (Issue #7).
+var _command_info: Label
 
 
 func _ready() -> void:
@@ -114,6 +119,8 @@ func _build_combatants() -> void:
 	enemy_root.position = ENEMY_POS
 	enemy_root.add_child(Fx.shadow_quad(scale * 0.8))
 	enemy = Fx.sprite(Assets.frame(int(def.frame)), 16.0 / scale)
+	# Die Pixel-Art schaut nach rechts; der Gegner soll den Helden ansehen.
+	enemy.flip_h = TOWARD_ENEMY > 0.0
 	var bob := Fx.Bob.new()
 	bob.amplitude = 0.1
 	bob.period = 1.8
@@ -129,7 +136,7 @@ func _build_combatants() -> void:
 	hero_root.position = HERO_POS
 	hero_root.add_child(Fx.shadow_quad(1.6))
 	hero = Fx.sprite(Assets.frame(int(cls.frame)), 8.0)
-	hero.flip_h = true
+	hero.flip_h = TOWARD_ENEMY < 0.0
 	hero_root.add_child(hero)
 	var light := OmniLight3D.new()
 	light.light_color = Color("#ffe2a8")
@@ -152,6 +159,10 @@ func _build_ui() -> void:
 	_msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	top.add_child(_msg)
 	UI.pin(ui, top, Control.PRESET_CENTER_TOP, Vector2(0, 14))
+	if run.get("timeChallenge", false):
+		var clock := PanelContainer.new()
+		clock.add_child(Hud.Clock.new())
+		UI.pin(ui, clock, Control.PRESET_TOP_LEFT, Vector2(14, 14))
 
 	_intent = PanelContainer.new()
 	_intent_label = UI.label("", "Bold", 18)
@@ -164,12 +175,13 @@ func _build_ui() -> void:
 	bottom.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	bottom.offset_left = 16
 	bottom.offset_right = -54
-	bottom.offset_top = -214
+	bottom.offset_top = -262
 	bottom.offset_bottom = -14
 	ui.add_child(bottom)
-	_enemy_panel = _panel(bottom, 330)
-	_command_panel = _panel(bottom, 330)
+	# Wie in der Arena: Held und seine Anzeige links, Gegner rechts.
 	_party_panel = _panel(bottom, 0)
+	_command_panel = _panel(bottom, 330)
+	_enemy_panel = _panel(bottom, 330)
 
 	_flash_rect = ColorRect.new()
 	_flash_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -216,6 +228,7 @@ func refresh_panels() -> void:
 	if tier_label != "":
 		title.add_child(UI.label(tier_label, "Accent", 16))
 	_enemy_panel.add_child(title)
+	_enemy_panel.add_child(UI.label("HP %d/%d" % [int(e.hp), int(e.maxHp)], "Bold", 18))
 	var bar := Hud.bar(e.hp, e.maxHp, Color("#e8785a"), 300, 16)
 	bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_enemy_panel.add_child(bar)
@@ -261,6 +274,8 @@ func battle_loop() -> void:
 	await _sleep(0.9)
 	var learning: LearningSession = run.learning
 	while state.outcome == "ongoing":
+		if Ctx.time_up():
+			break
 		var action: String = await choose_command()
 		var label := CombatService.action_label(action, state.player)
 		var mode: String = "preferKnown" if action == "defend" else def.selection
@@ -292,6 +307,8 @@ func battle_loop() -> void:
 	_intent.visible = false
 	if state.outcome == "won":
 		await victory()
+	elif state.outcome == "ongoing":
+		await time_over()
 	else:
 		await defeat()
 
@@ -314,19 +331,23 @@ func choose_command() -> String:
 		b.theme_type_variation = "SmallButton"
 		b.add_theme_font_size_override("font_size", 19)
 		b.modulate = Color.WHITE if CombatService.can_use_action(state, action) else Color(1, 1, 1, 0.45)
-		if action == "skill":
-			b.tooltip_text = state.player.skill.description
+		var effect := CombatService.action_effect(action, state, GameConfig.section("combat"))
+		b.tooltip_text = effect
+		b.focus_entered.connect(func() -> void: _command_info.text = effect)
 		b.pressed.connect(choose.bind(i))
 		b.mouse_entered.connect(b.grab_focus)
 		_command_buttons.append(b)
 		_command_panel.add_child(b)
-	_command_panel.add_child(UI.label("1–4 direkt · ↑↓ + Enter", "Dim", 14))
+	_command_info = UI.para("", "", 14)
+	_command_info.custom_minimum_size = Vector2(300, 40)
+	_command_panel.add_child(_command_info)
+	_command_panel.add_child(UI.label("1–4 direkt · ↑↓ + Enter · falsche Vokabel: Aktion verpufft", "Dim", 13))
 	_menu_active = false
 	# Verzögert aktivieren, damit das Enter der vorherigen Eingabe nicht sofort einen Befehl auslöst.
 	if fast:
 		_menu_active = true
 	else:
-		get_tree().create_timer(0.12).timeout.connect(func() -> void: _menu_active = true)
+		_later(0.12, func() -> void: _menu_active = true)
 	UI.focus_later(_command_buttons[0])
 	return await command_chosen
 
@@ -434,7 +455,7 @@ func play_events(events: Array, action: String) -> void:
 				_intent.visible = false
 				say("%s: %s %s!" % [def.name, move.icon, move.name])
 				if int(move.hits) > 0:
-					await _lunge(enemy, 1.4)
+					await _lunge(enemy, -1.4 * TOWARD_ENEMY)
 				elif move.id == "charge":
 					var tw := create_tween()
 					tw.tween_property(enemy, "scale", Vector3(1.12, 1, 1), 0.25)
@@ -536,6 +557,18 @@ func defeat() -> void:
 		_finish({"objectId": obj.id, "outcome": "lost", "messages": [], "gameOver": true})
 
 
+## Zeit-Challenge: Die Uhr ist während des Kampfes abgelaufen.
+func time_over() -> void:
+	Ctx.profile.potions = int(state.player.potions)
+	say("Die Zeit ist abgelaufen!")
+	await result_window("⏱ Zeit abgelaufen", [
+		UI.label("Der Tempel hat dich diesmal noch nicht ganz durchgelassen.", "", 20),
+		UI.label("Für alles Erreichte bekommst du trotzdem %s." % Meta.CURRENCY, "Accent", 20),
+		UI.label("Alles, was du gelernt hast, bleibt erhalten.", "Good", 20),
+	])
+	_finish({"objectId": obj.id, "outcome": "lost", "messages": [], "gameOver": true})
+
+
 static func describe_loot(loot: Dictionary) -> String:
 	var parts: Array[String] = ["%d Gold" % int(loot.gold)]
 	if int(loot.potions) > 0:
@@ -570,7 +603,7 @@ func result_window(title: String, lines: Array) -> void:
 	if fast:
 		_result_open = true
 	else:
-		get_tree().create_timer(0.5).timeout.connect(func() -> void: _result_open = true)
+		_later(0.5, func() -> void: _result_open = true)
 	await result_closed
 
 
@@ -652,11 +685,13 @@ func enemy_pos(h: float) -> Vector3:
 	return ENEMY_POS + Vector3(0, h, 0.2)
 
 
+## Verzögerter Aufruf, der mit dem Kampf endet: Ein Tween gehört zum Knoten und verfällt mit ihm.
+## (Ein SceneTree-Timer würde nach dem Kampfende noch ein Lambda auf den freigegebenen Kampf aufrufen.)
 func _later(seconds: float, cb: Callable) -> void:
 	if fast:
 		cb.call()
 	else:
-		get_tree().create_timer(seconds).timeout.connect(cb)
+		create_tween().tween_callback(cb).set_delay(seconds)
 
 
 func _restore_enemy_tint() -> void:
@@ -870,7 +905,7 @@ func _move_hero(x: float, seconds: float, ease_in := true) -> void:
 
 ## Krieger: stürmt vor und führt einen weiten Schwertbogen; Wuchtschlag mit Sprung und Schockwelle.
 func _warrior_attack(skill: bool, crit: bool) -> void:
-	var to := ENEMY_POS.x - HERO_POS.x + 2.6
+	var to := ENEMY_POS.x - HERO_POS.x - 2.6 * TOWARD_ENEMY
 	await _move_hero(to, 0.24)
 	if skill:
 		var tw := create_tween()
@@ -881,10 +916,10 @@ func _warrior_attack(skill: bool, crit: bool) -> void:
 		_burst(ENEMY_POS + Vector3(0, 0.2, 0.3), Color("#c89a6a"), 14, 2.5, true)
 		_shake(0.3, 0.2)
 	var c := Color("#ffd75e") if skill or crit else Color.WHITE
-	var center := enemy_pos(enemy_height * 0.55) + Vector3(0.3, 0, 0.3)
+	var center := enemy_pos(enemy_height * 0.55) + Vector3(-0.3 * TOWARD_ENEMY, 0, 0.3)
 	var sweep := 1.4 if skill else 1.0
 	for i in 4:
-		_later(0.045 * i, _slash.bind(center + Vector3(0.1 * i, 0.15 - 0.12 * i, 0), 60 - 40 * i, 2.0 * sweep, c, 0.18 * sweep))
+		_later(0.045 * i, _slash.bind(center + Vector3(-0.1 * i * TOWARD_ENEMY, 0.15 - 0.12 * i, 0), -(60 - 40 * i) * TOWARD_ENEMY, 2.0 * sweep, c, 0.18 * sweep))
 	_burst(center, Color("#ffe08a"), 18 if skill else 10, 2.5, false)
 	if crit:
 		_shake(0.18, 0.12)
@@ -896,10 +931,10 @@ func _warrior_attack(skill: bool, crit: bool) -> void:
 
 ## Schurke: blitzschneller Sprint mit Nachbildern und Kreuzhieben; Giftklinge hinterlässt eine Giftwolke.
 func _rogue_attack(skill: bool, crit: bool) -> void:
-	var to := ENEMY_POS.x - HERO_POS.x + 2.0
+	var to := ENEMY_POS.x - HERO_POS.x - 2.0 * TOWARD_ENEMY
 	for i in range(1, 5):
 		var ghost := Fx.sprite(hero.texture, 8.0)
-		ghost.flip_h = true
+		ghost.flip_h = hero.flip_h
 		ghost.alpha_cut = SpriteBase3D.ALPHA_CUT_DISABLED
 		ghost.modulate = Color("#8aff6a", 0.45) if skill else Color("#b8c8ff", 0.45)
 		ghost.position = HERO_POS + Vector3(to * i / 5.0, 0, -0.05)
@@ -913,7 +948,7 @@ func _rogue_attack(skill: bool, crit: bool) -> void:
 	var center := enemy_pos(enemy_height * 0.55) + Vector3(0, 0, 0.3)
 	_slash(center, 45, 2.0, c)
 	await _sleep(0.11)
-	_slash(center + Vector3(-0.2, 0, 0), -45, 2.0, c)
+	_slash(center + Vector3(0.2 * TOWARD_ENEMY, 0, 0), -45, 2.0, c)
 	if skill:
 		_burst(center, Color("#6adf4a"), 24, 1.0, true)
 	if crit:
@@ -969,7 +1004,7 @@ func _mage_attack(skill: bool) -> void:
 	q.material = qm
 	trail.draw_pass_1 = q
 	ball.add_child(trail)
-	ball.position = hero_pos(1.3) + Vector3(-0.6, 0, 0.2)
+	ball.position = hero_pos(1.3) + Vector3(0.6 * TOWARD_ENEMY, 0, 0.2)
 	add_child(ball)
 	var to := enemy_pos(enemy_height * 0.5) + Vector3(0, 0, 0.3)
 	var flight := 0.52 if skill else 0.38

@@ -150,7 +150,8 @@ func _try_generate() -> Dictionary:
 			return {}
 		_carve(path)
 
-	# Bossanbindung: Tür an der Seite, die zum nächstgelegenen Raum zeigt.
+	# Bossanbindung: Tür an der Seite, die zum nächstgelegenen Raum zeigt – bevorzugt oben oder unten,
+	# denn Türen werden frontal zur Kamera gezeichnet und passen nur in Nord-Süd-Durchgänge.
 	var neighbor_pool: Array = others.filter(func(r: Dictionary) -> bool: return r.id != start_room.id)
 	if others.size() == 1:
 		neighbor_pool.append(start_room)
@@ -191,7 +192,7 @@ func _try_generate() -> Dictionary:
 	var door_candidates: Array = []
 	for y in range(1, H - 1):
 		for x in range(1, W - 1):
-			if not _is_entrance(x, y) or (x == boss_door.x and y == boss_door.y):
+			if not _is_entrance(x, y) or not _north_south_passage(x, y) or (x == boss_door.x and y == boss_door.y):
 				continue
 			var d := _bfs(PackedInt32Array([boss_door_idx, _idx(x, y)]))
 			var cut := reachable_count - _count_reachable(d) - 1
@@ -385,6 +386,11 @@ func _is_entrance(x: int, y: int) -> bool:
 	return false
 
 
+## Durchgang von oben nach unten (links und rechts kein Boden): Nur hier steht eine Tür richtig herum.
+func _north_south_passage(x: int, y: int) -> bool:
+	return tiles[_idx(x, y - 1)] == MapModel.FLOOR and tiles[_idx(x, y + 1)] == MapModel.FLOOR 		and tiles[_idx(x - 1, y)] != MapModel.FLOOR and tiles[_idx(x + 1, y)] != MapModel.FLOOR
+
+
 func _near_corridor(x: int, y: int) -> bool:
 	for dy in range(-1, 2):
 		for dx in range(-1, 2):
@@ -436,9 +442,7 @@ func _boss_door_sides(c: Vector2i, target: Vector2i) -> Array:
 	var dy := target.y - c.y
 	var horizontal: Array = [east, west] if dx > 0 else [west, east]
 	var vertical: Array = [south, north] if dy > 0 else [north, south]
-	if absi(dx) >= absi(dy):
-		return [horizontal[0], vertical[0], vertical[1], horizontal[1]]
-	return [vertical[0], horizontal[0], horizontal[1], vertical[1]]
+	return [vertical[0], vertical[1], horizontal[0], horizontal[1]]
 
 
 ## Läuft vom Ziel entlang fallender BFS-Distanz zurück zum Start und sammelt die besuchten Räume.

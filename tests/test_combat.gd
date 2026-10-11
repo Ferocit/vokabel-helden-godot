@@ -205,3 +205,45 @@ func test_erkundung_spielende_fuehrt_zur_auswertung() -> void:
 	(Engine.get_main_loop() as SceneTree).current_scene = null
 	root().remove_child(s)
 	s.free()
+
+
+func test_kampf_zeit_challenge_abgelaufen() -> void:
+	start_run()
+	Ctx.run.timeChallenge = true
+	Ctx.run.timeLeft = 30.0
+	var c := open_combat("elite")
+	var out := []
+	c.finished.connect(func(d: Dictionary) -> void: out.append(d))
+	expect_true(c.ui.find_children("*", "Label", true, false).any(func(n: Node) -> bool: return n is Hud.Clock), "Uhr im Kampf")
+	Ctx.run.timeLeft = 0.0
+	act(c, 0, true)
+	expect_true(c._result_modal != null, "Zeit-abgelaufen-Fenster")
+	c.close_result()
+	expect_eq(out.size(), 1)
+	expect_true(out[0].get("gameOver", false), "Abenteuer endet")
+
+
+func test_kampf_held_links_gegner_rechts() -> void:
+	start_run()
+	var c := open_combat()
+	expect_lt(c.HERO_POS.x, c.ENEMY_POS.x, "Held steht links")
+	var bottom: Node = c._party_panel.get_parent().get_parent()
+	expect_lt(c._party_panel.get_parent().get_index(), c._enemy_panel.get_parent().get_index(), "Heldenanzeige links")
+	expect_eq(bottom, c._enemy_panel.get_parent().get_parent())
+	expect_true(c._enemy_panel.find_children("*", "Label", true, false).any(func(l: Label) -> bool: return l.text == "HP %d/%d" % [int(c.state.enemy.hp), int(c.state.enemy.maxHp)]), "Gegner-HP als Zahl (Issue #1)")
+	c.free()
+
+
+func test_kampf_befehle_erklaeren_ihre_wirkung() -> void:
+	start_run("rogue")
+	var c := open_combat()
+	var cfg := GameConfig.section("combat")
+	var atk := int(c.state.player.attack)
+	expect_eq(CombatService.action_effect("attack", c.state, cfg), "Trifft für %d–%d Schaden. 25 %% Chance auf einen kritischen Treffer (×1.8)." % [atk, atk + 2])
+	expect_true(CombatService.action_effect("skill", c.state, cfg).contains("Gift: 3 Runden"), "Giftklinge nennt das Gift")
+	expect_true(CombatService.action_effect("defend", c.state, cfg).begins_with("Der nächste gegnerische Angriff macht nur"))
+	c._command_buttons[1].focus_entered.emit()
+	expect_eq(c._command_info.text, CombatService.action_effect("defend", c.state, cfg), "Erklärung zum gewählten Befehl (Issue #7)")
+	c.state.enemy.guarding = true
+	expect_true(CombatService.action_effect("attack", c.state, cfg).contains("gepanzert"), "Panzer wird erwähnt")
+	c.free()

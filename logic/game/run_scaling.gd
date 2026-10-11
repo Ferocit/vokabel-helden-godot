@@ -30,6 +30,12 @@ static func scale_level_config(cfg: Dictionary, scale: float) -> Dictionary:
 	return c
 
 
+## Zeit-Challenge: Zeit für das ganze Abenteuer in Sekunden, wächst mit der Anzahl der Vokabeln.
+static func time_limit_for(word_count: int) -> int:
+	var c := GameConfig.section("timeChallenge")
+	return clampi(int(c.baseSeconds) + int(c.secondsPerWord) * word_count, int(c.minSeconds), int(c.maxSeconds))
+
+
 ## Bei größeren Abenteuern braucht das Siegeltor etwas mehr Runen.
 static func scaled_boss_runes(base: int, scale: float) -> int:
 	return CombatService.js_round(base * sqrt(scale))

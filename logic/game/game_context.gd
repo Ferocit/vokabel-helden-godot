@@ -3,7 +3,8 @@ extends Node
 ## Zentraler Spielzustand (Autoload „Ctx“); Szenen lesen und verändern ihn, SaveService persistiert ihn.
 ## ActiveRun { seed, levelScale, bossRunes, unitIds, worldId, map, hp, focus, runes, player: Vector2,
 ##             lastHeal: Vector2, defeated: {id: true}, opened: {id: true}, xpGained, goldGained,
-##             lootGained, levelsGained, startedAt, learning: LearningSession, rng: Callable, completed }
+##             lootGained, levelsGained, startedAt, learning: LearningSession, rng: Callable, completed,
+##             timeChallenge: bool, timeLimit, timeLeft (Sekunden, nur in der Zeit-Challenge) }
 
 signal profile_changed
 
@@ -65,11 +66,13 @@ func _generate_map(seed: int, scale: float, boss_runes: int, world_id: String) -
 
 
 ## Neues Abenteuer: Lauf-Werte (Level, Gold, Ausrüstung …) werden zurückgesetzt, Skills wirken ab Start.
-func start_run(unit_ids: Array, world_id: String = "jungle", seed: int = -1, heat: int = 0) -> Dictionary:
+func start_run(unit_ids: Array, world_id: String = "jungle", seed: int = -1, heat: int = 0, time_challenge: bool = false) -> Dictionary:
 	if seed < 0:
 		seed = Rng.random_seed()
 	profile = Meta.reset_run_fields(Meta.ensure(profile), GameConfig.section("player"))
-	var level_scale := RunScaling.level_scale_for(repo.learning_items(unit_ids).size())
+	var word_count := repo.learning_items(unit_ids).size()
+	var level_scale := RunScaling.level_scale_for(word_count)
+	var time_limit := RunScaling.time_limit_for(word_count) if time_challenge else 0
 	var boss_runes := RunScaling.scaled_boss_runes(int(GameConfig.section("run").bossRunesRequired), level_scale)
 	var map := _generate_map(seed, level_scale, boss_runes, world_id)
 	var s := stats()
@@ -97,6 +100,9 @@ func start_run(unit_ids: Array, world_id: String = "jungle", seed: int = -1, hea
 		"learning": _create_learning(unit_ids, seed),
 		"rng": Rng.create(seed ^ 0x9E3779B9),
 		"completed": false,
+		"timeChallenge": time_challenge,
+		"timeLimit": time_limit,
+		"timeLeft": float(time_limit),
 	}
 	autosave()
 	return run
@@ -154,6 +160,9 @@ func resume_run() -> Dictionary:
 		"learning": learning,
 		"rng": Rng.create(((seed ^ 0x9E3779B9) + int(snap.learning.run.questions)) & Rng.MASK),
 		"completed": false,
+		"timeChallenge": bool(snap.get("timeChallenge", false)),
+		"timeLimit": int(snap.get("timeLimit", 0)),
+		"timeLeft": float(snap.get("timeLeft", 0.0)),
 	}
 	return run
 
@@ -181,6 +190,18 @@ func end_run(victory: bool = false) -> Dictionary:
 	save.clear_run()
 	save_persistent()
 	return reward
+
+
+## Zeit-Challenge: lässt die Uhr laufen. Liefert true, sobald die Zeit abgelaufen ist.
+func tick_time(dt: float) -> bool:
+	if not has_run() or not run.get("timeChallenge", false) or run.completed:
+		return false
+	run.timeLeft = maxf(0.0, float(run.timeLeft) - dt)
+	return time_up()
+
+
+func time_up() -> bool:
+	return has_run() and run.get("timeChallenge", false) and float(run.timeLeft) <= 0.0
 
 
 ## Kampfwerte des Helden für den aktuellen Lauf (inklusive Skillbaum).
@@ -283,4 +304,7 @@ func snapshot_run() -> Dictionary:
 		"lootGained": run.lootGained,
 		"startedAt": run.startedAt,
 		"learning": learning.snapshot(),
+		"timeChallenge": run.get("timeChallenge", false),
+		"timeLimit": run.get("timeLimit", 0),
+		"timeLeft": run.get("timeLeft", 0.0),
 	}

@@ -184,6 +184,12 @@ static func run_reward(run: Dictionary, victory: bool, profile: Dictionary) -> D
 	var subtotal := 0
 	for l: Array in lines:
 		subtotal += int(l[1])
+	# Zeit-Challenge: Wer den Tempel rechtzeitig bezwingt, bekommt einen Bonus.
+	if victory and run.get("timeChallenge", false):
+		var share := float(GameConfig.section("timeChallenge").shardBonus)
+		var time_bonus := int(floor(subtotal * share))
+		lines.append(["Zeit-Challenge +%d %%" % roundi(share * 100.0), time_bonus])
+		subtotal += time_bonus
 	var heat := int(run.get("heat", 0))
 	if heat > 0:
 		var heat_bonus := int(floor(subtotal * heat_shard_bonus(heat)))

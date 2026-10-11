@@ -294,6 +294,23 @@ func _check_level(map: Dictionary, lv: Dictionary, runes: int, strict: bool, lab
 		expect_lt(r.size(), without_boss.size() - 1, label + " Tür trennt nichts ab")
 
 
+## Issue #3: Türen werden frontal gezeichnet und gehören deshalb in Nord-Süd-Durchgänge.
+func test_tueren_stehen_richtig_herum() -> void:
+	var sideways := 0
+	var total := 0
+	for seed in range(1, 201):
+		var map := gen(seed * 977)
+		for o: Dictionary in map.get("objects", []):
+			if o.kind == "door":
+				expect_false(LevelBuilder.door_faces_side(map, o.x, o.y), "seed %d Tür %s seitlich" % [seed, o.id])
+			if o.kind in ["door", "bossDoor"]:
+				total += 1
+				if LevelBuilder.door_faces_side(map, o.x, o.y):
+					sideways += 1
+	# Die Bosstür darf nur im Notfall seitlich sitzen.
+	expect_lt(sideways, total / 20, "seitliche Türen %d von %d" % [sideways, total])
+
+
 func test_level_skalierung_issue16() -> void:
 	expect_eq(RunScaling.level_scale_for(20), 1.0)
 	expect_eq(RunScaling.level_scale_for(60), 2.0)

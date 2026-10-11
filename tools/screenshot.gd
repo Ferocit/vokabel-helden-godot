@@ -37,6 +37,24 @@ func _ready() -> void:
 		if args.has("at"):
 			var at: PackedStringArray = String(args.at).split(",")
 			Ctx.run.player = Vector2(float(at[0]), float(at[1]))
+		# near=door|bossDoor|… stellt den Helden neben das erste Objekt dieser Art (sideDoor: Tür im Ost-West-Gang).
+		if args.has("near"):
+			for o: Dictionary in Ctx.run.map.objects:
+				var side := LevelBuilder.door_faces_side(Ctx.run.map, int(o.x), int(o.y))
+				if o.kind == args.near or (args.near == "sideDoor" and o.kind in ["door", "bossDoor"] and side):
+					for d: Vector2i in [Vector2i(-2, 0), Vector2i(2, 0), Vector2i(0, 2), Vector2i(0, -2)]:
+						if MapModel.is_floor(Ctx.run.map, int(o.x) + d.x, int(o.y) + d.y):
+							Ctx.run.player = Vector2(o.x + d.x + 0.5, o.y + d.y + 0.5)
+							break
+					break
+	# train=<Set-ID> öffnet mit scene=res://scenes/training.tscn das Training für dieses Set.
+	if args.has("train"):
+		TrainingScreen.unit_id = args.train
+	# challenge=1 startet das Abenteuer als Zeit-Challenge.
+	if args.has("challenge") and Ctx.has_run():
+		Ctx.run.timeChallenge = true
+		Ctx.run.timeLimit = RunScaling.time_limit_for(27)
+		Ctx.run.timeLeft = float(args.challenge) if float(args.challenge) > 1.0 else float(Ctx.run.timeLimit)
 	var scene: PackedScene = load(args.get("scene", "res://scenes/title.tscn"))
 	var node := scene.instantiate()
 	if args.has("victory"):
