@@ -54,10 +54,26 @@ func refresh() -> void:
 		UI.label("🧪 %d" % int(Ctx.profile.potions), "Bold", 18),
 		UI.label("💰 %d" % int(Ctx.profile.gold), "Bold", 18),
 		UI.label("Lv %d" % int(Ctx.profile.level), "Accent", 18),
+		xp_bar(),
 		q,
 		Clock.new() if run.get("timeChallenge", false) else null,
 	], 10))
 	reset_size()
+
+
+## Fortschritt zum nächsten Level (Issue #9); auf dem Höchstlevel voll.
+static func xp_bar(width: int = 80) -> ProgressBar:
+	var p: Dictionary = Ctx.profile
+	var cfg := GameConfig.section("player")
+	var next := Player.xp_for_next_level(int(p.level), cfg)
+	var prev: int = int((cfg.xpPerLevel as Array)[int(p.level) - 1])
+	var b := bar(int(p.xp) - prev, maxi(1, next - prev) if next >= 0 else 1, UI.ACCENT, width, 10)
+	if next < 0:
+		b.value = b.max_value
+	b.name = "XpBar"
+	b.tooltip_text = "XP %d / %d – noch %d bis Level %d" % [int(p.xp), next, next - int(p.xp), int(p.level) + 1] if next >= 0 else "Höchstes Level erreicht"
+	b.mouse_filter = Control.MOUSE_FILTER_PASS
+	return b
 
 
 ## Verbleibende Leben dieses Abenteuers; die letzte Niederlage beendet es.

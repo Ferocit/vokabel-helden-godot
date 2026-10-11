@@ -50,10 +50,7 @@ func _character_column() -> Control:
 	col.custom_minimum_size.x = 420
 
 	var next := Player.xp_for_next_level(int(p.level), GameConfig.section("player"))
-	var prev: int = (GameConfig.section("player").xpPerLevel as Array)[int(p.level) - 1]
-	var xp_bar := Hud.bar(int(p.xp) - prev, maxi(1, next - prev) if next >= 0 else 1, UI.ACCENT, 240, 10)
-	if next < 0:
-		xp_bar.value = xp_bar.max_value
+	var xp_bar := Hud.xp_bar(240)
 	col.add_child(UI.hbox([UI.label(cls.name, "H3"), UI.spacer(), UI.label("Level %d" % int(p.level), "Accent", 18)]))
 	col.add_child(UI.hbox([xp_bar, UI.label("XP %d%s" % [int(p.xp), " / %d" % next if next >= 0 else " (max)"], "Dim", 14)], 10))
 

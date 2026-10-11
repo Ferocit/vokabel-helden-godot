@@ -353,3 +353,14 @@ func test_keine_stacheln_an_der_wand() -> void:
 					found = true
 	expect_false(found, "Stachel-Kachel an der Wand")
 	level.root.free()
+
+
+func test_hud_zeigt_xp_balken() -> void:
+	var e := _explore()
+	Ctx.gain_xp(20)
+	e.hud.refresh()
+	var bars: Array = e.hud.find_children("XpBar", "ProgressBar", true, false)
+	expect_eq(bars.size(), 1, "XP-Balken in der Statusleiste (Issue #9)")
+	var cfg := GameConfig.section("player")
+	expect_eq(int(bars[0].value), int(Ctx.profile.xp) - int((cfg.xpPerLevel as Array)[int(Ctx.profile.level) - 1]))
+	e.free()
