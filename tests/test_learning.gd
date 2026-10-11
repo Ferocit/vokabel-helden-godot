@@ -230,11 +230,12 @@ func test_scheduler_modi() -> void:
 		stats[all[i].key] = stats_of(5, 1 if hard else 5, 4 if hard else 0, 0, 0.0 if hard else 0.8)
 	var s := LearningScheduler.new(all, func(k: String) -> Variant: return stats.get(k), cfg(), Rng.create(7), func() -> int: return NOW)
 	expect_gt(s.weight(all[0], "preferHard"), s.weight(all[1], "preferHard") * 2)
-	expect_gt(s.weight(all[1], "preferKnown"), s.weight(all[0], "preferKnown"))
+	# Issue #19: Verteidigen hat keinen eigenen Modus mehr, der leichte Wörter bevorzugt.
+	expect_gt(s.weight(all[0], "normal"), s.weight(all[1], "normal"))
 
 
 func test_scheduler_issue7_keine_wiederholung_richtiger() -> void:
-	for mode in ["normal", "preferHard", "preferKnown"]:
+	for mode in ["normal", "preferHard"]:
 		for seed in range(1, 21):
 			var all := items(97)
 			var stats := {}

@@ -398,7 +398,7 @@ class _Run:
 				action = "defend"
 			elif CombatService.can_use_action(state, "skill") and (def.tier != "normal" or profile.heroClass == "mage"):
 				action = "skill"
-			var mode: String = "preferKnown" if action == "defend" else def.selection
+			var mode: String = def.selection
 			wallet.focus = int(p.focus)
 			var reserve := int(p.skill.focusCost) if action == "skill" else 0
 			var level_before := int(profile.level)

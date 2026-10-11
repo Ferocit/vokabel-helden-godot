@@ -135,7 +135,7 @@
     },
     "heat": {
       "max": 5,
-      "enemyHp": 0.3,
+      "enemyHp": 0.35,
       "enemyAttack": 0.35,
       "shardBonus": 0.25
     }

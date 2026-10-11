@@ -280,7 +280,7 @@ func battle_loop() -> void:
 			break
 		var action: String = await choose_command()
 		var label := CombatService.action_label(action, state.player)
-		var mode: String = "preferKnown" if action == "defend" else def.selection
+		var mode: String = def.selection
 		say("%s: Erinnere dich an das englische Wort!" % label)
 		_intent.visible = false
 		var item := learning.next_word(mode)

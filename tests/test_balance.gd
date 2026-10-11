@@ -99,3 +99,10 @@ func test_balance_kampagne_fortschritt() -> void:
 	var runs := BalanceSim.campaign({"seed": 4000, "learner": "average"}, 6)
 	expect_eq(runs.size(), 6)
 	expect_gt(float(runs[5].invested), 60.0, "Nach 6 Läufen ist ein Teil des Baums gekauft")
+
+
+func test_balance_verteidigen_umgeht_keine_schweren_woerter() -> void:
+	# Issue #19: Wörter beim Verteidigen sind im Schnitt nicht leichter als bei anderen Befehlen.
+	var s := batch({"seed": 6100, "learner": "beginner"}, 30)
+	expect_gt(s.defendShare, 0.0, "Der Bot verteidigt überhaupt")
+	expect_lt(absf(float(s.defendKnowledge) - float(s.otherKnowledge)), 0.08)

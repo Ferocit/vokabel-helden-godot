@@ -1,7 +1,8 @@
 class_name LearningScheduler
 extends RefCounted
 ## Gewichtete Vokabelauswahl mit Wiederholungs-Warteschlange.
-## Modi: "normal" | "preferHard" (Elite, Boss, besondere Truhen) | "preferKnown" (Verteidigen)
+## Modi: "normal" | "preferHard" (Elite, Boss, besondere Truhen). Verteidigen nutzt die normale Auswahl –
+## kein Kampfbefehl darf schwierige Wörter umgehen (Issue #19).
 ## Über alle Abenteuer hinweg (VocabStats): Noch nie oder selten abgefragte und zuletzt falsche Wörter
 ## haben Vorrang; wer ein Wort mehrmals in Folge auf Anhieb richtig weiß, bekommt es seltener.
 
@@ -166,8 +167,6 @@ func weight(item: Dictionary, mode: String) -> float:
 	if mode == "preferHard":
 		w *= 1.0 + 3.0 * (1.0 - mastery)
 		w += 2.0 * mini(int(stats.wrong), 3)
-	elif mode == "preferKnown":
-		w = 1.0 + 4.0 * mastery + (1.0 if misses > 0 else 0.0)
 	return w
 
 

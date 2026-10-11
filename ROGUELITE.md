@@ -81,7 +81,7 @@ Neue Effekte: Schlüssel in `SkillTrees.EFFECT_TEXT` eintragen und an der passen
 
 ## Tempelstufen (Schwierigkeit)
 Ein Sieg auf der höchsten freien Stufe schaltet die nächste frei (bis 5). Vor dem Abenteuer im Titel wählbar.
-Pro Stufe: Gegner +30 % HP, +35 % Angriff, +25 % Splitter (`meta.heat`). Gegenstück zur wachsenden Stärke durch
+Pro Stufe: Gegner +35 % HP, +35 % Angriff, +25 % Splitter (`meta.heat`). Gegenstück zur wachsenden Stärke durch
 Skillbäume.
 
 ## Gemessene Balance (Simulator `logic/sim/balance_sim.gd`)
@@ -100,16 +100,17 @@ Neu erzeugen: `start.bat sim runs=40 learner=beginner,average,strong` bzw.
 | Stufe 0, Anfänger | 100 % | ≈ 42 | ≈ 68 | ≈ 17 |
 | Stufe 0, Durchschnitt | 100 % | ≈ 41 | ≈ 43 | ≈ 10 |
 | Stufe 0, stark | 100 % | ≈ 41 | ≈ 31 | ≈ 7 |
-| Stufe 3, Durchschnitt, keine Skills | 45 % | ≈ 55 | ≈ 76 | ≈ 17 |
+| Stufe 3, Durchschnitt, keine Skills | ≈ 50 % | ≈ 59 | ≈ 76 | ≈ 17 |
 | Stufe 3, Durchschnitt, voller Baum | 100 % | ≈ 75 | ≈ 54 | ≈ 12 |
-| Stufe 5, Durchschnitt, voller Baum | 80 % | ≈ 95 | ≈ 81 | ≈ 18 |
+| Stufe 5, Durchschnitt, voller Baum | ≈ 80 % | ≈ 95 | ≈ 81 | ≈ 18 |
 
 Kampagne (Durchschnitt, immer höchste freie Stufe, Splitter sofort in den Baum): Splitter pro Lauf 37 → 53 → 60 → 80 …,
 der Krieger-Baum ist nach 4 Läufen voll.
 
 Folgerung: Schurke nach dem ersten Sieg freischaltbar; Stufe 3 braucht den Skillbaum, Stufe 5 bleibt mit vollem Baum
 schaffbar. Talente, Segnungen und Händler machten die alten Tempelstufen zu leicht – deshalb wachsen Gegner-HP und
--Angriff jetzt um 30 % / 35 % pro Stufe (vorher 25 % / 20 %). Die Tests in `tests/test_balance.gd` sichern diese
+-Angriff jetzt um je 35 % pro Stufe (vorher 25 % / 20 %; nach „fast richtig“ und ohne
+leichte Wörter beim Verteidigen nachjustiert). Die Tests in `tests/test_balance.gd` sichern diese
 Eckwerte ab.
 
 **Regel:** Wer Kampf, Lernen, Belohnungen, Talente/Segnungen oder Meta-Fortschritt ändert, passt den Simulator und
