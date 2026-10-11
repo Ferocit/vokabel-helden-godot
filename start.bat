@@ -27,6 +27,13 @@ if /i "%~1"=="test" (
   pause
   exit /b %errorlevel%
 )
+if /i "%~1"=="sim" (
+  rem Argumente roh weiterreichen (cmd.exe würde "runs=10" und "a,b" auftrennen); "sim" selbst wird ignoriert.
+  set "SIM_ARGS=%*"
+  "%GODOT%" --headless --path "%~dp0." -s res://tools/sim.gd
+  pause
+  exit /b %errorlevel%
+)
 if /i "%~1"=="export" (
   echo Exportiere nach build\windows\Vokabel-Helden.exe ...
   if not exist "build\windows" mkdir "build\windows"

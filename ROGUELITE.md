@@ -81,22 +81,39 @@ Neue Effekte: Schlüssel in `SkillTrees.EFFECT_TEXT` eintragen und an der passen
 
 ## Tempelstufen (Schwierigkeit)
 Ein Sieg auf der höchsten freien Stufe schaltet die nächste frei (bis 5). Vor dem Abenteuer im Titel wählbar.
-Pro Stufe: Gegner +25 % HP, +20 % Angriff, +25 % Splitter (`meta.heat`). Gegenstück zur wachsenden Stärke durch
+Pro Stufe: Gegner +30 % HP, +35 % Angriff, +25 % Splitter (`meta.heat`). Gegenstück zur wachsenden Stärke durch
 Skillbäume.
 
-## Gemessene Balance (Bot-Simulation, `tests/test_balance.gd`)
-Der Bot weiß 80 % der Wörter und heilt sich vor Elite und Boss – echte Spieler sind eher schwächer.
+## Gemessene Balance (Simulator `logic/sim/balance_sim.gd`)
+Der Simulator spielt komplette Abenteuer mit der echten Spiellogik. Der Bot geht immer zum nächsten Ziel, heilt sich
+am Altar vor Elite/Boss und bei weniger als 50 % HP, kauft beim Händler, wählt Talente und Segnungen, nutzt Hilfen
+bei unsicheren Wörtern und verliert nach 3 Niederlagen. Lerner-Modelle (`config/game.json → simulation.learners`):
+jedes Wort hat eine eigene Trefferwahrscheinlichkeit, die mit jedem Abruf wächst (Anfänger ≈ 25 %, Durchschnitt ≈ 55 %,
+stark ≈ 80 % zu Beginn); zwischen zwei Läufen wird etwas vergessen. Zeiten (Laufen, Antworten, Kampfrunden) sind grobe
+Schätzwerte unter `simulation.time`.
 
-| Fall | Läufe verloren | Ø Splitter |
-| --- | --- | --- |
-| Stufe 0, keine Skills, 80 % | 0/40 | ≈ 42 |
-| Stufe 0, keine Skills, 60 % | 0/40 | ≈ 42 |
-| Stufe 3, keine Skills | 19/30 | – |
-| Stufe 3, voller Krieger-Baum | 0/30 | ≈ 76 |
-| Stufe 5, voller Krieger-Baum | 2/30 | ≈ 108 |
+Neu erzeugen: `start.bat sim runs=40 learner=beginner,average,strong` bzw.
+`start.bat sim runs=40 heat=3,5 skills=none,full` und `start.bat sim campaign=8` (Linux/macOS: `./start.sh sim …`).
 
-Folgerung: Schurke nach dem ersten Sieg, Magier nach dem zweiten freischaltbar; ein Baum braucht ≈ 5 Siege.
-Die Tests sichern diese Eckwerte ab (Splitter 30–60 pro Sieg, Stufe 3 braucht Skills, Stufe 5 bleibt schaffbar).
+| Fall (Krieger, 40 Läufe) | Sieg | Ø Splitter | Ø Abfragen | Ø Minuten |
+| --- | --- | --- | --- | --- |
+| Stufe 0, Anfänger | 100 % | ≈ 42 | ≈ 68 | ≈ 17 |
+| Stufe 0, Durchschnitt | 100 % | ≈ 41 | ≈ 43 | ≈ 10 |
+| Stufe 0, stark | 100 % | ≈ 41 | ≈ 31 | ≈ 7 |
+| Stufe 3, Durchschnitt, keine Skills | 45 % | ≈ 55 | ≈ 76 | ≈ 17 |
+| Stufe 3, Durchschnitt, voller Baum | 100 % | ≈ 75 | ≈ 54 | ≈ 12 |
+| Stufe 5, Durchschnitt, voller Baum | 80 % | ≈ 95 | ≈ 81 | ≈ 18 |
+
+Kampagne (Durchschnitt, immer höchste freie Stufe, Splitter sofort in den Baum): Splitter pro Lauf 37 → 53 → 60 → 80 …,
+der Krieger-Baum ist nach 4 Läufen voll.
+
+Folgerung: Schurke nach dem ersten Sieg freischaltbar; Stufe 3 braucht den Skillbaum, Stufe 5 bleibt mit vollem Baum
+schaffbar. Talente, Segnungen und Händler machten die alten Tempelstufen zu leicht – deshalb wachsen Gegner-HP und
+-Angriff jetzt um 30 % / 35 % pro Stufe (vorher 25 % / 20 %). Die Tests in `tests/test_balance.gd` sichern diese
+Eckwerte ab.
+
+**Regel:** Wer Kampf, Lernen, Belohnungen, Talente/Segnungen oder Meta-Fortschritt ändert, passt den Simulator und
+die Balance-Tests im selben Zug an.
 
 ## Offene Ideen zum Weiterentwickeln
 - Balance mit echten Spielern prüfen (der Bot spielt nahezu optimal).

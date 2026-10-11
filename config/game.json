@@ -131,8 +131,8 @@
     },
     "heat": {
       "max": 5,
-      "enemyHp": 0.25,
-      "enemyAttack": 0.2,
+      "enemyHp": 0.3,
+      "enemyAttack": 0.35,
       "shardBonus": 0.25
     }
   },
@@ -167,5 +167,48 @@
       "pauseMin": 1.0,
       "pauseMax": 1.0
     }
+  },
+  "simulation": {
+    "learners": {
+      "beginner": {
+        "start": 0.25,
+        "spread": 0.15,
+        "gainCorrect": 0.08,
+        "gainWrong": 0.18,
+        "forget": 0.25
+      },
+      "average": {
+        "start": 0.55,
+        "spread": 0.2,
+        "gainCorrect": 0.06,
+        "gainWrong": 0.15,
+        "forget": 0.15
+      },
+      "strong": {
+        "start": 0.8,
+        "spread": 0.12,
+        "gainCorrect": 0.05,
+        "gainWrong": 0.12,
+        "forget": 0.08
+      }
+    },
+    "hints": {
+      "useBelow": 0.4,
+      "lengthBoost": 0.1,
+      "firstLetterBoost": 0.25
+    },
+    "time": {
+      "heroSpeed": 3.4,
+      "pathFactor": 1.4,
+      "answerSec": 6.0,
+      "wrongExtraSec": 7.0,
+      "hintSec": 2.0,
+      "combatRoundSec": 3.5,
+      "lootSec": 3.0,
+      "choiceSec": 4.0,
+      "shopSec": 10.0
+    },
+    "restBelowHp": 0.5,
+    "daysBetweenRuns": 1.0
   }
 }

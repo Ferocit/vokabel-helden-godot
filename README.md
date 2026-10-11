@@ -110,6 +110,13 @@ godot --headless --path . -s res://tests/run_tests.gd -- test_combat   # gefilte
 
 Der Testläufer wertet auch Script-Fehler während eines Tests als Fehlschlag.
 
+**Balancing-Simulator:** `start.bat sim` (bzw. `./start.sh sim`) spielt viele Abenteuer mit einem Bot und gibt
+Tabellen aus (Siegquote, Splitter, Abfragen pro Minute, Lernzuwachs …). Optionen als `schlüssel=wert`, Listen mit
+Komma, z. B. `start.bat sim runs=40 class=warrior,mage learner=beginner,average heat=0,3 skills=none,full` oder
+`start.bat sim campaign=8` (mehrere Läufe mit Meta-Fortschritt). Alle Optionen: `tools/sim.gd`, Modell und Bot:
+`logic/sim/balance_sim.gd`, Annahmen: `simulation` in `config/game.json`. Änderungen an Kampf, Lernen oder
+Belohnungen ziehen den Simulator und `tests/test_balance.gd` mit.
+
 Screenshots ohne Fenster (Linux, z. B. in der Cloud): `tools/shot.sh <name> scene=res://scenes/title.tscn`
 (siehe Kommentar in `tools/screenshot.gd`; `run=1` startet ein Abenteuer im Arbeitsspeicher).
 
@@ -123,7 +130,8 @@ Screenshots ohne Fenster (Linux, z. B. in der Cloud): `tools/shot.sh <name> scen
 | `scenes/` | Titel, Erkundung, Kampf, Auswertung |
 | `ui/` | Theme, UI-Helfer, Vokabel-Abfrage, Import-Editor, HUD, Minikarte, Ausrüstung, Statistik, Melden, Sound |
 | `tests/` | Testrahmen und Tests |
-| `tools/` | Screenshot-Werkzeug |
+| `logic/sim/` | Balancing-Simulator (Bot, Lerner-Modell, Zeitmodell) |
+| `tools/` | Screenshot-Werkzeug, Simulator-Kommandozeile (`sim.gd`) |
 
 Spielstände liegen unter `user://save/` (Windows: `%APPDATA%\Godot\app_userdata\Vokabel-Helden\save`).
 

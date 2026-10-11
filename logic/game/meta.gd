@@ -207,6 +207,20 @@ static func run_reward(run: Dictionary, victory: bool, profile: Dictionary) -> D
 	return {"total": subtotal + bonus, "lines": lines}
 
 
+## Abenteuer abrechnen: Splitter gutschreiben, Statistik und freie Tempelstufe fortschreiben.
+## Verändert `profile` direkt und liefert die Belohnung (auch vom Balancing-Simulator genutzt).
+static func apply_run_end(profile: Dictionary, run: Dictionary, victory: bool) -> Dictionary:
+	var reward := run_reward(run, victory, profile)
+	profile.shards = int(profile.shards) + int(reward.total)
+	profile.records.runs = int(profile.records.runs) + 1
+	profile.records.shardsTotal = int(profile.records.shardsTotal) + int(reward.total)
+	if victory:
+		profile.records.victories = int(profile.records.victories) + 1
+		# Ein Sieg auf der höchsten freien Tempelstufe schaltet die nächste frei.
+		if int(run.get("heat", 0)) >= int(profile.records.heatUnlocked):
+			profile.records.heatUnlocked = mini(int(cfg().heat.max), int(run.get("heat", 0)) + 1)
+	return reward
+
 
 # ---------- Leben, Segnungen, Händler (nur im laufenden Abenteuer) ----------
 

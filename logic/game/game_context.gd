@@ -172,15 +172,7 @@ func resume_run() -> Dictionary:
 func end_run(victory: bool = false) -> Dictionary:
 	var reward := {"total": 0, "lines": []}
 	if has_run() and not run.completed:
-		reward = Meta.run_reward(run, victory, profile)
-		profile.shards = int(profile.shards) + int(reward.total)
-		profile.records.runs = int(profile.records.runs) + 1
-		profile.records.shardsTotal = int(profile.records.shardsTotal) + int(reward.total)
-		if victory:
-			profile.records.victories = int(profile.records.victories) + 1
-			# Ein Sieg auf der höchsten freien Tempelstufe schaltet die nächste frei.
-			if int(run.get("heat", 0)) >= int(profile.records.heatUnlocked):
-				profile.records.heatUnlocked = mini(int(Meta.cfg().heat.max), int(run.get("heat", 0)) + 1)
+		reward = Meta.apply_run_end(profile, run, victory)
 		run.completed = true
 		run.victory = victory
 		run.reward = reward
