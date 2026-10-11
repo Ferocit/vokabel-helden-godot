@@ -242,5 +242,9 @@
   "plate": {
     "gold": 3,
     "damage": 3
+  },
+  "setBonus": {
+    "shards": 5,
+    "goldenShards": 10
   }
 }

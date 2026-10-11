@@ -256,7 +256,10 @@ func _render_list() -> void:
 		row.theme_type_variation = "RowChecked" if _selected.has(unit.id) else "RowUnchecked"
 		var cb := CheckBox.new()
 		cb.button_pressed = _selected.has(unit.id)
-		cb.text = unit.title
+		var stars := int((Ctx.profile.get("setStars", {}) as Dictionary).get(unit.id, 0))
+		cb.text = unit.title + ("  " + SetBonus.star_text(stars) if stars > 0 else "")
+		if stars > 0:
+			cb.tooltip_text = "Goldener Set-Meister: jede Vokabel in einem Abenteuer ohne Hilfe richtig" if stars >= 2 else "Set-Meister: jede Vokabel in einem Abenteuer richtig geschrieben"
 		cb.add_theme_font_size_override("font_size", 17)
 		cb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		cb.clip_text = true

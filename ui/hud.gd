@@ -46,8 +46,8 @@ func refresh() -> void:
 	q.tooltip_text = "Lernabfragen in diesem Abenteuer"
 	q.mouse_filter = Control.MOUSE_FILTER_PASS
 	add_child(UI.hbox([
-		UI.label("HP", "Bold", 18), bar(run.hp, s.maxHp, UI.HP_LOW if hp_low else UI.HP), UI.label("%d/%d" % [int(run.hp), int(s.maxHp)], "Bold", 18),
-		UI.gap(0), UI.label("FP", "Bold", 18), bar(run.focus, s.maxFocus, UI.FP), UI.label("%d/%d" % [int(run.focus), int(s.maxFocus)], "Bold", 18),
+		UI.label("HP", "Bold", 18), bar(run.hp, s.maxHp, UI.HP_LOW if hp_low else UI.HP, 90), UI.label("%d/%d" % [int(run.hp), int(s.maxHp)], "Bold", 18),
+		UI.gap(0), UI.label("FP", "Bold", 18), bar(run.focus, s.maxFocus, UI.FP, 70), UI.label("%d/%d" % [int(run.focus), int(s.maxFocus)], "Bold", 18),
 		UI.gap(0), runes(int(run.runes), int(run.bossRunes)),
 		UI.gap(0), _lives(),
 		_combo(),
@@ -57,6 +57,7 @@ func refresh() -> void:
 		UI.label("Lv %d" % int(Ctx.profile.level), "Accent", 18),
 		xp_bar(),
 		q,
+		_set_progress(),
 		Clock.new() if run.get("timeChallenge", false) else null,
 	], 10))
 	reset_size()
@@ -75,6 +76,28 @@ static func xp_bar(width: int = 80) -> ProgressBar:
 	b.tooltip_text = "XP %d / %d – noch %d bis Level %d" % [int(p.xp), next, next - int(p.xp), int(p.level) + 1] if next >= 0 else "Höchstes Level erreicht"
 	b.mouse_filter = Control.MOUSE_FILTER_PASS
 	return b
+
+
+## Super-Bonus (Issue #29): wie viele Wörter je Set in diesem Abenteuer schon richtig geschrieben wurden.
+static func _set_progress() -> Label:
+	var learning: LearningSession = Ctx.run.learning
+	var prog := SetBonus.progress(Ctx.run, learning.scheduler._items)
+	if prog.is_empty():
+		return null
+	var parts: PackedStringArray = []
+	var tips: PackedStringArray = []
+	for u: String in prog:
+		var p: Dictionary = prog[u]
+		var done: String = Ctx.run.get("setBonus", {}).get(u, "")
+		parts.append("%s %d/%d" % ["🌟" if done == "golden" else ("⭐" if done == "normal" else "📘"), int(p.hits), int(p.total)])
+		var title: String = Ctx.repo.get_unit(u).get("title", u)
+		tips.append("%s: %d von %d Wörtern richtig geschrieben (%d ohne Hilfe)" % [title, int(p.hits), int(p.total), int(p.clean)])
+		if parts.size() >= 3:
+			break
+	var l := UI.label(" ".join(parts), "Dim", 18)
+	l.tooltip_text = "Super-Bonus: Schreib jede Vokabel eines Sets einmal richtig!\n" + "\n".join(tips)
+	l.mouse_filter = Control.MOUSE_FILTER_PASS
+	return l
 
 
 ## Kombo (Issue #21): nur sichtbar, solange sie läuft.

@@ -63,6 +63,7 @@ func _ready() -> void:
 	rng = run.rng
 	state = CombatService.create_combat(Ctx.combat_player(), CombatService.create_enemy(def, int(Ctx.profile.level), rng, int(run.get("heat", 0))))
 	wallet = Ctx.hint_wallet(int(state.player.focus))
+	Ctx.set_bonus_reached.connect(_on_set_bonus)
 	_build_arena()
 	_build_combatants()
 	_build_ui()
@@ -693,6 +694,17 @@ func _finish(data: Dictionary) -> void:
 	await _sleep(0.26)
 	finished.emit(data)
 	queue_free()
+
+
+## Super-Bonus mitten im Kampf (Issue #29): volle Heilung und voller Fokus.
+func _on_set_bonus(bonus: Dictionary) -> void:
+	var p: Dictionary = state.player
+	p.hp = int(p.maxHp)
+	p.focus = int(p.maxFocus)
+	wallet.focus = int(p.maxFocus)
+	say("%s Set-Meister! Jede Vokabel %s richtig – volle Heilung!" % ["🌟 Goldener" if bonus.level == "golden" else "⭐", "ohne Hilfe" if bonus.level == "golden" else "einmal"])
+	_burst(hero_pos(1.6), Color("#ffd75e"), 24, 2.0, true)
+	refresh_panels()
 
 
 func _on_level_up() -> void:

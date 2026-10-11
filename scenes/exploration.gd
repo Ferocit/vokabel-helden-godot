@@ -54,6 +54,7 @@ func _ready() -> void:
 	run = Ctx.run
 	_refresh_speed()
 	Ctx.profile_changed.connect(_refresh_speed)
+	Ctx.set_bonus_reached.connect(_on_set_bonus)
 	_create_agents()
 	level = LevelBuilder.build(run.map, is_gone)
 	add_child(level.root)
@@ -446,6 +447,17 @@ func grant_chest(obj: Dictionary) -> void:
 	loot_toast(MapModel.CHEST_LABELS[obj.chestType], CHEST_ICONS[obj.chestType], LootView.entries(loot, xp))
 	if levels > 0:
 		level_up_toast(levels)
+
+
+## Super-Bonus (Issue #29): ganzes Set einmal richtig geschrieben.
+func _on_set_bonus(bonus: Dictionary) -> void:
+	var title: String = Ctx.repo.get_unit(bonus.unitId).get("title", "Set")
+	var golden: bool = bonus.level == "golden"
+	Sound.play("levelup")
+	toast("%s %s „%s“! Jede Vokabel %s richtig – volle Heilung, +%d %s am Ende." % [
+		"🌟" if golden else "⭐", "Goldener Set-Meister:" if golden else "Set-Meister:", title,
+		"ohne Hilfe" if golden else "einmal", SetBonus.shards_for(bonus.level), Meta.ICON])
+	hud.refresh()
 
 
 ## Wissensschrein: Vokabeln nacheinander, jede genau einmal. Liefert die Zahl der Treffer

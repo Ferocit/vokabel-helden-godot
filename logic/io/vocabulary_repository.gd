@@ -77,5 +77,5 @@ func learning_items(unit_ids: Array) -> Array:
 		if unit.is_empty():
 			continue
 		for e: Dictionary in unit.vocabulary:
-			items.append({"key": Vocab.item_key(unit.id, e.id), "entry": e})
+			items.append({"key": Vocab.item_key(unit.id, e.id), "entry": e, "unitId": unit.id})
 	return items

@@ -7,6 +7,8 @@ extends Node
 ##             timeChallenge: bool, timeLimit, timeLeft (Sekunden, nur in der Zeit-Challenge) }
 
 signal profile_changed
+## Ein Set wurde in diesem Abenteuer komplett richtig geschrieben (Issue #29): {unitId, level}.
+signal set_bonus_reached(bonus: Dictionary)
 
 var save: SaveService
 var repo: VocabularyRepository
@@ -105,6 +107,7 @@ func start_run(unit_ids: Array, world_id: String = "jungle", seed: int = -1, hea
 		"timeLimit": time_limit,
 		"timeLeft": float(time_limit),
 	}
+	SetBonus.init_run(run, (run.learning as LearningSession).scheduler._items)
 	autosave()
 	return run
 
@@ -166,6 +169,11 @@ func resume_run() -> Dictionary:
 		"timeLimit": int(snap.get("timeLimit", 0)),
 		"timeLeft": float(snap.get("timeLeft", 0.0)),
 	}
+	SetBonus.init_run(run, learning.scheduler._items)
+	for k: String in ["setHits", "setClean", "setBonus"]:
+		var saved: Variant = snap.get(k)
+		if saved is Dictionary:
+			run[k] = (saved as Dictionary).duplicate()
 	return run
 
 
@@ -271,6 +279,13 @@ func submit_answer(item: Dictionary, res: Dictionary) -> int:
 	var learning: LearningSession = run.learning
 	learning.submit(item, res)
 	run.combo = Combo.next(int(run.get("combo", 0)), res)
+	# Super-Bonus: ganzes Set richtig → sofort volle Heilung und voller Fokus (Splitter am Ende).
+	for bonus: Dictionary in SetBonus.record(run, learning.scheduler._items, item, res):
+		var s := stats()
+		run.hp = int(s.maxHp)
+		run.focus = int(s.maxFocus)
+		SetBonus.award_star(profile, bonus.unitId, bonus.level)
+		set_bonus_reached.emit(bonus)
 	profile.lastLearnedAt = Vocab.now_ms()
 	if res.outcome == "correct":
 		return gain_xp(int(GameConfig.section("xp").correctAnswer))
@@ -307,4 +322,7 @@ func snapshot_run() -> Dictionary:
 		"timeChallenge": run.get("timeChallenge", false),
 		"timeLimit": run.get("timeLimit", 0),
 		"timeLeft": run.get("timeLeft", 0.0),
+		"setHits": run.get("setHits", {}),
+		"setClean": run.get("setClean", {}),
+		"setBonus": run.get("setBonus", {}),
 	}

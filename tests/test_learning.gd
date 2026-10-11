@@ -377,3 +377,49 @@ func test_mehrere_abenteuer_decken_das_set_ab() -> void:
 				session.submit(item, Vocab.result("correct"))
 		covered += progress.size()
 	expect_ge(covered / 5.0, 55.0, "Nach 3 × 20 Abfragen im Schnitt fast alle 60 Wörter mindestens einmal dran")
+
+
+# ---------- Super-Bonus (Issue #29) ----------
+
+func test_set_bonus_normal_und_golden() -> void:
+	var items: Array = []
+	for i in 3:
+		items.append({"key": "u/%d" % i, "entry": entry(str(i), "w%d" % i), "unitId": "u"})
+	var run := {}
+	SetBonus.init_run(run, items)
+	expect_eq(SetBonus.record(run, items, items[0], Vocab.result("correct", 1)), [])
+	expect_eq(SetBonus.record(run, items, items[1], Vocab.result("almostCorrect")), [], "fast richtig zählt nicht")
+	SetBonus.record(run, items, items[1], Vocab.result("correct"))
+	var got := SetBonus.record(run, items, items[2], Vocab.result("correct"))
+	expect_eq(got, [{"unitId": "u", "level": "normal"}], "alle einmal richtig (mit Hilfe zählt)")
+	expect_eq(SetBonus.record(run, items, items[2], Vocab.result("correct")), [], "nur einmal")
+	got = SetBonus.record(run, items, items[0], Vocab.result("correct"))
+	expect_eq(got, [{"unitId": "u", "level": "golden"}], "jetzt alle auch ohne Hilfe")
+	expect_eq(run.setBonus, {"u": "golden"})
+	var profile := {}
+	SetBonus.award_star(profile, "u", "golden")
+	SetBonus.award_star(profile, "u", "normal")
+	expect_eq(int(profile.setStars.u), 2, "der bessere Stern bleibt")
+
+
+func test_set_bonus_im_abenteuer() -> void:
+	VocabPrompt.instant = true
+	Ctx.setup(KeyValueStore.new())
+	Ctx.start_run(["sample"], "jungle", 77)
+	var learning: LearningSession = Ctx.run.learning
+	var reached := []
+	var cb := func(b: Dictionary) -> void: reached.append(b)
+	Ctx.set_bonus_reached.connect(cb)
+	Ctx.run.hp = 1
+	for item: Dictionary in learning.scheduler._items:
+		Ctx.submit_answer(item, Vocab.result("correct"))
+	Ctx.set_bonus_reached.disconnect(cb)
+	expect_eq(reached.size(), 1)
+	expect_eq(reached[0].level, "golden")
+	expect_eq(int(Ctx.run.hp), int(Ctx.stats().maxHp), "volle Heilung")
+	expect_eq(int(Ctx.profile.setStars.sample), 2)
+	var r := Meta.run_reward(Ctx.run, false, Ctx.profile)
+	expect_true((r.lines as Array).any(func(l: Array) -> bool: return String(l[0]).contains("Set-Meister")))
+	Ctx.autosave()
+	Ctx.resume_run()
+	expect_eq(Ctx.run.setBonus, {"sample": "golden"}, "bleibt im Spielstand")

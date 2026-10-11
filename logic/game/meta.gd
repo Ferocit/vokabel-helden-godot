@@ -34,6 +34,8 @@ static func ensure(profile: Dictionary) -> Dictionary:
 		profile.unlockedClasses = ["warrior"]
 	if not profile.get("skills") is Dictionary:
 		profile.skills = {}
+	if not profile.get("setStars") is Dictionary:
+		profile.setStars = {}
 	for c: Dictionary in GameData.HERO_CLASSES:
 		if not (profile.skills as Dictionary).get(c.id) is Dictionary:
 			profile.skills[c.id] = {}
@@ -189,6 +191,9 @@ static func run_reward(run: Dictionary, victory: bool, profile: Dictionary) -> D
 		lines.append(["%d richtig erinnerte Vokabeln" % correct, correct / per_words])
 	if victory:
 		lines.append(["Tempel bezwungen", int(c.victory)])
+	for unit_id: String in run.get("setBonus", {}):
+		var level: String = run.setBonus[unit_id]
+		lines.append(["%s Set-Meister" % ("🌟 Goldener" if level == "golden" else "⭐"), SetBonus.shards_for(level)])
 	var subtotal := 0
 	for l: Array in lines:
 		subtotal += int(l[1])

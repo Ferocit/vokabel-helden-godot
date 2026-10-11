@@ -57,10 +57,10 @@ func _batch(args: Dictionary, base: Dictionary) -> void:
 					o.skills = "full" if skills == "full" else {}
 					var s := BalanceSim.batch(o, int(args.runs))
 					rows.append([cls, learner, int(heat), skills, "%d %%" % roundi(s.winRate * 100.0), s.defeats, s.shards, s.level,
-						s.questions, s.words, s.perMinute, s.minutes, s.hints, s.talents, s.blessings, s.maxCombo, s.knowledgeGain,
+						s.questions, s.words, s.perMinute, s.minutes, s.hints, s.talents, s.blessings, s.maxCombo, "%d %% / %d %%" % [roundi(s.setBonus * 100.0), roundi(s.setBonusGolden * 100.0)], s.knowledgeGain,
 						"%.2f / %.2f" % [s.defendKnowledge, s.otherKnowledge]])
 	print(BalanceSim.table(["Klasse", "Lerner", "Stufe", "Skills", "Sieg", "Ø Niederl.", "Ø 🔷", "Ø Level", "Abfragen",
-		"Wörter", "Abfr./min", "Minuten", "Hilfen", "Talente", "Segnungen", "Ø max. Kombo", "Wissen +", "Wissen Vert./sonst"], rows))
+		"Wörter", "Abfr./min", "Minuten", "Hilfen", "Talente", "Segnungen", "Ø max. Kombo", "Set-Meister / golden", "Wissen +", "Wissen Vert./sonst"], rows))
 
 
 func _campaign(args: Dictionary, base: Dictionary) -> void:

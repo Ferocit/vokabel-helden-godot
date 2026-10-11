@@ -125,7 +125,7 @@ static func _forget(knowledge: Dictionary, learner: String) -> void:
 ## Durchschnitte und Quoten über mehrere Ergebnisse.
 static func summarize(rows: Array) -> Dictionary:
 	var n := float(maxi(1, rows.size()))
-	var keys := ["shards", "level", "defeats", "questions", "words", "firstTry", "hints", "minutes", "perMinute", "talents", "blessings", "itemsBought", "knowledgeGain", "defendShare", "defendKnowledge", "otherKnowledge", "maxCombo"]
+	var keys := ["shards", "level", "defeats", "questions", "words", "firstTry", "hints", "minutes", "perMinute", "talents", "blessings", "itemsBought", "knowledgeGain", "defendShare", "defendKnowledge", "otherKnowledge", "maxCombo", "setBonus", "setBonusGolden"]
 	var sum := {}
 	for k: String in keys:
 		sum[k] = 0.0
@@ -186,6 +186,8 @@ class _Run:
 	var combo := 0
 	var max_combo := 0
 	var last_revenge := false
+	var set_bonus_heal := false
+	var set_bonus_level := ""
 
 	func _init(opts: Dictionary) -> void:
 		o = opts
@@ -194,7 +196,7 @@ class _Run:
 		sc = c.simulation
 		rng = Rng.create(int(o.seed))
 		var vocab: Array = o.vocabulary if not (o.vocabulary as Array).is_empty() else BalanceSim.sample_vocab()
-		var items: Array = vocab.map(func(e: Dictionary) -> Dictionary: return {"key": "s/" + str(e.id), "entry": e})
+		var items: Array = vocab.map(func(e: Dictionary) -> Dictionary: return {"key": "s/" + str(e.id), "entry": e, "unitId": "s"})
 		profile = (o.profile as Dictionary).duplicate(true) if not (o.profile as Dictionary).is_empty() else Player.normalize({}, pc)
 		profile.heroClass = o.heroClass
 		if (o.profile as Dictionary).is_empty():
@@ -219,6 +221,7 @@ class _Run:
 		var s := _stats()
 		run_state = {"seed": int(o.seed), "heat": int(o.heat), "map": map, "defeated": {}, "opened": {}, "learning": learning,
 			"hp": int(s.maxHp), "focus": int(s.maxFocus), "runes": 0}
+		SetBonus.init_run(run_state, items)
 		pos = map.start
 
 	func _initial_knowledge() -> float:
@@ -274,6 +277,12 @@ class _Run:
 		_spend(float(sc.time.answerSec) + used * float(sc.time.hintSec) + (float(sc.time.wrongExtraSec) if outcome == "wrongCorrected" else 0.0))
 		learning.submit(item, Vocab.result(outcome, used))
 		combo = Combo.next(combo, Vocab.result(outcome, used))
+		for bonus: Dictionary in SetBonus.record(run_state, learning.scheduler._items, item, Vocab.result(outcome, used)):
+			var st := _stats()
+			run_state.hp = int(st.maxHp)
+			run_state.focus = int(st.maxFocus)
+			set_bonus_heal = true
+			set_bonus_level = bonus.level
 		max_combo = maxi(max_combo, combo)
 		if o.learner != "fixed":
 			var k := float(knowledge[item.key])
@@ -411,6 +420,10 @@ class _Run:
 			var level_before := int(profile.level)
 			var outcome := ask(mode, wallet, reserve, action)
 			p.focus = int(wallet.focus)
+			if set_bonus_heal:
+				set_bonus_heal = false
+				p.hp = int(p.maxHp)
+				p.focus = int(p.maxFocus)
 			if int(profile.level) > level_before:
 				var ns := _stats()
 				p.maxHp = int(ns.maxHp)
@@ -580,6 +593,8 @@ class _Run:
 			"perMinute": questions / maxf(0.01, seconds / 60.0),
 			"talents": talents_taken,
 			"maxCombo": max_combo,
+			"setBonus": 1.0 if set_bonus_level != "" else 0.0,
+			"setBonusGolden": 1.0 if set_bonus_level == "golden" else 0.0,
 			"blessings": blessings_taken,
 			"itemsBought": items_bought,
 			"knowledgeGain": known_after - knowledge_before,
