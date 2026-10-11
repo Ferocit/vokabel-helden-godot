@@ -4,7 +4,7 @@
 - **Phaser-Original als Referenz:** `G:\VibeCoding\VokabelHeroes`. Dort nichts ändern.
 - **Godot:** `E:\Spiele\Steam\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe` (4.7.2)
 - **Godot in der Cloud (Linux):** 4.7.2 stable von github.com/godotengine/godot-builds, nach `/usr/local/bin/godot` verlinken.
-- **Tests:** `godot --headless --path . -s res://tests/run_tests.gd [-- filter]`. Erwartet: 81 grün, etwa 25–40 s.
+- **Tests:** `godot --headless --path . -s res://tests/run_tests.gd [-- filter]`. Erwartet: 85 grün, etwa 25–40 s.
 - **Screenshots:** Linux: `tools/shot.sh <name> scene=res://scenes/title.tscn [call=open_unit_manager]` (xvfb + opengl3).
   Ohne GPU: `apt-get install mesa-vulkan-drivers` (lavapipe) für Forward+, sonst `DRIVER=opengl3`.
   Mit `run=1 [class=rogue] [seed=…] [at=x,y]` startet ein Abenteuer im Arbeitsspeicher.
@@ -47,12 +47,23 @@
   - `scenes/summary.tscn`: Sternenhimmel, Kennzahlen, Wort-Chips (sofort gewusst, mit Hilfe, üben), schwierigste
     Wörter mit Mastery, Zeit/XP/Gold/Beute, „Zurück zum Titel“ (setzt `Ctx.run = {}`).
   - Test prüft, dass jede im Code verwendete Sound-ID als Datei unter `assets/audio` existiert.
+- **Phase 6:** Melden, Start, README, 4 Tests.
+  - Autoload `Reporter` (`ui/reporter.gd`): 🐞-Knopf bzw. F8 in jeder Szene, Screenshot (abwählbar), Kategorien,
+    Kontext (Szene, offene Dialoge, aktuelle Vokabel mit Treffern in allen Sets, Abenteuer, Log-Auszug),
+    pausiert das Spiel. Ablage unter `reports/` (exportiert: `user://reports`), GitHub-Issue per `gh` im
+    Hintergrund-Thread inkl. Screenshot-Upload auf Branch `report-screenshots`. `VQ_REPORT_GITHUB=0` = nur lokal.
+  - `start.bat` (GODOT-Variable, Steam-Pfad, PATH; `start.bat test`), `start.sh`, `README.md`.
+  - Testläufer zählt Script-Fehler über einen `Logger` und wertet sie als Fehlschlag.
 
-## Nächste Schritte (siehe Plan, Abschnitt „Reihenfolge“)
-1. **Phase 6:** Melden via gh, start.bat, README
+## Stand
+Alle sechs Phasen sind portiert. Mögliche nächste Schritte:
+- Auf echter Hardware (Windows, Forward+) spielen und Licht/Kamera feinjustieren; in der Cloud wurde mit
+  lavapipe (Software-Vulkan) geprüft.
+- Bäume vor dem Helden bei Verdeckung transparent machen (derzeit stehen vor Wegen nur niedrige Büsche).
+- Export-Vorlage (Windows) anlegen.
 
 **Arbeitsweise:**
 - Selbstständig ohne Rückfragen arbeiten.
-- Nach jeder Phase Tests ausführen, committen und pushen.
-- Screenshots über ein Hilfsskript in `tools/` prüfen.
+- Nach jeder Änderung Tests ausführen, committen und pushen.
+- Screenshots über `tools/shot.sh` bzw. `tools/screenshot.tscn` prüfen.
 - Diese Datei aktuell halten.

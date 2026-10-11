@@ -51,6 +51,8 @@ func _ready() -> void:
 			node.call(m)
 		for i in 5:
 			await get_tree().process_frame
+	if args.has("report"):
+		Reporter.open_report()
 	for i in int(args.get("frames", "30")):
 		await get_tree().process_frame
 	var out: String = args.get("out", "screenshots/shot.png")

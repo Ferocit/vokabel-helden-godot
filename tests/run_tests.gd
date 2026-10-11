@@ -4,6 +4,22 @@ extends SceneTree
 
 
 var _done := false
+var _errors := ErrorCounter.new()
+
+
+## Zählt Script-Fehler (z. B. Aufruf auf null), damit ein Test mit Laufzeitfehler nicht grün durchgeht.
+class ErrorCounter extends Logger:
+	var count := 0
+	var _mutex := Mutex.new()
+
+	func _log_error(_function: String, _file: String, _line: int, _code: String, _rationale: String, _editor_notify: bool, error_type: int, _script_backtraces: Array[ScriptBacktrace]) -> void:
+		if error_type == Logger.ERROR_TYPE_SCRIPT:
+			_mutex.lock()
+			count += 1
+			_mutex.unlock()
+
+	func _log_message(_message: String, _error: bool) -> void:
+		pass
 
 
 ## Erst im ersten Frame starten: dann ist der Baum samt Autoloads bereit und `_ready` läuft beim Einhängen.
@@ -15,6 +31,7 @@ func _process(_delta: float) -> bool:
 
 
 func _run() -> void:
+	OS.add_logger(_errors)
 	var filter := ""
 	var args := OS.get_cmdline_user_args()
 	if not args.is_empty():
@@ -40,7 +57,10 @@ func _run() -> void:
 			var tc: TestCase = script.new()
 			tc.current = "%s › %s" % [f.trim_suffix(".gd"), m]
 			var t0 := Time.get_ticks_msec()
+			var errors_before := _errors.count
 			tc.call(m)
+			if _errors.count > errors_before:
+				tc.fail("%d Script-Fehler während des Tests (siehe Ausgabe oben)" % (_errors.count - errors_before))
 			total += 1
 			var ms := Time.get_ticks_msec() - t0
 			if tc.failures.is_empty():
