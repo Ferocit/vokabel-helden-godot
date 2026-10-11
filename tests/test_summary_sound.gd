@@ -82,3 +82,39 @@ func test_alle_sounds_vorhanden() -> void:
 	expect_gt(ids.size(), 12, "Sound-IDs im Code gefunden")
 	for id: String in ids:
 		expect_true(ResourceLoader.exists("res://assets/audio/%s.ogg" % id), "Sounddatei fehlt: %s" % id)
+
+
+func test_letzte_pruefung_zahlt_einmal_aus() -> void:
+	play_some(12)
+	Ctx.end_run()
+	var shards_before := int(Ctx.profile.shards)
+	var wrong: Array = (Ctx.run.learning as LearningSession).run.summary().wrongWords
+	expect_gt(wrong.size(), 0)
+	var s: Control = SUMMARY.instantiate()
+	root().add_child(s)
+	var btn: Button = s.find_child("FinalExam", true, false)
+	expect_true(btn != null, "Letzte Prüfung wird angeboten")
+	btn.pressed.emit()
+	var answered := 0
+	while answered < 20:
+		var prompts := s.find_children("*", "VocabPrompt", true, false).filter(func(p: Node) -> bool: return not p.is_queued_for_deletion())
+		if prompts.is_empty():
+			break
+		var p: VocabPrompt = prompts[0]
+		p.input.text = p.entry.en
+		p._submit()
+		answered += 1
+	expect_eq(answered, wrong.size(), "Jedes Fehlerwort einmal")
+	expect_eq(int(Ctx.profile.shards), shards_before + Meta.final_exam_reward(wrong.size()))
+	expect_true(Ctx.run.finalExamDone)
+	expect_eq(Meta.apply_final_exam(Ctx.profile, Ctx.run, 5), 0, "Nur einmal")
+	expect_true(s.find_child("FinalExam", true, false) == null, "Kein zweites Angebot")
+	expect_true(texts(s).any(func(x: String) -> bool: return x.begins_with("📝 Letzte Prüfung:")), "Ergebnis wird gezeigt")
+	root().remove_child(s)
+	s.free()
+
+
+func test_letzte_pruefung_belohnung() -> void:
+	expect_eq(Meta.final_exam_reward(0), 0)
+	expect_eq(Meta.final_exam_reward(1), 1)
+	expect_eq(Meta.final_exam_reward(6), 6 / int(Meta.cfg().shards.finalExamPer))

@@ -225,6 +225,28 @@ static func apply_run_end(profile: Dictionary, run: Dictionary, victory: bool) -
 	return reward
 
 
+## Letzte Prüfung (Issue #18): Splitter für richtig beantwortete Fehlerwörter nach dem Abenteuer –
+## einer je `finalExamPer` Wörter, mindestens einer, sobald eines richtig war.
+static func final_exam_reward(correct: int) -> int:
+	if correct <= 0:
+		return 0
+	return maxi(1, correct / maxi(1, int(cfg().shards.get("finalExamPer", 2))))
+
+
+## Zahlt die Letzte Prüfung genau einmal pro Abenteuer aus und ergänzt die Belohnung des Laufs.
+static func apply_final_exam(profile: Dictionary, run: Dictionary, correct: int) -> int:
+	if run.get("finalExamDone", false):
+		return 0
+	run.finalExamDone = true
+	var shards := final_exam_reward(correct)
+	profile.shards = int(profile.shards) + shards
+	profile.records.shardsTotal = int(profile.records.get("shardsTotal", 0)) + shards
+	if run.get("reward") is Dictionary and shards > 0:
+		(run.reward.lines as Array).append(["Letzte Prüfung (%d richtig)" % correct, shards])
+		run.reward.total = int(run.reward.total) + shards
+	return shards
+
+
 # ---------- Leben, Segnungen, Händler (nur im laufenden Abenteuer) ----------
 
 ## Eine Niederlage kostet ein Leben. Liefert true, wenn noch Leben übrig sind (Erwachen am Altar).

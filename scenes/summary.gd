@@ -52,6 +52,10 @@ func _build() -> void:
 	var sub := UI.label("Der Boss ist besiegt. Hier ist, was du gelernt hast:" if victory else "Dein Lernfortschritt wurde gespeichert. Hier ist deine Auswertung:", "Dim", 18)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.add_child(sub)
+	if exam_result != "":
+		var ex := UI.label(exam_result, "Good", 18)
+		ex.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		body.add_child(ex)
 	body.add_child(UI.gap(4))
 
 	var grid := UI.hbox([], 10)
@@ -62,6 +66,10 @@ func _build() -> void:
 	body.add_child(grid)
 	body.add_child(UI.gap(4))
 	body.add_child(_reward_card(run))
+	var exam := _final_exam_card(s.wrongWords, run)
+	if exam != null:
+		body.add_child(UI.gap(4))
+		body.add_child(exam)
 	body.add_child(UI.gap(4))
 
 	var left := UI.vbox([UI.label("✔ Beim ersten Versuch gewusst", "H3")])
@@ -115,6 +123,57 @@ func _build() -> void:
 	center.add_child(win)
 	add_child(center)
 	UI.focus_later(back)
+
+
+## Angebot „Letzte Prüfung“: die Fehlerwörter des Abenteuers noch einmal, für Bonus-Splitter (Issue #18).
+func _final_exam_card(wrong: Array, run: Dictionary) -> Control:
+	if wrong.is_empty() or run.get("finalExamDone", false):
+		return null
+	var best := Meta.final_exam_reward(wrong.size())
+	var btn := UI.button("📝 Letzte Prüfung: %d %s – bis zu +%d %s" % [wrong.size(), "Wort" if wrong.size() == 1 else "Wörter", best, Meta.ICON], start_final_exam.bind(wrong))
+	btn.name = "FinalExam"
+	var info := UI.para("Die Wörter, die heute noch nicht saßen – einmal ohne Hilfe. Freiwillig.", "Dim", 15)
+	var card := PanelContainer.new()
+	card.theme_type_variation = "Card"
+	card.add_child(UI.hbox([btn, info], 14))
+	return card
+
+
+## Fragt jedes Fehlerwort einmal ab (ohne Hilfen), schreibt Statistik fort und zahlt danach einmalig aus.
+func start_final_exam(wrong: Array) -> void:
+	if Ctx.run.get("finalExamDone", false):
+		return
+	Sound.play("select")
+	for c in get_children():
+		remove_child(c)
+		c.queue_free()
+	var correct := 0
+	for i in wrong.size():
+		var item: Dictionary = wrong[i].item
+		var prompt := VocabPrompt.create({
+			"item": item,
+			"wallet": {"freeCharges": {}, "focus": 0, "costs": GameConfig.section("combat").hintFocusCost.duplicate()},
+			"label": "Letzte Prüfung",
+			"footer": "Wort %d/%d · %d richtig" % [i + 1, wrong.size(), correct],
+			"hints": false,
+		})
+		add_child(prompt)
+		var out: Dictionary = await prompt.finished
+		var res: Dictionary = out.result.duplicate()
+		res.firstTry = false
+		Ctx.progress[item.key] = Vocab.record_answer(Ctx.progress.get(item.key), res, GameConfig.section("learning"), Vocab.now_ms())
+		if res.outcome == "correct":
+			correct += 1
+	var shards := Meta.apply_final_exam(Ctx.profile, Ctx.run, correct)
+	Ctx.save_persistent()
+	Ctx.profile_changed.emit()
+	Sound.play("victory" if shards > 0 else "select")
+	exam_result = "📝 Letzte Prüfung: %d von %d richtig – +%d %s" % [correct, wrong.size(), shards, Meta.ICON]
+	_build()
+
+
+## Ergebnis der Letzten Prüfung (wird nach der Prüfung über der Auswertung angezeigt).
+var exam_result := ""
 
 
 ## Tempelsplitter dieses Abenteuers mit Aufschlüsselung; Ausrüstung und Gold verfallen.

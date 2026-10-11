@@ -543,6 +543,20 @@ class _Run:
 
 	func _result(victory: bool, defeats: int, boss_attempts: int) -> Dictionary:
 		var reward := Meta.apply_run_end(profile, run_state, victory)
+		run_state.reward = reward
+		# Letzte Prüfung (Issue #18): der Bot macht sie immer; jedes Fehlerwort einmal, ohne Hilfen.
+		var exam_correct := 0
+		var exam_words: Array = learning.run.summary().wrongWords
+		if o.get("useFinalExam", true):
+			for w: Dictionary in exam_words:
+				var key: String = w.item.key
+				var ok: bool = rng.call() < float(knowledge[key])
+				if ok:
+					exam_correct += 1
+				var st: Variant = o.progress.get(key)
+				o.progress[key] = Vocab.record_answer(st, Vocab.result("correct" if ok else "wrongCorrected"), c.learning, clock)
+				_spend(float(sc.time.answerSec))
+			Meta.apply_final_exam(profile, run_state, exam_correct)
 		var summary := learning.run.summary()
 		var known_after := 0.0
 		for item: Dictionary in learning.scheduler._items:
@@ -555,6 +569,8 @@ class _Run:
 			"defeats": defeats,
 			"bossAttempts": boss_attempts,
 			"shards": int(reward.total),
+			"examWords": exam_words.size(),
+			"examCorrect": exam_correct,
 			"level": int(profile.level),
 			"questions": questions,
 			"words": (summary.words as Array).size(),

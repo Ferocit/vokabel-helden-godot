@@ -52,6 +52,8 @@ Einstellungen (Ton, Lautstärke, Vollbild) und eine Spielanleitung gibt es im Ti
    **Kombo ⚡:** Richtige Antworten in Folge ohne Hilfe machen Angriffe stärker (bis ×1,5); ein Fehler setzt sie zurück. Gegner kündigen ihre nächste
    Aktion an (z. B. „Schwerer Schlag“ → jetzt verteidigen).
 5. **Auswertung:** Was sofort saß, was mit Hilfe, was weiter geübt wird – und die verdienten 🔷 Tempelsplitter.
+   Freiwillig gibt es die **📝 Letzte Prüfung**: Die Fehlerwörter des Abenteuers noch einmal ohne Hilfe, je zwei
+   richtige bringen einen Bonus-Splitter (`meta.shards.finalExamPer`).
 
 **Rogue-lite:** Jedes Abenteuer beginnt auf Level 1 mit Holzschwert; Ausrüstung, Gold und Level verfallen am
 Ende. Mit Tempelsplittern werden dauerhaft Klassen freigeschaltet (anfangs nur der Krieger) und Skillbäume
