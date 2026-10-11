@@ -441,7 +441,7 @@ func _class_card(cls: Dictionary, key: int) -> Button:
 	var sprite := UI.sprite(int(cls.frame), 96)
 	sprite.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	box.add_child(sprite)
-	var name := UI.label("[%d]  %s" % [key, cls.name], "H2")
+	var name := UI.label(cls.name, "H2")
 	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(name)
 	var tag := UI.label(cls.tagline, "Dim", 14)
@@ -469,6 +469,10 @@ func _class_card(cls: Dictionary, key: int) -> Button:
 	for c in box.find_children("*", "Control", true, false):
 		(c as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.add_child(box)
+	# Tastenkappe oben links in der Ecke, außerhalb des Textflusses.
+	var cap := UI.keycap(str(key), 18)
+	cap.position = Vector2(12, 12)
+	card.add_child(cap)
 	return card
 
 

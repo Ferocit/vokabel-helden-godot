@@ -267,3 +267,14 @@ func test_kampf_beute_als_liste_mit_symbolen() -> void:
 	var titles: Array = c._result_modal.body.find_children("*", "Label", true, false).map(func(l: Label) -> String: return l.text)
 	expect_true(titles.has("Erfahrung") and titles.has("Rune"), "Zeilen für XP und Rune")
 	c.close_result()
+
+
+## Issue #11: Kurzbefehle sind als Tastenkappen erkennbar (Befehle und Segnungen).
+func test_kurzbefehle_als_tastenkappen() -> void:
+	start_run()
+	var c := open_combat("elite")
+	for i in c._command_buttons.size():
+		var cap: Node = c._command_buttons[i].find_child("Keycap", true, false)
+		expect_true(cap != null, "Befehl %d hat Tastenkappe" % (i + 1))
+		expect_eq((cap.get_child(0) as Label).text, str(i + 1))
+	c.free()

@@ -142,6 +142,36 @@ static func clear(node: Node) -> void:
 		c.queue_free()
 
 
+## Tastenkappe, z. B. für Kurzbefehle 1–4: sieht wie eine Taste aus, damit man sie nicht für Text hält.
+static func keycap(text: String, size: int = 16) -> PanelContainer:
+	var cap := PanelContainer.new()
+	cap.name = "Keycap"
+	var sb := UiTheme.box(Color("#2b2620"), GOLD, 1, 4, Vector4(7, 0, 7, 1))
+	sb.border_width_bottom = 3
+	cap.add_theme_stylebox_override("panel", sb)
+	var l := label(text, "Bold", size)
+	l.add_theme_color_override("font_color", ACCENT)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cap.add_child(l)
+	cap.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	cap.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	cap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return cap
+
+
+## Inhalt (Box) auf einen Knopf legen: füllt ihn mit Rand und lässt Klicks zum Knopf durch.
+static func fill_button(b: Button, content: Control, margin := Vector4(10, 4, 10, 4)) -> void:
+	content.set_anchors_preset(Control.PRESET_FULL_RECT)
+	content.offset_left = margin.x
+	content.offset_top = margin.y
+	content.offset_right = -margin.z
+	content.offset_bottom = -margin.w
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for c in content.find_children("*", "Control", true, false):
+		(c as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+	b.add_child(content)
+
+
 ## Kenney-Sprite als skalierte Pixelgrafik.
 static func sprite(frame_no: int, px: int = 40) -> TextureRect:
 	var r := TextureRect.new()

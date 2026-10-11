@@ -328,10 +328,11 @@ func choose_command() -> String:
 		elif action == "item":
 			meta = "   ×%d" % int(state.player.potions)
 		var b := Button.new()
-		b.text = "%d  %s%s" % [i + 1, CombatService.action_label(action, state.player), meta]
-		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.theme_type_variation = "SmallButton"
-		b.add_theme_font_size_override("font_size", 19)
+		b.custom_minimum_size.y = 38
+		var name := UI.label(CombatService.action_label(action, state.player), "Bold", 19)
+		name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UI.fill_button(b, UI.hbox([UI.keycap(str(i + 1)), name, UI.label(meta.strip_edges(), "Dim", 17)], 10), Vector4(8, 3, 12, 3))
 		b.modulate = Color.WHITE if CombatService.can_use_action(state, action) else Color(1, 1, 1, 0.45)
 		var effect := CombatService.action_effect(action, state, GameConfig.section("combat"))
 		b.tooltip_text = effect
@@ -343,7 +344,7 @@ func choose_command() -> String:
 	_command_info = UI.para("", "", 14)
 	_command_info.custom_minimum_size = Vector2(300, 40)
 	_command_panel.add_child(_command_info)
-	_command_panel.add_child(UI.label("1–4 direkt · ↑↓ + Enter · falsche Vokabel: Aktion verpufft", "Dim", 13))
+	_command_panel.add_child(UI.label("Tasten 1–4 · ↑↓ + Enter · falsche Vokabel: Aktion verpufft", "Dim", 13))
 	_menu_active = false
 	# Verzögert aktivieren, damit das Enter der vorherigen Eingabe nicht sofort einen Befehl auslöst.
 	if fast:
@@ -625,12 +626,20 @@ func choose_blessing_window() -> void:
 		var b: Dictionary = options[i]
 		var btn := Button.new()
 		btn.theme_type_variation = "CardButton"
-		btn.custom_minimum_size = Vector2(270, 150)
-		btn.text = "%d  %s %s\n\n%s" % [i + 1, b.icon, b.name, Blessings.text(b)]
-		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		btn.custom_minimum_size = Vector2(270, 170)
+		var icon := UI.label(b.icon, "", 34)
+		icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var title := UI.label(b.name, "Bold", 20)
+		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var text := UI.para(Blessings.text(b), "", 16)
+		text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UI.fill_button(btn, UI.vbox([UI.keycap(str(i + 1), 18), icon, title, text], 6), Vector4(12, 10, 12, 10))
 		btn.pressed.connect(choose_blessing.bind(i))
 		row.add_child(btn)
 	m.body.add_child(row)
+	var hint := UI.label("Taste 1–3 oder klicken", "Dim", 14)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	m.body.add_child(hint)
 	UI.focus_later(row.get_child(0) as Control)
 	await blessing_chosen
 
