@@ -296,8 +296,9 @@ func battle_loop() -> void:
 		var levels := Ctx.submit_answer(item, out.result)
 		if levels > 0:
 			_on_level_up()
-		var correct: bool = out.result.outcome == "correct"
-		var events := CombatService.resolve_player_action(state, action, correct, GameConfig.section("combat"), rng)
+		var outcome: String = out.result.outcome
+		var power := float(GameConfig.section("combat").almostPower) if outcome == "almostCorrect" else 1.0
+		var events := CombatService.resolve_player_action(state, action, outcome != "wrongCorrected", GameConfig.section("combat"), rng, power)
 		wallet.focus = int(state.player.focus)
 		await play_events(events, action)
 		if state.outcome != "ongoing":
@@ -407,6 +408,9 @@ func play_events(events: Array, action: String) -> void:
 				say("„%s“ verpufft – das Wort kommt bald noch einmal." % CombatService.action_label(ev.action, state.player))
 				_burst(hero_pos(1.4), Color("#bfc4d8"), 10, 1.2, false)
 				await _sleep(1.1)
+			"weak":
+				say("Fast richtig – „%s“ wirkt nur halb so stark." % CombatService.action_label(ev.action, state.player))
+				await _sleep(0.8)
 			"damage":
 				if ev.target == "enemy":
 					var skill := action == "skill"

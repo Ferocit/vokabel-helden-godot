@@ -42,14 +42,32 @@ func test_abfrage_falsch_dann_abtippen() -> void:
 	var p := prompt(item(), wallet())
 	var out := []
 	p.finished.connect(func(o: Dictionary) -> void: out.append(o))
-	answer(p, "House")
-	expect_eq(p.phase, "correction", "Groß-/Kleinschreibung zählt")
+	answer(p, "garden")
+	expect_eq(p.phase, "correction", "Falsches Wort führt zur Korrektur")
 	answer(p, "hous")
 	expect_eq(p.phase, "correction", "Falsch abgetippt bleibt in der Korrektur")
 	expect_true(out.is_empty())
 	answer(p, "house")
 	expect_eq(out.size(), 1)
 	expect_eq(out[0].result.outcome, "wrongCorrected")
+
+
+func test_abfrage_fast_richtig_ohne_abtippen() -> void:
+	var p := prompt(item(), wallet())
+	var out := []
+	p.finished.connect(func(o: Dictionary) -> void: out.append(o))
+	answer(p, "hosue")
+	expect_eq(out.size(), 1, "Tippfehler: kein Abtippen nötig")
+	expect_eq(out[0].result.outcome, "almostCorrect")
+
+
+func test_abfrage_grossschreibung_egal_bei_kleiner_loesung() -> void:
+	var p := prompt(item(), wallet())
+	var out := []
+	p.finished.connect(func(o: Dictionary) -> void: out.append(o))
+	answer(p, "House")
+	expect_eq(out.size(), 1)
+	expect_eq(out[0].result.outcome, "correct")
 
 
 func test_abfrage_leere_eingabe_wird_ignoriert() -> void:

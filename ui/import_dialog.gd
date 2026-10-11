@@ -14,7 +14,8 @@ const AI_PROMPT := """Lies die Vokabeln auf dem Foto aus. Gib ausschließlich JS
   ]
 }
 Regeln: "de" = deutsches Wort, "en" = englische Hauptlösung, weitere gültige Übersetzungen in "alternatives".
-Übernimm die Schreibweise exakt wie auf der Seite."""
+Übernimm die Schreibweise exakt wie auf der Seite. Großbuchstaben nur dort, wo sie im Englischen immer stehen
+(z. B. "I", "Monday", "London") – sonst alles klein."""
 
 ## Das gerade offene Dialogfenster (für Drag & Drop aus der Titelszene), als WeakRef,
 ## damit die statische Variable den Dialog nicht über das Spielende hinaus festhält.
@@ -271,7 +272,7 @@ func _make_row(row: int) -> PanelContainer:
 		refresh())
 	var cs := CheckBox.new()
 	cs.button_pressed = entry.caseSensitive
-	cs.tooltip_text = "Groß-/Kleinschreibung prüfen"
+	cs.tooltip_text = "Großbuchstaben der Lösung prüfen (z. B. „Monday“). Kleingeschriebene Lösungen sind immer egal."
 	cs.custom_minimum_size.x = 34
 	cs.toggled.connect(func(on: bool) -> void:
 		entry.caseSensitive = on

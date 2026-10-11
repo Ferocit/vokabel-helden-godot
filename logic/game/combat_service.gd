@@ -114,12 +114,16 @@ static func can_use_action(state: Dictionary, action: String) -> bool:
 
 ## Führt die gewählte Aktion aus. Nur bei richtig erinnerter Vokabel wirkt sie;
 ## bei falscher Antwort verpufft sie, ohne Fokus oder Items zu verbrauchen.
-static func resolve_player_action(state: Dictionary, action: String, answered_correctly: bool, cfg: Dictionary, rng: Callable) -> Array:
+## `power` < 1 schwächt die Wirkung ab („fast richtig“, Issue #17): Schaden, Heilung und Verteidigen.
+static func resolve_player_action(state: Dictionary, action: String, answered_correctly: bool, cfg: Dictionary, rng: Callable, power: float = 1.0) -> Array:
 	var events: Array = []
 	state.defending = false
+	state.defendPower = 1.0
 	if not answered_correctly:
 		events.append({"type": "fizzle", "action": action})
 		return events
+	if power < 1.0:
+		events.append({"type": "weak", "action": action, "power": power})
 
 	var player: Dictionary = state.player
 	var enemy: Dictionary = state.enemy
@@ -127,21 +131,24 @@ static func resolve_player_action(state: Dictionary, action: String, answered_co
 		"attack":
 			var crit: bool = rng.call() < float(player.critChance)
 			var base: int = int(player.attack) + Rng.rand_int(rng, 0, 2)
-			events.append_array(_damage_enemy(state, js_round(base * float(player.critMultiplier)) if crit else base, crit))
+			var dmg: int = js_round(base * float(player.critMultiplier)) if crit else base
+			events.append_array(_damage_enemy(state, maxi(1, js_round(dmg * power)), crit))
 		"skill":
 			var skill: Dictionary = player.skill
 			player.focus = int(player.focus) - int(skill.focusCost)
-			events.append_array(_damage_enemy(state, js_round(int(player.attack) * float(skill.multiplier)) + Rng.rand_int(rng, 0, 2), false))
+			var hit: int = js_round(int(player.attack) * float(skill.multiplier)) + Rng.rand_int(rng, 0, 2)
+			events.append_array(_damage_enemy(state, maxi(1, js_round(hit * power)), false))
 			if skill.has("poisonTurns") and state.outcome == "ongoing":
 				var dmg := maxi(1, js_round(int(player.attack) * float(skill.get("poisonFactor", 0.5))))
 				enemy.poison = {"turns": int(skill.poisonTurns), "damage": dmg}
 				events.append({"type": "poisoned", "turns": int(skill.poisonTurns)})
 		"defend":
 			state.defending = true
+			state.defendPower = power
 			events.append({"type": "defend"})
 		"item":
 			player.potions = int(player.potions) - 1
-			var healed := mini(int(cfg.potionHeal) + int(player.get("potionHealBonus", 0)), int(player.maxHp) - int(player.hp))
+			var healed := mini(js_round((int(cfg.potionHeal) + int(player.get("potionHealBonus", 0))) * power), int(player.maxHp) - int(player.hp))
 			player.hp = int(player.hp) + healed
 			events.append({"type": "heal", "amount": healed})
 
@@ -188,7 +195,9 @@ static func resolve_enemy_turn(state: Dictionary, rng: Callable) -> Array:
 	var hit := 0
 	while hit < int(move.hits) and int(player.hp) > 0:
 		var raw := maxi(1, js_round(int(enemy.attack) * float(move.power)) + Rng.rand_int(rng, -1, 1))
-		var amount := maxi(1, int(floor(raw * float(player.defendFactor))) if state.defending else raw)
+		# Halbes Verteidigen („fast richtig“) hält nur einen Teil dessen ab, was volles Verteidigen abhält.
+		var factor := 1.0 - (1.0 - float(player.defendFactor)) * float(state.get("defendPower", 1.0))
+		var amount := maxi(1, int(floor(raw * factor))) if state.defending else raw
 		amount = maxi(1, amount - int(player.get("armor", 0)))
 		player.hp = maxi(0, int(player.hp) - amount)
 		events.append({"type": "damage", "target": "player", "amount": amount, "blocked": state.defending})

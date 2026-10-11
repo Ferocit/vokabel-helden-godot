@@ -278,3 +278,22 @@ func test_kurzbefehle_als_tastenkappen() -> void:
 		expect_true(cap != null, "Befehl %d hat Tastenkappe" % (i + 1))
 		expect_eq((cap.get_child(0) as Label).text, str(i + 1))
 	c.free()
+
+
+func test_fast_richtig_halbe_wirkung() -> void:
+	var def := GameData.get_enemy("stone_rat")
+	var cls := GameData.get_class_def("warrior")
+	var base := {"hp": 40, "maxHp": 60, "focus": 6, "maxFocus": 6, "attack": 10, "potions": 1}
+	var full := CombatService.create_combat(CombatService.combat_player_from(base, cls), CombatService.create_enemy(def, 1))
+	var half := CombatService.create_combat(CombatService.combat_player_from(base, cls), CombatService.create_enemy(def, 1))
+	full.enemy.guarding = false
+	half.enemy.guarding = false
+	CombatService.resolve_player_action(full, "attack", true, GameConfig.section("combat"), func() -> float: return 0.99)
+	var ev := CombatService.resolve_player_action(half, "attack", true, GameConfig.section("combat"), func() -> float: return 0.99, 0.5)
+	expect_eq(ev[0].type, "weak")
+	var dmg_full: int = int(full.enemy.maxHp) - int(full.enemy.hp)
+	var dmg_half: int = int(half.enemy.maxHp) - int(half.enemy.hp)
+	expect_eq(dmg_half, CombatService.js_round(dmg_full * 0.5))
+	# Heiltrank heilt halb.
+	CombatService.resolve_player_action(half, "item", true, GameConfig.section("combat"), func() -> float: return 0.5, 0.5)
+	expect_eq(int(half.player.hp), 40 + CombatService.js_round(18 * 0.5))

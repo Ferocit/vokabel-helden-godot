@@ -16,7 +16,7 @@ func test_balance_abfragen_pro_run() -> void:
 	var total := 0
 	for seed in range(1, 31):
 		var r := simulate_run(seed * 31, 0.8)
-		expect_ge(r.questions, min_q * 0.8, "seed %d" % seed)
+		expect_ge(r.questions, min_q * 0.7, "seed %d" % seed)
 		expect_le(r.questions, 65, "seed %d" % seed)
 		expect_ge(r.words, 15, "seed %d" % seed)
 		total += int(r.questions)

@@ -69,6 +69,10 @@ func _build() -> void:
 	left.add_child(UI.gap(8))
 	left.add_child(UI.label("💡 Mit Hilfe gelöst", "H3"))
 	left.add_child(_chips(s.withHints, false, "Keine Hilfen gebraucht."))
+	if not (s.get("almostWords", []) as Array).is_empty():
+		left.add_child(UI.gap(8))
+		left.add_child(UI.label("≈ Fast richtig (Tippfehler)", "H3"))
+		left.add_child(_chips(s.almostWords, false, ""))
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	var right := UI.vbox([UI.label("✎ Diese Wörter üben wir weiter", "H3")])

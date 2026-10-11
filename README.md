@@ -44,7 +44,9 @@ Einstellungen (Ton, Lautstärke, Vollbild) und eine Spielanleitung gibt es im Ti
 3. **Erkunden:** Runen ◆ sammeln (Gegner, Türen), um das Siegeltor zum Boss zu öffnen.
    Der Kristallaltar heilt und ist der Rückkehrpunkt nach einer Niederlage.
 4. **Kämpfen:** Jede Aktion verlangt eine richtig erinnerte Vokabel. Falsch → die Aktion verpufft, die
-   Lösung wird gezeigt und einmal abgetippt; das Wort kommt bald wieder. Gegner kündigen ihre nächste
+   Lösung wird gezeigt und einmal abgetippt; das Wort kommt bald wieder. **Fast richtig** (ein Tippfehler oder
+   nur die Großschreibung falsch): Die Aktion wirkt halb so stark, die richtige Schreibweise wird gezeigt.
+   Kleingeschriebene Lösungen dürfen auch großgeschrieben werden („House“ für „house“). Gegner kündigen ihre nächste
    Aktion an (z. B. „Schwerer Schlag“ → jetzt verteidigen).
 5. **Auswertung:** Was sofort saß, was mit Hilfe, was weiter geübt wird – und die verdienten 🔷 Tempelsplitter.
 

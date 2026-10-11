@@ -1,7 +1,9 @@
 class_name VocabPrompt
 extends PanelContainer
 ## Gemeinsame Lernabfrage für Kampf, Truhen und Türen:
-## deutsche Aufgabe → englische Eingabe → strenge Prüfung → bei Fehler Lösung zeigen und abtippen lassen.
+## deutsche Aufgabe → englische Eingabe → Prüfung → bei Fehler Lösung zeigen und abtippen lassen.
+## Ein einzelner Tippfehler (oder nur falsche Großschreibung) gilt als „fast richtig“: Die richtige Schreibweise
+## wird gezeigt, abtippen ist nicht nötig (Issue #17).
 ## Kein Zeitlimit. Hilfen (Alt+1/Alt+2) kosten Fokus oder eine Gratis-Ladung.
 ## Ergebnis (Signal `finished`): { cancelled: bool, result: AnswerResult (falls nicht abgebrochen), wallet }
 
@@ -11,6 +13,7 @@ signal wallet_changed(wallet: Dictionary)
 const HINT_TYPES: Array[String] = ["length", "firstLetter"]
 const CORRECT_DELAY := 0.65
 const CORRECTION_DELAY := 0.9
+const ALMOST_DELAY := 2.4
 
 ## Für Tests: Ergebnis sofort melden statt nach kurzer Anzeigezeit.
 static var instant := false
@@ -187,7 +190,19 @@ func _submit() -> void:
 
 
 func _submit_answer(value: String) -> void:
-	if Vocab.is_correct_answer(entry, value):
+	var check := Vocab.check_answer(entry, value)
+	if check == "almostCorrect":
+		phase = "done"
+		input.editable = false
+		_set_input_state(true, UI.ACCENT)
+		_feedback.theme_type_variation = "Accent"
+		var case_only := Vocab.accepted_answers(entry).any(func(a: String) -> bool: return a.to_lower() == value.strip_edges().to_lower())
+		var spelled := _closest_answer(value)
+		_feedback.text = ("Fast! Achte auf die Großschreibung: „%s“" if case_only else "Fast richtig! Ein Buchstabe stimmt nicht – richtig ist „%s“.") % spelled
+		Sound.play("hint")
+		_finish_later({"cancelled": false, "result": Vocab.result("almostCorrect", (hints.used as Array).size()), "wallet": wallet}, ALMOST_DELAY)
+		return
+	if check == "correct":
 		phase = "done"
 		input.editable = false
 		_set_input_state(true)
@@ -260,8 +275,18 @@ func _submit_correction(value: String) -> void:
 		input.select_all()
 
 
-func _set_input_state(right: bool) -> void:
-	var sb := UiTheme.box(Color(0.04, 0.05, 0.05, 0.9), UI.GOOD if right else UI.BAD, 2, 5, Vector4(8, 5, 8, 5))
+## Die akzeptierte Lösung, die der Eingabe am nächsten kommt (für „fast richtig“).
+func _closest_answer(value: String) -> String:
+	var v := value.strip_edges().to_lower()
+	for a: String in Vocab.accepted_answers(entry):
+		if a.to_lower() == v or Vocab.one_typo(a.to_lower(), v):
+			return a
+	return entry.en
+
+
+func _set_input_state(right: bool, color: Variant = null) -> void:
+	var border: Color = color if color is Color else (UI.GOOD if right else UI.BAD)
+	var sb := UiTheme.box(Color(0.04, 0.05, 0.05, 0.9), border, 2, 5, Vector4(8, 5, 8, 5))
 	input.add_theme_stylebox_override("normal", sb)
 	input.add_theme_stylebox_override("focus", sb)
 	input.add_theme_stylebox_override("read_only", sb)

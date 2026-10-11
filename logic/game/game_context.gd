@@ -271,6 +271,8 @@ func submit_answer(item: Dictionary, res: Dictionary) -> int:
 	profile.lastLearnedAt = Vocab.now_ms()
 	if res.outcome == "correct":
 		return gain_xp(int(GameConfig.section("xp").correctAnswer))
+	if res.outcome == "almostCorrect":
+		return gain_xp(int(GameConfig.section("xp").almostAnswer))
 	return 0
 
 

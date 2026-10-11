@@ -454,7 +454,8 @@ func run_challenge(title: String, required: int, mode: String) -> bool:
 		if levels > 0:
 			level_up_toast(levels)
 		hud.refresh()
-		if out.result.outcome == "correct":
+		# Fast richtig (ein Tippfehler) öffnet ebenfalls – das Wort kommt trotzdem bald wieder.
+		if out.result.outcome != "wrongCorrected":
 			correct += 1
 	return true
 

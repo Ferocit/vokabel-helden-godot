@@ -58,13 +58,48 @@ func test_validator_gross_klein_und_alternativen() -> void:
 	var monday := entry("2", "Monday")
 	expect_true(Vocab.is_correct_answer(monday, "Monday"))
 	expect_false(Vocab.is_correct_answer(monday, "monday"))
-	expect_false(Vocab.is_correct_answer(entry("1", "dangerous"), "Dangerous"))
+	expect_eq(Vocab.check_answer(monday, "monday"), "almostCorrect", "nur Großschreibung falsch")
+	# Kleingeschriebene Lösung: Großschreibung ist egal (Issue #17).
+	expect_true(Vocab.is_correct_answer(entry("1", "dangerous"), "Dangerous"))
 	expect_true(Vocab.is_correct_answer(entry("3", "house", {"caseSensitive": false}), "HOUSE"))
 	var fast := entry("4", "fast", {"alternatives": ["quick"]})
 	expect_true(Vocab.is_correct_answer(fast, "quick"))
 	expect_false(Vocab.is_correct_answer(fast, "rapid"))
 	expect_true(Vocab.is_correct_copy("dangerous", " dangerous "))
 	expect_false(Vocab.is_correct_copy("dangerous", "Dangerous"))
+
+
+func test_fast_richtig_ein_tippfehler() -> void:
+	var d := entry("1", "dangerous")
+	for typo in ["dangerus", "dnagerous", "dangerou", "dangerouss", "dangerois", "Dangerus"]:
+		expect_eq(Vocab.check_answer(d, typo), "almostCorrect", typo)
+	for wrong in ["dangrus", "danger", "safe", "dan gerous x", "   "]:
+		expect_eq(Vocab.check_answer(d, wrong), "wrong", wrong)
+	# Kurze Wörter: kein Tippfehler-Bonus („cat“ vs. „car“ sind verschiedene Wörter).
+	expect_eq(Vocab.check_answer(entry("2", "cat"), "car"), "wrong")
+	# Alternativen zählen auch.
+	expect_eq(Vocab.check_answer(entry("3", "fast", {"alternatives": ["quickly"]}), "quickyl"), "almostCorrect")
+	expect_true(Vocab.one_typo("house", "hosue"))
+	expect_false(Vocab.one_typo("house", "house"))
+
+
+func test_fast_richtig_lernlogik() -> void:
+	expect_near(Vocab.next_mastery(0.5, Vocab.result("almostCorrect"), cfg()), 0.55)
+	var s := Vocab.record_answer(null, Vocab.result("correct"), cfg(), 100)
+	s = Vocab.record_answer(s, Vocab.result("almostCorrect"), cfg(), 200)
+	expect_match(s, {"seen": 2, "correct": 1, "wrong": 0, "almost": 1, "streak": 1, "firstTryStreak": 0})
+	# Scheduler: kommt bald wieder, aber ohne Fehler-Gewicht.
+	var items := [{"key": "a", "entry": entry("a", "alpha")}, {"key": "b", "entry": entry("b", "beta")}, {"key": "c", "entry": entry("c", "gamma")}]
+	var sched := LearningScheduler.new(items, func(_k: String) -> Variant: return null, cfg(), Rng.create(3))
+	sched.next()
+	sched.report("a", "almostCorrect")
+	expect_true(sched.pending.has("a"))
+	expect_false(sched.wrong_in_run.has("a"))
+	var run := RunSession.new()
+	run.record(items[0], Vocab.result("almostCorrect"), 0.0, 0.05)
+	var sum := run.summary()
+	expect_eq((sum.almostWords as Array).size(), 1)
+	expect_eq((sum.wrongWords as Array).size(), 0)
 
 
 # ---------- Mastery & Statistik ----------

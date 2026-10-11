@@ -241,8 +241,9 @@ class _Run:
 
 	# ---------- Lernen ----------
 
-	## Eine Vokabel abfragen (mit Hilfen nach Bot-Regel). Liefert true bei richtiger Antwort.
-	func ask(mode: String, wallet: Dictionary, reserve_focus: int = 0, action: String = "") -> bool:
+	## Eine Vokabel abfragen (mit Hilfen nach Bot-Regel). Liefert das Ergebnis wie die Abfrage:
+	## "correct" | "almostCorrect" | "wrongCorrected". Ein Teil der Fehler sind Tippfehler (simulation.almostShare).
+	func ask(mode: String, wallet: Dictionary, reserve_focus: int = 0, action: String = "") -> String:
 		var item := learning.next_word(mode)
 		var p := float(knowledge[item.key])
 		if action == "defend":
@@ -264,14 +265,17 @@ class _Run:
 				break
 		hints += used
 		var correct: bool = rng.call() < p
-		_spend(float(sc.time.answerSec) + used * float(sc.time.hintSec) + (0.0 if correct else float(sc.time.wrongExtraSec)))
-		learning.submit(item, Vocab.result("correct" if correct else "wrongCorrected", used))
+		var outcome := "correct" if correct else ("almostCorrect" if rng.call() < float(sc.almostShare) else "wrongCorrected")
+		_spend(float(sc.time.answerSec) + used * float(sc.time.hintSec) + (float(sc.time.wrongExtraSec) if outcome == "wrongCorrected" else 0.0))
+		learning.submit(item, Vocab.result(outcome, used))
 		if o.learner != "fixed":
 			var k := float(knowledge[item.key])
 			knowledge[item.key] = minf(0.98, k + (1.0 - k) * float(learner.gainCorrect if correct else learner.gainWrong))
 		if correct:
 			gain_xp(int(c.xp.correctAnswer))
-		return correct
+		elif outcome == "almostCorrect":
+			gain_xp(int(c.xp.almostAnswer))
+		return outcome
 
 	func _wallet(focus: int) -> Dictionary:
 		return {"freeCharges": (_stats().freeHints as Dictionary).duplicate(), "focus": focus, "costs": (c.combat.hintFocusCost as Dictionary).duplicate()}
@@ -398,7 +402,7 @@ class _Run:
 			wallet.focus = int(p.focus)
 			var reserve := int(p.skill.focusCost) if action == "skill" else 0
 			var level_before := int(profile.level)
-			var correct := ask(mode, wallet, reserve, action)
+			var outcome := ask(mode, wallet, reserve, action)
 			p.focus = int(wallet.focus)
 			if int(profile.level) > level_before:
 				var ns := _stats()
@@ -409,7 +413,8 @@ class _Run:
 				p.focus = int(ns.maxFocus)
 			if action == "skill" and not CombatService.can_use_action(state, "skill"):
 				action = "attack"  # Fokus für eine Hilfe ausgegeben
-			CombatService.resolve_player_action(state, action, correct, c.combat, rng)
+			var power := float(c.combat.almostPower) if outcome == "almostCorrect" else 1.0
+			CombatService.resolve_player_action(state, action, outcome != "wrongCorrected", c.combat, rng, power)
 			CombatService.resolve_enemy_turn(state, rng)
 			_spend(float(sc.time.combatRoundSec))
 		profile.potions = int(state.player.potions)
@@ -435,7 +440,7 @@ class _Run:
 		var wallet := _wallet(int(run_state.focus))
 		var got := 0
 		while got < needed:
-			if ask(mode, wallet):
+			if ask(mode, wallet) != "wrongCorrected":
 				got += 1
 		run_state.focus = int(wallet.focus)
 		run_state.opened[obj.id] = true

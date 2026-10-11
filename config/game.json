@@ -64,7 +64,9 @@
     "recentHistorySize": 2,
     "masteryCorrectGain": 0.1,
     "masteryNoHintBonus": 0.05,
-    "masteryWrongLoss": 0.15
+    "masteryWrongLoss": 0.15,
+    "masteryAlmostGain": 0.05,
+    "almostMinLength": 4
   },
   "player": {
     "baseHp": 40,
@@ -92,14 +94,16 @@
     "hintFocusCost": {
       "length": 1,
       "firstLetter": 2
-    }
+    },
+    "almostPower": 0.5
   },
   "xp": {
     "correctAnswer": 2,
     "normalEnemy": 6,
     "eliteEnemy": 15,
     "boss": 40,
-    "chest": 3
+    "chest": 3,
+    "almostAnswer": 1
   },
   "meta": {
     "classUnlockCost": {
@@ -209,6 +213,7 @@
       "shopSec": 10.0
     },
     "restBelowHp": 0.5,
-    "daysBetweenRuns": 1.0
+    "daysBetweenRuns": 1.0,
+    "almostShare": 0.3
   }
 }

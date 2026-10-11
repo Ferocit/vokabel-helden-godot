@@ -114,6 +114,10 @@ func report(key: String, outcome: String) -> void:
 		correct_in_run[key] = true
 		return
 	correct_in_run.erase(key)
+	if outcome == "almostCorrect":
+		# Fast richtig: bald noch einmal, aber ohne Fehler-Gewicht.
+		pending[key] = {"dueAt": picks + Rng.rand_int(_rng, int(_cfg.minRepeatGap), int(_cfg.maxRepeatGap)), "misses": int(wrong_in_run.get(key, 0))}
+		return
 	var misses: int = int(wrong_in_run.get(key, 0)) + 1
 	wrong_in_run[key] = misses
 	var reduction: int = int(options.get("repeatGapReduction", 0))
