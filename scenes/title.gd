@@ -210,7 +210,7 @@ const HELP := [
 	["💡 Hilfen", "Alt+1 zeigt die Wortlänge, Alt+2 den ersten Buchstaben. Hilfen kosten Fokus (FP)."],
 	["❤ Leben", "Jedes Abenteuer hat 3 Leben. Bei einer Niederlage erwachst du am Kristallaltar; ist das letzte Leben weg, endet das Abenteuer."],
 	["🔷 Tempelsplitter", "Jedes Abenteuer beginnt auf Level 1 mit Holzschwert – Ausrüstung, Gold und Level verfallen am Ende. Dafür bekommst du Tempelsplitter für alles Erreichte. Damit schaltest du unter „🌳 Fertigkeiten“ neue Klassen frei und baust Skillbäume aus."],
-	["✨ Unterwegs", "Am Kristallaltar ruhst du dich aus und kaufst beim Händler mit Gold ein. Nach jedem Sieg über einen Elite-Gegner wählst du eine Segnung für den Rest des Abenteuers."],
+	["✨ Unterwegs", "Am Kristallaltar ruhst du dich aus und kaufst beim Händler mit Gold ein. Bei jedem Level-up wählst du ein Talent, nach jedem Sieg über einen Elite-Gegner eine Segnung – beide gelten für den Rest des Abenteuers."],
 	["🎮 Steuerung", "WASD/Pfeiltasten oder Controller bewegen · E/Enter/Leertaste (A) interagieren · I (Y) Charakter & Inventar · Esc (Start) Menü · F8 oder 🐞 etwas melden."],
 ]
 

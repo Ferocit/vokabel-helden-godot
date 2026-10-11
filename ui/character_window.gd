@@ -128,6 +128,25 @@ func _stats() -> Control:
 		grid.add_child(name)
 		grid.add_child(UI.label(r[2], "Bold", 16))
 	var box := UI.vbox([UI.label("Werte", "H3"), grid], 4)
+	var talents: Array = Ctx.profile.get("talents", [])
+	if not talents.is_empty():
+		var tflow := HFlowContainer.new()
+		tflow.add_theme_constant_override("h_separation", 6)
+		tflow.add_theme_constant_override("v_separation", 4)
+		var shown := {}
+		for id: String in talents:
+			if shown.has(id):
+				continue
+			shown[id] = true
+			var t := Talents.get_talent(id)
+			var n := Talents.rank(talents, id)
+			var chip := PanelContainer.new()
+			chip.theme_type_variation = "Card"
+			chip.tooltip_text = "%s (je Stufe)" % Talents.text(t)
+			chip.add_child(UI.label("%s %s%s" % [t.icon, t.name, " ×%d" % n if n > 1 else ""], "", 14))
+			tflow.add_child(chip)
+		box.add_child(UI.label("Talente", "H3"))
+		box.add_child(tflow)
 	var blessings: Array = Ctx.profile.get("blessings", [])
 	if not blessings.is_empty():
 		var flow := HFlowContainer.new()

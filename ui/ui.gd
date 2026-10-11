@@ -172,6 +172,27 @@ static func fill_button(b: Button, content: Control, margin := Vector4(10, 4, 10
 	b.add_child(content)
 
 
+## Auswahlkarte mit Tastenkappe (Segnungen, Talente): Symbol, Name, Wirkung, optional eine Zusatzzeile.
+static func choice_card(key: int, icon_text: String, title: String, text: String, extra: String = "") -> Button:
+	var btn := Button.new()
+	btn.theme_type_variation = "CardButton"
+	# Der Inhalt liegt über dem Knopf und lässt ihn nicht mitwachsen: Höhe reicht für zwei Zeilen Wirkung.
+	btn.custom_minimum_size = Vector2(270, 210 if extra != "" else 190)
+	var icon_l := label(icon_text, "", 34)
+	icon_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var title_l := label(title, "Bold", 20)
+	title_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var text_l := para(text, "", 16)
+	text_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var box := vbox([keycap(str(key), 18), icon_l, title_l, text_l], 6)
+	if extra != "":
+		var extra_l := label(extra, "Dim", 14)
+		extra_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		box.add_child(extra_l)
+	fill_button(btn, box, Vector4(12, 10, 12, 10))
+	return btn
+
+
 ## Kenney-Sprite als skalierte Pixelgrafik.
 static func sprite(frame_no: int, px: int = 40) -> TextureRect:
 	return icon(Assets.frame(frame_no), px)

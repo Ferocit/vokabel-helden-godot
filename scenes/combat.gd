@@ -624,16 +624,7 @@ func choose_blessing_window() -> void:
 	var row := UI.hbox([], 12)
 	for i in options.size():
 		var b: Dictionary = options[i]
-		var btn := Button.new()
-		btn.theme_type_variation = "CardButton"
-		btn.custom_minimum_size = Vector2(270, 170)
-		var icon := UI.label(b.icon, "", 34)
-		icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		var title := UI.label(b.name, "Bold", 20)
-		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		var text := UI.para(Blessings.text(b), "", 16)
-		text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		UI.fill_button(btn, UI.vbox([UI.keycap(str(i + 1), 18), icon, title, text], 6), Vector4(12, 10, 12, 10))
+		var btn := UI.choice_card(i + 1, b.icon, b.name, Blessings.text(b))
 		btn.pressed.connect(choose_blessing.bind(i))
 		row.add_child(btn)
 	m.body.add_child(row)

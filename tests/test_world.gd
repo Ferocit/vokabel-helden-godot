@@ -364,3 +364,33 @@ func test_hud_zeigt_xp_balken() -> void:
 	var cfg := GameConfig.section("player")
 	expect_eq(int(bars[0].value), int(Ctx.profile.xp) - int((cfg.xpPerLevel as Array)[int(Ctx.profile.level) - 1]))
 	e.free()
+
+
+## Issue #14: Jedes Level-up bringt eine Talentwahl; Talente wirken und stapeln sich.
+func test_level_up_talentwahl() -> void:
+	var e := _explore()
+	var before := Ctx.stats()
+	var need := Player.xp_for_next_level(1, GameConfig.section("player"))
+	expect_eq(Ctx.gain_xp(need), 1, "Level-up")
+	expect_eq(int(Ctx.profile.pendingTalents), 1, "Eine Talentwahl offen")
+	e._process(0.01)
+	expect_true(e._talent_modal != null, "Wahl öffnet sich in der Erkundung")
+	expect_eq(e._talent_options.size(), 3, "Drei Talente zur Wahl")
+	var t: Dictionary = e._talent_options[0]
+	var key := InputEventKey.new()
+	key.keycode = KEY_1
+	key.pressed = true
+	e._unhandled_input(key)
+	expect_true(e._talent_modal == null, "Mit Taste 1 gewählt")
+	expect_false(e.busy)
+	expect_eq(int(Ctx.profile.pendingTalents), 0)
+	expect_eq(Ctx.profile.talents, [t.id])
+	# Zähigkeit zweimal: +16 max. HP zusätzlich zum Level-Bonus.
+	Ctx.profile.talents = ["t_vigor", "t_vigor"]
+	var cfg := GameConfig.section("player")
+	expect_eq(int(Ctx.stats().maxHp), int(before.maxHp) + int(cfg.hpPerLevel) + 16, "Talente stapeln sich")
+	expect_eq(Talents.roll(Rng.create(1), ["t_hide", "t_hide"], 20).filter(func(x: Dictionary) -> bool: return x.id == "t_hide").size(), 0, "Ausgebaute Talente kommen nicht mehr")
+	e.free()
+	# Neues Abenteuer: Talente verfallen.
+	Ctx.start_run(["sample"], "jungle", 1)
+	expect_eq(Ctx.profile.talents, [])

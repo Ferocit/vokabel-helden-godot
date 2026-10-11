@@ -226,6 +226,8 @@ func gain_xp(amount: int) -> int:
 		run.xpGained = int(run.xpGained) + amount
 		run.levelsGained = int(run.levelsGained) + gained
 		if gained > 0:
+			# Jedes Level-up bringt eine Talentwahl (die Erkundung zeigt sie, sobald man frei ist).
+			profile.pendingTalents = int(profile.get("pendingTalents", 0)) + gained
 			# Level-up: volle Heilung als kleine Belohnung.
 			var s := stats()
 			run.hp = int(s.maxHp)

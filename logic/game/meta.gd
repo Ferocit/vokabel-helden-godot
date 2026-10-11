@@ -26,6 +26,9 @@ static func ensure(profile: Dictionary) -> Dictionary:
 	profile.shards = int(profile.shards)
 	if not profile.get("blessings") is Array:
 		profile.blessings = []
+	if not profile.get("talents") is Array:
+		profile.talents = []
+	profile.pendingTalents = int(profile.get("pendingTalents", 0))
 	profile.lives = int(profile.get("lives", cfg().lives))
 	if not profile.get("unlockedClasses") is Array or (profile.unlockedClasses as Array).is_empty():
 		profile.unlockedClasses = ["warrior"]
@@ -148,6 +151,8 @@ static func reset_run_fields(profile: Dictionary, player_cfg: Dictionary) -> Dic
 	next.equipment = START_EQUIPMENT.duplicate()
 	next.bag = []
 	next.blessings = []
+	next.talents = []
+	next.pendingTalents = 0
 	next.lives = int(cfg().lives)
 	return next
 
@@ -219,6 +224,18 @@ static func add_blessing(profile: Dictionary, run: Dictionary, id: String) -> vo
 	(profile.blessings as Array).append(id)
 	if not run.is_empty():
 		run.hp = int(run.hp) + int(b.effect.get("maxHp", 0))
+
+
+## Talent nach einem Level-up wählen (gilt bis zum Ende des Abenteuers, stapelbar).
+static func add_talent(profile: Dictionary, run: Dictionary, id: String) -> void:
+	var t := Talents.get_talent(id)
+	if t.is_empty() or Talents.rank(profile.talents, id) >= int(t.max):
+		return
+	(profile.talents as Array).append(id)
+	profile.pendingTalents = maxi(0, int(profile.get("pendingTalents", 0)) - 1)
+	if not run.is_empty():
+		run.hp = int(run.hp) + int(t.effect.get("maxHp", 0))
+		run.focus = int(run.focus) + int(t.effect.get("maxFocus", 0))
 
 
 ## Händler am Kristallaltar: je Abenteuer und Altar feste Angebote (Seed), ohne bereits besessene Gegenstände.

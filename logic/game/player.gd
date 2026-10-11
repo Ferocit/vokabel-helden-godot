@@ -64,7 +64,14 @@ static func compute_stats(profile: Dictionary, cfg: Dictionary) -> Dictionary:
 		for type: String in hints:
 			stats.freeHints[type] = int(stats.freeHints.get(type, 0)) + int(hints[type])
 		_add_mods(m, fx)
-	# Segnungen gelten nur im laufenden Abenteuer (Meta.reset_run_fields leert sie).
+	# Talente aus Level-ups und Segnungen gelten nur im laufenden Abenteuer (Meta.reset_run_fields leert sie).
+	for id: String in profile.get("talents", []):
+		var t := Talents.get_talent(id)
+		if not t.is_empty():
+			stats.maxHp += int(t.effect.get("maxHp", 0))
+			stats.attack += int(t.effect.get("attack", 0))
+			stats.maxFocus += int(t.effect.get("maxFocus", 0))
+			_add_mods(m, t.effect)
 	for id: String in profile.get("blessings", []):
 		var b := Blessings.get_blessing(id)
 		if not b.is_empty():

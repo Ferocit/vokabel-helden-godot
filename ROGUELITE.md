@@ -61,6 +61,10 @@ Neue Effekte: Schlüssel in `SkillTrees.EFFECT_TEXT` eintragen und an der passen
   Abenteuer – Splitter gibt es trotzdem für alles Erreichte (ohne Siegbonus). HUD: ❤.
 - **Segnungen** (`data/blessings.gd`): Nach jedem Elite-Sieg eine von 3 zufälligen Segnungen wählen (Tasten 1–3).
   Gelten bis zum Ende des Abenteuers (`profile.blessings`), nutzen die Skill-Effektschlüssel.
+- **Talente** (`data/talents.gd`): Jedes Level-up im Abenteuer bringt eine Wahl aus 3 zufälligen Talenten
+  (Tasten 1–3), z. B. +8 HP, +1 Angriff, +5 % Krit. Stapelbar bis zur jeweiligen Höchststufe, kleiner als
+  Segnungen, gelten bis zum Ende des Abenteuers (`profile.talents`, offene Wahlen `profile.pendingTalents`).
+  Die Wahl erscheint in der Erkundung, sobald man frei ist (auch nach einem Kampf).
 - **Händler am Kristallaltar:** pro Abenteuer und Altar 3 feste Angebote (Seed), Preise nach Seltenheit
   (`meta.shopPrice` 20/45/90), dazu Heiltränke. Gekauftes landet in der Tasche.
 - **Gegenstände** nutzen ebenfalls die Skill-Effektschlüssel (z. B. Wandererring = Tempo, Runenklinge =

@@ -31,6 +31,9 @@ var _time := 0.0
 var _speed_factor := 1.0
 ## Zeit-Challenge: Im Menü steht die Uhr still.
 var _clock_paused := false
+## Offene Talentwahl nach einem Level-up (Issue #14).
+var _talent_modal: UI.Modal
+var _talent_options: Array = []
 ## Bewegliche Gegner (Objekt-ID → EnemyAgent); besiegte fehlen.
 var agents := {}
 
@@ -151,6 +154,9 @@ func _process(delta: float) -> void:
 	if Ctx.time_up() and not busy:
 		time_over()
 		return
+	# Level-up: Talent wählen, sobald man frei ist (auch nach einem Kampf).
+	if not busy and int(Ctx.profile.get("pendingTalents", 0)) > 0:
+		open_talent_choice()
 	if busy:
 		_place_hero()
 		return
@@ -346,6 +352,12 @@ func describe(obj: Dictionary) -> String:
 # ---------- Eingabe & Interaktion ----------
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _talent_modal != null and event is InputEventKey and event.is_pressed() and not event.is_echo():
+		var idx := [KEY_1, KEY_2, KEY_3].find((event as InputEventKey).keycode)
+		if idx >= 0:
+			get_viewport().set_input_as_handled()
+			choose_talent(idx)
+		return
 	if run.is_empty() or busy or not event.is_pressed() or event.is_echo():
 		return
 	if event.is_action("menu"):
@@ -762,6 +774,54 @@ func open_menu() -> UI.Modal:
 	_render_learning(content)
 	UI.focus_later(resume)
 	return m
+
+
+## Talentwahl nach einem Level-up: eins von drei zufälligen Talenten (stapelbar, gilt bis Abenteuerende).
+func open_talent_choice() -> UI.Modal:
+	var owned: Array = Ctx.profile.talents
+	_talent_options = Talents.roll(run.rng, owned)
+	if _talent_options.is_empty():
+		Ctx.profile.pendingTalents = 0
+		return null
+	busy = true
+	walk_time = 0.0
+	_clock_paused = true
+	Sound.play("levelup")
+	var m := UI.modal(ui, "⭐ Level %d – wähle ein Talent" % int(Ctx.profile.level), 900, false)
+	_talent_modal = m
+	var more := int(Ctx.profile.pendingTalents) - 1
+	m.body.add_child(UI.label("Dein Talent wirkt bis zum Ende dieses Abenteuers.%s" % (" Danach darfst du noch %d× wählen." % more if more > 0 else ""), "Dim", 16))
+	var row := UI.hbox([], 12)
+	for i in _talent_options.size():
+		var t: Dictionary = _talent_options[i]
+		var r := Talents.rank(owned, t.id)
+		var btn := UI.choice_card(i + 1, t.icon, t.name, Talents.text(t), "Stufe %d/%d" % [r + 1, int(t.max)])
+		btn.pressed.connect(choose_talent.bind(i))
+		row.add_child(btn)
+	m.body.add_child(row)
+	var hint := UI.label("Taste 1–3 oder klicken", "Dim", 14)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	m.body.add_child(hint)
+	UI.focus_later(row.get_child(0) as Control)
+	return m
+
+
+func choose_talent(i: int) -> void:
+	if _talent_modal == null or i < 0 or i >= _talent_options.size():
+		return
+	var t: Dictionary = _talent_options[i]
+	Meta.add_talent(Ctx.profile, run, t.id)
+	Sound.play("select")
+	var m := _talent_modal
+	_talent_modal = null
+	m.close()
+	toast("Talent: %s %s – %s" % [t.icon, t.name, Talents.text(t)])
+	Ctx.clamp_run_stats()
+	Ctx.profile_changed.emit()
+	_clock_paused = false
+	busy = false
+	hud.refresh()
+	Ctx.autosave()
 
 
 ## Charakterfenster mit Inventar (Taste I); die Uhr der Zeit-Challenge steht dabei still.
