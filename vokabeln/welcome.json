@@ -1,0 +1,811 @@
+{
+  "version": 1,
+  "title": "Welcome (S. 225–227)",
+  "sourceLanguage": "de",
+  "targetLanguage": "en",
+  "vocabulary": [
+    {
+      "id": "welcome_001",
+      "de": "Willkommen in Brighton.",
+      "en": "Welcome to Brighton",
+      "alternatives": [
+        "Welcome to Brighton."
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_002",
+      "de": "Ich heiße Alice.",
+      "en": "My name is Alice",
+      "alternatives": [
+        "My name is Alice."
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_003",
+      "de": "Ich bin aus Brighton.",
+      "en": "I'm from Brighton",
+      "alternatives": [
+        "I'm from Brighton.",
+        "I am from Brighton",
+        "I am from Brighton.",
+        "I’m from Brighton",
+        "I’m from Brighton."
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_004",
+      "de": "Ich bin elf Jahre alt.",
+      "en": "I'm eleven years old",
+      "alternatives": [
+        "I'm eleven years old.",
+        "I am eleven years old",
+        "I am eleven years old.",
+        "I’m eleven years old",
+        "I’m eleven years old."
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_005",
+      "de": "eins (1)",
+      "en": "one",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_006",
+      "de": "zwei (2)",
+      "en": "two",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_007",
+      "de": "drei (3)",
+      "en": "three",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_008",
+      "de": "vier (4)",
+      "en": "four",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_009",
+      "de": "fünf (5)",
+      "en": "five",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_010",
+      "de": "sechs (6)",
+      "en": "six",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_011",
+      "de": "sieben (7)",
+      "en": "seven",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_012",
+      "de": "acht (8)",
+      "en": "eight",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_013",
+      "de": "neun (9)",
+      "en": "nine",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_014",
+      "de": "zehn (10)",
+      "en": "ten",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_015",
+      "de": "elf (11)",
+      "en": "eleven",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_016",
+      "de": "zwölf (12)",
+      "en": "twelve",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_017",
+      "de": "eine Großstadt",
+      "en": "city",
+      "alternatives": [
+        "a city"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_018",
+      "de": "Großstädte (Mehrzahl)",
+      "en": "cities",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_019",
+      "de": "mein Freund / meine Freundin",
+      "en": "my friend",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_020",
+      "de": "auch",
+      "en": "too",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_021",
+      "de": "am Meer",
+      "en": "by the sea",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_022",
+      "de": "das Meer",
+      "en": "sea",
+      "alternatives": [
+        "the sea"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_023",
+      "de": "der Junge",
+      "en": "boy",
+      "alternatives": [
+        "the boy"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_024",
+      "de": "das Mädchen",
+      "en": "girl",
+      "alternatives": [
+        "the girl"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_025",
+      "de": "der Strand",
+      "en": "beach",
+      "alternatives": [
+        "the beach"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_026",
+      "de": "der Sand",
+      "en": "sand",
+      "alternatives": [
+        "the sand"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_027",
+      "de": "die Möwe",
+      "en": "seagull",
+      "alternatives": [
+        "the seagull"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_028",
+      "de": "der Himmel",
+      "en": "sky",
+      "alternatives": [
+        "the sky"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_029",
+      "de": "der Stein",
+      "en": "stone",
+      "alternatives": [
+        "the stone"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_030",
+      "de": "sehen; besuchen",
+      "en": "see",
+      "alternatives": [
+        "to see"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_031",
+      "de": "mögen",
+      "en": "like",
+      "alternatives": [
+        "to like"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_032",
+      "de": "das Bild",
+      "en": "picture",
+      "alternatives": [
+        "the picture"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_033",
+      "de": "denken, glauben; meinen",
+      "en": "think",
+      "alternatives": [
+        "to think"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_034",
+      "de": "nett, schön",
+      "en": "nice",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_035",
+      "de": "cool",
+      "en": "cool",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_036",
+      "de": "groß",
+      "en": "big",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_037",
+      "de": "klein",
+      "en": "small",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_038",
+      "de": "großartig",
+      "en": "great",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_039",
+      "de": "heiß",
+      "en": "hot",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_040",
+      "de": "kalt",
+      "en": "cold",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_041",
+      "de": "Freut mich, dich kennenzulernen.",
+      "en": "Nice to meet you",
+      "alternatives": [
+        "Nice to meet you."
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_042",
+      "de": "Wie alt bist du?",
+      "en": "How old are you",
+      "alternatives": [
+        "How old are you?"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_043",
+      "de": "Woher kommst du?",
+      "en": "Where are you from",
+      "alternatives": [
+        "Where are you from?"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_044",
+      "de": "wo? woher? wohin?",
+      "en": "where",
+      "alternatives": [
+        "where?"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_045",
+      "de": "die Heimatstadt",
+      "en": "hometown",
+      "alternatives": [
+        "the hometown"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_046",
+      "de": "die Stadt",
+      "en": "town",
+      "alternatives": [
+        "city",
+        "the town"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_047",
+      "de": "Hallo. / Guten Tag.",
+      "en": "Hello",
+      "alternatives": [
+        "Hello."
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_048",
+      "de": "heute",
+      "en": "today",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_049",
+      "de": "Wie geht's?",
+      "en": "How are you",
+      "alternatives": [
+        "How are you?"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_050",
+      "de": "Gut, danke.",
+      "en": "I'm fine, thanks",
+      "alternatives": [
+        "I'm fine, thanks.",
+        "I'm fine thanks",
+        "I'm fine",
+        "I am fine, thanks",
+        "I’m fine, thanks",
+        "I’m fine, thanks.",
+        "I’m fine thanks",
+        "I’m fine"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_051",
+      "de": "wohnen; leben",
+      "en": "live",
+      "alternatives": [
+        "to live"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_052",
+      "de": "können",
+      "en": "can",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_053",
+      "de": "fliegen",
+      "en": "fly",
+      "alternatives": [
+        "to fly"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_054",
+      "de": "eine Rundfahrt durch Brighton",
+      "en": "a tour of Brighton",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_055",
+      "de": "Deutschland",
+      "en": "Germany",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_056",
+      "de": "Tschüs. / Auf Wiedersehen.",
+      "en": "Bye",
+      "alternatives": [
+        "Bye.",
+        "Goodbye",
+        "Goodbye."
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_057",
+      "de": "der Garten",
+      "en": "garden",
+      "alternatives": [
+        "the garden"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_058",
+      "de": "der Palast, das Schloss",
+      "en": "palace",
+      "alternatives": [
+        "the palace"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_059",
+      "de": "Die Gärten sind großartig.",
+      "en": "The gardens are great",
+      "alternatives": [
+        "The gardens are great."
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_060",
+      "de": "der Park",
+      "en": "park",
+      "alternatives": [
+        "the park"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_061",
+      "de": "das Spiel",
+      "en": "game",
+      "alternatives": [
+        "the game"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_062",
+      "de": "die Tasche, der Beutel, die Tüte",
+      "en": "bag",
+      "alternatives": [
+        "the bag"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_063",
+      "de": "der Ball",
+      "en": "ball",
+      "alternatives": [
+        "the ball"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_064",
+      "de": "der Luftballon",
+      "en": "balloon",
+      "alternatives": [
+        "the balloon"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_065",
+      "de": "die Biene",
+      "en": "bee",
+      "alternatives": [
+        "the bee"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_066",
+      "de": "das Fahrrad",
+      "en": "bike",
+      "alternatives": [
+        "bicycle",
+        "the bike"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_067",
+      "de": "der Hund",
+      "en": "dog",
+      "alternatives": [
+        "the dog"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_068",
+      "de": "das Gras; der Rasen",
+      "en": "grass",
+      "alternatives": [
+        "the grass"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_069",
+      "de": "die Blume; die Blüte",
+      "en": "flower",
+      "alternatives": [
+        "the flower"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_070",
+      "de": "das Sandwich, belegtes Brot",
+      "en": "sandwich",
+      "alternatives": [
+        "the sandwich"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_071",
+      "de": "der Baum",
+      "en": "tree",
+      "alternatives": [
+        "the tree"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_072",
+      "de": "etwas",
+      "en": "something",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_073",
+      "de": "Nein, das ist falsch.",
+      "en": "No, that's wrong",
+      "alternatives": [
+        "No, that's wrong.",
+        "No, that is wrong",
+        "No, that’s wrong",
+        "No, that’s wrong."
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_074",
+      "de": "Ja, das ist richtig.",
+      "en": "Yes, that's right",
+      "alternatives": [
+        "Yes, that's right.",
+        "Yes, that is right",
+        "Yes, that’s right",
+        "Yes, that’s right."
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_075",
+      "de": "nun, jetzt",
+      "en": "now",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_076",
+      "de": "Du bist dran.",
+      "en": "It's your turn",
+      "alternatives": [
+        "It's your turn.",
+        "Your turn",
+        "It is your turn",
+        "It’s your turn",
+        "It’s your turn."
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_077",
+      "de": "dein/e; euer/eure; Ihr/e",
+      "en": "your",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_078",
+      "de": "buchstabieren",
+      "en": "spell",
+      "alternatives": [
+        "to spell"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_079",
+      "de": "die Rechtschreibung",
+      "en": "spelling",
+      "alternatives": [
+        "the spelling"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_080",
+      "de": "die Farbe",
+      "en": "colour",
+      "alternatives": [
+        "color",
+        "the colour"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_081",
+      "de": "rot",
+      "en": "red",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_082",
+      "de": "gelb",
+      "en": "yellow",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_083",
+      "de": "blau",
+      "en": "blue",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_084",
+      "de": "grün",
+      "en": "green",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_085",
+      "de": "braun",
+      "en": "brown",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_086",
+      "de": "orange",
+      "en": "orange",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_087",
+      "de": "grau",
+      "en": "grey",
+      "alternatives": [
+        "gray"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_088",
+      "de": "pink, rosa",
+      "en": "pink",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_089",
+      "de": "violett, lila",
+      "en": "purple",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_090",
+      "de": "weiß",
+      "en": "white",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_091",
+      "de": "schwarz",
+      "en": "black",
+      "alternatives": [],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_092",
+      "de": "finden",
+      "en": "find",
+      "alternatives": [
+        "to find"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_093",
+      "de": "die Banane",
+      "en": "banana",
+      "alternatives": [
+        "the banana"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_094",
+      "de": "haben",
+      "en": "have",
+      "alternatives": [
+        "to have"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "welcome_095",
+      "de": "falsch, verkehrt",
+      "en": "wrong",
+      "alternatives": [],
+      "caseSensitive": true
+    }
+  ]
+}

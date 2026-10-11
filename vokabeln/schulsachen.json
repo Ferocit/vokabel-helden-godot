@@ -1,0 +1,295 @@
+{
+  "version": 1,
+  "title": "Schulsachen & Klassenzimmer",
+  "sourceLanguage": "de",
+  "targetLanguage": "en",
+  "vocabulary": [
+    {
+      "id": "school_001",
+      "de": "der Ordner",
+      "en": "folder",
+      "alternatives": [
+        "the folder"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_002",
+      "de": "das Handy",
+      "en": "mobile",
+      "alternatives": [
+        "mobile phone",
+        "the mobile"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_003",
+      "de": "das Übungsheft",
+      "en": "exercise book",
+      "alternatives": [
+        "the exercise book"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_004",
+      "de": "das Buch",
+      "en": "book",
+      "alternatives": [
+        "the book"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_005",
+      "de": "der Geldbeutel",
+      "en": "wallet",
+      "alternatives": [
+        "the wallet"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_006",
+      "de": "die Flasche",
+      "en": "bottle",
+      "alternatives": [
+        "the bottle"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_007",
+      "de": "das Mäppchen",
+      "en": "pencil case",
+      "alternatives": [
+        "the pencil case"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_008",
+      "de": "die Brotdose",
+      "en": "lunchbox",
+      "alternatives": [
+        "lunch box",
+        "the lunchbox"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_009",
+      "de": "der Klebestift",
+      "en": "glue stick",
+      "alternatives": [
+        "the glue stick"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_010",
+      "de": "das Klebeband (Tesa)",
+      "en": "adhesive tape",
+      "alternatives": [
+        "the adhesive tape"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_011",
+      "de": "der Spitzer",
+      "en": "sharpener",
+      "alternatives": [
+        "the sharpener"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_012",
+      "de": "die Schere",
+      "en": "scissors",
+      "alternatives": [
+        "the scissors"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_013",
+      "de": "der Filzstift",
+      "en": "felt tip",
+      "alternatives": [
+        "felt-tip",
+        "felt-tip pen",
+        "felt tip pen",
+        "the felt tip"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_014",
+      "de": "der Tintenkiller",
+      "en": "ink eraser",
+      "alternatives": [
+        "the ink eraser"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_015",
+      "de": "der Radiergummi",
+      "en": "rubber",
+      "alternatives": [
+        "eraser",
+        "the rubber"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_016",
+      "de": "der Füller",
+      "en": "pen",
+      "alternatives": [
+        "the pen"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_017",
+      "de": "der Bleistift",
+      "en": "pencil",
+      "alternatives": [
+        "the pencil"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_018",
+      "de": "der Textmarker",
+      "en": "marker",
+      "alternatives": [
+        "highlighter",
+        "the marker"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_019",
+      "de": "das Lineal",
+      "en": "ruler",
+      "alternatives": [
+        "the ruler"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_020",
+      "de": "das Geodreieck",
+      "en": "set square",
+      "alternatives": [
+        "the set square"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_021",
+      "de": "der Lehrer / die Lehrerin",
+      "en": "teacher",
+      "alternatives": [
+        "the teacher"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_022",
+      "de": "der Schüler / die Schülerin",
+      "en": "student",
+      "alternatives": [
+        "pupil",
+        "the student"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_023",
+      "de": "das Regal",
+      "en": "shelf",
+      "alternatives": [
+        "the shelf"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_024",
+      "de": "der Schrank",
+      "en": "cupboard",
+      "alternatives": [
+        "the cupboard"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_025",
+      "de": "die Tafel",
+      "en": "board",
+      "alternatives": [
+        "the board"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_026",
+      "de": "der Schreibtisch",
+      "en": "desk",
+      "alternatives": [
+        "the desk"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_027",
+      "de": "die Tür",
+      "en": "door",
+      "alternatives": [
+        "the door"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_028",
+      "de": "das Fenster",
+      "en": "window",
+      "alternatives": [
+        "the window"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_029",
+      "de": "der Stuhl",
+      "en": "chair",
+      "alternatives": [
+        "the chair"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_030",
+      "de": "der Tisch",
+      "en": "table",
+      "alternatives": [
+        "the table"
+      ],
+      "caseSensitive": true
+    },
+    {
+      "id": "school_031",
+      "de": "der Mülleimer",
+      "en": "bin",
+      "alternatives": [
+        "the bin"
+      ],
+      "caseSensitive": true
+    }
+  ]
+}

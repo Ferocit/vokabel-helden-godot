@@ -1,0 +1,54 @@
+{
+  "run": {
+    "targetMinutes": 15,
+    "minVocabularyInteractions": 25,
+    "bossRunesRequired": 4
+  },
+  "level": {
+    "rooms": { "min": 9, "max": 12 },
+    "roomSize": { "min": 4, "max": 7 },
+    "bossRoomSize": 8,
+    "gridSize": 38,
+    "extraLoops": 2,
+    "normalEnemies": { "min": 4, "max": 6 },
+    "eliteEnemies": { "min": 1, "max": 2 },
+    "chests": { "min": 3, "max": 5 },
+    "doors": { "min": 1, "max": 3 },
+    "doorAnswers": { "min": 1, "max": 3 },
+    "minEnemyDistanceFromStart": 6
+  },
+  "learning": {
+    "wrongAnswerWeight": 5,
+    "highErrorRateWeight": 3,
+    "highErrorRateThreshold": 0.4,
+    "notSeenRecentlyWeight": 2,
+    "notSeenRecentlyHours": 72,
+    "minRepeatGap": 2,
+    "maxRepeatGap": 5,
+    "recentHistorySize": 2,
+    "masteryCorrectGain": 0.1,
+    "masteryNoHintBonus": 0.05,
+    "masteryWrongLoss": 0.15
+  },
+  "player": {
+    "baseHp": 40,
+    "baseFocus": 6,
+    "baseAttack": 5,
+    "hpPerLevel": 6,
+    "focusPerLevel": 1,
+    "attackPerLevel": 1,
+    "xpPerLevel": [0, 40, 100, 180, 280, 400, 550, 730, 950, 1200],
+    "startPotions": 2
+  },
+  "combat": {
+    "potionHeal": 18,
+    "hintFocusCost": { "length": 1, "firstLetter": 2 }
+  },
+  "xp": {
+    "correctAnswer": 2,
+    "normalEnemy": 6,
+    "eliteEnemy": 15,
+    "boss": 40,
+    "chest": 3
+  }
+}
