@@ -281,3 +281,63 @@ func test_training_falsche_karten_kommen_wieder() -> void:
 	expect_eq(t.answered, 6)
 	expect_eq(TrainingSession.reward_for(27), 5)
 	expect_eq(TrainingSession.reward_for(3), 1, "Mindestens ein Splitter")
+
+
+# ---------- Über mehrere Abenteuer ----------
+
+func test_statistik_auf_anhieb_richtig() -> void:
+	var s := Vocab.record_answer(null, {"outcome": "correct", "hintsUsed": 0, "firstTry": true}, cfg(), 1)
+	s = Vocab.record_answer(s, {"outcome": "correct", "hintsUsed": 0, "firstTry": true}, cfg(), 2)
+	expect_match(s, {"firstTry": 2, "firstTryStreak": 2})
+	s = Vocab.record_answer(s, Vocab.result("correct", 1), cfg(), 3)
+	expect_match(s, {"firstTry": 2, "firstTryStreak": 0}, "Mit Hilfe zählt nicht als auf Anhieb")
+	var old := Vocab.record_answer({"seen": 3, "correct": 3, "wrong": 0, "streak": 3, "mastery": 0.5, "lastSeen": 1, "hintsUsed": 0}, {"outcome": "correct", "hintsUsed": 0, "firstTry": true}, cfg(), 4)
+	expect_match(old, {"seen": 4, "firstTry": 1, "firstTryStreak": 1}, "Alter Spielstand ohne neue Felder")
+
+
+func test_session_erkennt_auf_anhieb() -> void:
+	var progress := {}
+	var session := LearningSession.new(items(8), progress, cfg(), Rng.create(1), func() -> int: return 1000)
+	var a := session.next_word()
+	session.submit(a, Vocab.result("correct"))
+	expect_match(progress[a.key], {"firstTry": 1, "firstTryStreak": 1})
+	var b := session.next_word()
+	session.submit(b, Vocab.result("wrongCorrected"))
+	session.submit(b, Vocab.result("correct"))
+	expect_match(progress[b.key], {"seen": 2, "firstTry": 0, "firstTryStreak": 0}, "Nach Fehler im selben Abenteuer nicht auf Anhieb")
+
+
+func test_scheduler_gewichte_ueber_abenteuer() -> void:
+	var all := items(5)
+	var stats := {
+		all[0].key: stats_of(6, 6, 0, 6, 0.8),  # oft dran, sicher
+		all[1].key: stats_of(1, 1, 0, 1, 0.15),  # selten dran
+		all[2].key: stats_of(6, 5, 1, 0, 0.5),  # zuletzt falsch
+	}
+	stats[all[0].key].firstTryStreak = 4
+	var s := LearningScheduler.new(all, func(k: String) -> Variant: return stats.get(k), cfg(), Rng.create(1), func() -> int: return NOW)
+	s.refresh_average_seen()
+	var w := func(i: int) -> float: return s.weight(all[i], "normal")
+	expect_gt(w.call(3), w.call(1), "Noch nie dran vor selten dran")
+	expect_gt(w.call(1), w.call(0), "Selten dran vor oft dran")
+	expect_gt(w.call(2), w.call(0), "Zuletzt falsch vor sicher")
+	var plain: Dictionary = (stats[all[0].key] as Dictionary).duplicate()
+	plain.firstTryStreak = 0
+	stats[all[4].key] = plain
+	expect_lt(w.call(0), w.call(4) * 0.5, "Mehrfach auf Anhieb richtig kommt deutlich seltener")
+
+
+## Mehrere Abenteuer hintereinander mit einem großen Set: Die Lernstatistik bleibt erhalten, und neue
+## Wörter kommen dran, bevor sichere Wörter wiederholt werden.
+func test_mehrere_abenteuer_decken_das_set_ab() -> void:
+	var covered := 0
+	for seed in 5:
+		var progress := {}
+		var all := items(60)
+		for run in 3:
+			var session := LearningSession.new(all, progress, cfg(), Rng.create(100 * seed + run), func() -> int: return NOW + run * 1000)
+			for i in 20:
+				var item := session.next_word()
+				session.submit(item, Vocab.result("correct"))
+		covered += progress.size()
+	expect_ge(covered / 5.0, 55.0, "Nach 3 × 20 Abfragen im Schnitt fast alle 60 Wörter mindestens einmal dran")

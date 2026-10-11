@@ -2,10 +2,13 @@ class_name Vocab
 extends RefCounted
 ## Datentypen der Lernlogik als Dictionaries (bleiben JSON-kompatibel zum Spielstand):
 ##   VocabEntry  { id, de, en, alternatives: Array[String], caseSensitive: bool }
-##   VocabStats  { seen, correct, wrong, streak, mastery, lastSeen (ms oder null), hintsUsed }
+##   VocabStats  { seen, correct, wrong, streak, mastery, lastSeen (ms oder null), hintsUsed,
+##                 firstTry (auf Anhieb richtig), firstTryStreak (so oft in Folge auf Anhieb richtig) }
+##               Global über alle Abenteuer und Trainings (Ctx.progress), Schlüssel „Set/Vokabel“.
 ##   VocabUnit   { id, title, createdAt (ms), vocabulary: Array[VocabEntry] }
 ##   LearningItem{ key, entry }
-##   AnswerResult{ outcome: "correct" | "wrongCorrected", hintsUsed }
+##   AnswerResult{ outcome: "correct" | "wrongCorrected", hintsUsed, firstTry (optional: richtig ohne Hilfe
+##                 und ohne vorherigen Fehler in dieser Sitzung) }
 
 
 static func item_key(unit_id: String, vocab_id: String) -> String:
@@ -13,7 +16,7 @@ static func item_key(unit_id: String, vocab_id: String) -> String:
 
 
 static func empty_stats() -> Dictionary:
-	return {"seen": 0, "correct": 0, "wrong": 0, "streak": 0, "mastery": 0.0, "lastSeen": null, "hintsUsed": 0}
+	return {"seen": 0, "correct": 0, "wrong": 0, "streak": 0, "mastery": 0.0, "lastSeen": null, "hintsUsed": 0, "firstTry": 0, "firstTryStreak": 0}
 
 
 static func entry(id: String, de: String, en: String, alternatives: Array = [], case_sensitive: bool = true) -> Dictionary:
@@ -90,6 +93,7 @@ static func mastery_label(mastery: float) -> String:
 static func record_answer(stats: Variant, res: Dictionary, cfg: Dictionary, now: int) -> Dictionary:
 	var s: Dictionary = stats if stats is Dictionary else empty_stats()
 	var correct: bool = res.outcome == "correct"
+	var first_try: bool = correct and bool(res.get("firstTry", false))
 	return {
 		"seen": int(s.seen) + 1,
 		"correct": int(s.correct) + (1 if correct else 0),
@@ -98,6 +102,8 @@ static func record_answer(stats: Variant, res: Dictionary, cfg: Dictionary, now:
 		"mastery": next_mastery(float(s.mastery), res, cfg),
 		"lastSeen": now,
 		"hintsUsed": int(s.hintsUsed) + int(res.hintsUsed),
+		"firstTry": int(s.get("firstTry", 0)) + (1 if first_try else 0),
+		"firstTryStreak": int(s.get("firstTryStreak", 0)) + 1 if first_try else 0,
 	}
 
 

@@ -83,7 +83,9 @@ func _on_answer(out: Dictionary, item: Dictionary) -> void:
 	if out.get("cancelled", false):
 		return
 	# Wie im Abenteuer: Statistik und Mastery fortschreiben und sofort speichern.
-	Ctx.progress[item.key] = Vocab.record_answer(Ctx.progress.get(item.key), out.result, GameConfig.section("learning"), Vocab.now_ms())
+	var res: Dictionary = out.result.duplicate()
+	res.firstTry = res.outcome == "correct" and int(res.hintsUsed) == 0 and not session.was_missed(item.key)
+	Ctx.progress[item.key] = Vocab.record_answer(Ctx.progress.get(item.key), res, GameConfig.section("learning"), Vocab.now_ms())
 	Ctx.profile.lastLearnedAt = Vocab.now_ms()
 	Ctx.save_persistent()
 	session.submit(out.result)

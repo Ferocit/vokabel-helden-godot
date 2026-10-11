@@ -2,6 +2,8 @@ class_name LearningScheduler
 extends RefCounted
 ## Gewichtete Vokabelauswahl mit Wiederholungs-Warteschlange.
 ## Modi: "normal" | "preferHard" (Elite, Boss, besondere Truhen) | "preferKnown" (Verteidigen)
+## Über alle Abenteuer hinweg (VocabStats): Noch nie oder selten abgefragte und zuletzt falsche Wörter
+## haben Vorrang; wer ein Wort mehrmals in Folge auf Anhieb richtig weiß, bekommt es seltener.
 
 const HOUR_MS := 60 * 60 * 1000
 
@@ -12,6 +14,8 @@ var pending := {}  # key → {dueAt, misses}
 ## Im Run bereits richtig beantwortet – erst wieder dran, wenn die anderen Wörter durch sind.
 var correct_in_run := {}  # key → true
 var options := {}  # repeatGapReduction
+## Durchschnittliche Abfragen pro Wort im Set (für „selten dran“), wird vor jeder Auswahl aktualisiert.
+var average_seen := 0.0
 
 var _items: Array
 var _by_key := {}
@@ -81,6 +85,7 @@ func owed_repeats() -> Array:
 
 
 func next(mode: String = "normal") -> Dictionary:
+	refresh_average_seen()
 	var candidates := _without_recent(_items)
 
 	# 1. Fällige Wiederholungen haben Vorrang.
@@ -117,10 +122,28 @@ func report(key: String, outcome: String) -> void:
 	pending[key] = {"dueAt": picks + Rng.rand_int(_rng, min_gap, max_gap), "misses": misses}
 
 
+func refresh_average_seen() -> void:
+	var total := 0
+	for item: Dictionary in _items:
+		var s: Variant = _get_stats.call(item.key)
+		total += int(s.seen) if s is Dictionary else 0
+	average_seen = float(total) / _items.size()
+
+
 func weight(item: Dictionary, mode: String) -> float:
 	var s: Variant = _get_stats.call(item.key)
 	var stats: Dictionary = s if s is Dictionary else Vocab.empty_stats()
 	var w := 1.0
+
+	# Über alle Abenteuer: noch nie oder seltener als der Durchschnitt dran → Vorrang.
+	var seen: int = int(stats.seen)
+	if seen == 0:
+		w += float(_cfg.unseenWeight)
+	elif average_seen > 0.0 and seen < average_seen:
+		w += float(_cfg.rarelySeenWeight) * (1.0 - seen / average_seen)
+	# Zuletzt falsch beantwortet (die Serie ist seitdem nicht wieder angelaufen).
+	if int(stats.wrong) > 0 and int(stats.streak) == 0:
+		w += float(_cfg.lastWrongWeight)
 
 	var misses: int = int(wrong_in_run.get(item.key, 0))
 	if misses > 0:
@@ -129,14 +152,11 @@ func weight(item: Dictionary, mode: String) -> float:
 		w += float(_cfg.highErrorRateWeight)
 	if stats.lastSeen == null or int(_now.call()) - int(stats.lastSeen) > float(_cfg.notSeenRecentlyHours) * HOUR_MS:
 		w += float(_cfg.notSeenRecentlyWeight)
-	var streak: int = int(stats.streak)
-	if streak >= 5:
-		w -= 3
-	elif streak >= 3:
-		w -= 2
-	elif streak >= 2:
-		w -= 1
 	w = maxf(1.0, w)
+	# Mehrmals in Folge auf Anhieb richtig → deutlich seltener (aber nie ganz weg).
+	var known: int = int(stats.get("firstTryStreak", 0))
+	if known > 0:
+		w *= maxf(float(_cfg.minKnownFactor), pow(float(_cfg.firstTryDecay), known))
 
 	var mastery: float = float(stats.mastery)
 	if mode == "preferHard":

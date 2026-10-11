@@ -54,6 +54,12 @@ Händler am Kristallaltar; nach Siegen werden schwerere Tempelstufen frei. Detai
 
 Es gibt kein Zeitlimit und keinen Strafsound – Fehler sind Teil des Lernens.
 
+**Welche Vokabel drankommt:** Für jedes Wort wird über alle Abenteuer und Trainings hinweg gezählt, wie oft
+es dran war, wie oft es auf Anhieb (ohne Hilfe und ohne vorherigen Fehler) richtig war und ob es zuletzt
+falsch war (Titel → „Sets & Statistik“ → Statistik). Noch nie oder selten abgefragte und zuletzt falsche
+Wörter haben Vorrang; wer ein Wort mehrmals in Folge auf Anhieb weiß, bekommt es deutlich seltener
+(Gewichte unter `learning` in `config/game.json`).
+
 **⏱ Zeit-Challenge (optional):** Im Titel unter „Neues Abenteuer“ einschaltbar. Dann muss das ganze Abenteuer
 in einer festen Zeit geschafft werden: 6 Minuten + 15 Sekunden pro Vokabel der gewählten Sets, mindestens
 10 und höchstens 40 Minuten (`timeChallenge` in `config/game.json`). Die Uhr läuft auch in Kämpfen und

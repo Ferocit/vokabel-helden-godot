@@ -1,6 +1,6 @@
 class_name StatsView
 extends RefCounted
-## Lernstatistik pro Vokabel und Mastery-Durchschnitt eines Sets.
+## Lernstatistik pro Vokabel (über alle Abenteuer und Trainings) und Mastery-Durchschnitt eines Sets.
 
 
 static func average_mastery(unit_id: String) -> float:
@@ -36,11 +36,12 @@ static func render(container: Control, unit_id: String) -> void:
 	container.add_child(UI.hbox([
 		UI.label("%d Vokabeln" % rows.size(), "", 17),
 		UI.label("%d schon geübt" % seen.size(), "", 17),
+		UI.label("%d noch nie dran" % (rows.size() - seen.size()), "Accent" if rows.size() > seen.size() else "Dim", 17),
 		UI.label("Ø Mastery", "", 17),
 		UI.mastery_bar(avg),
 	], 20))
 
-	var headers := ["Deutsch", "Englisch", "Gesehen", "Richtig", "Falsch", "Quote", "Serie", "Hilfen", "Mastery", "Zuletzt"]
+	var headers := ["Deutsch", "Englisch", "Dran", "Auf Anhieb", "Richtig", "Falsch", "Quote", "Hilfen", "Mastery", "Zuletzt"]
 	var grid := GridContainer.new()
 	grid.columns = headers.size()
 	grid.add_theme_constant_override("h_separation", 14)
@@ -58,10 +59,13 @@ static func render(container: Control, unit_id: String) -> void:
 		grid.add_child(de)
 		grid.add_child(en)
 		grid.add_child(UI.label(str(s.seen), "", 16))
-		grid.add_child(UI.label(str(s.correct), "Good", 16))
+		var first := UI.label(str(int(s.get("firstTry", 0))), "Good", 16)
+		first.tooltip_text = "Ohne Hilfe und ohne vorherigen Fehler richtig – zuletzt %d× in Folge" % int(s.get("firstTryStreak", 0))
+		first.mouse_filter = Control.MOUSE_FILTER_PASS
+		grid.add_child(first)
+		grid.add_child(UI.label(str(s.correct), "", 16))
 		grid.add_child(UI.label(str(s.wrong), "Bad", 16))
 		grid.add_child(UI.label("%d %%" % roundi(Vocab.success_rate(s) * 100.0) if int(s.seen) > 0 else "–", "", 16))
-		grid.add_child(UI.label(str(s.streak), "", 16))
 		grid.add_child(UI.label(str(s.hintsUsed), "", 16))
 		grid.add_child(UI.mastery_bar(float(s.mastery), 80))
 		grid.add_child(UI.label(UI.format_date_time(s.lastSeen), "Dim", 15))

@@ -36,6 +36,11 @@ func remaining() -> int:
 	return queue.size() + retry.size()
 
 
+## War die Karte in diesem Training schon einmal falsch?
+func was_missed(key: String) -> bool:
+	return _missed.has(key)
+
+
 ## Ergebnis für die aktuelle Karte melden (AnswerResult, outcome „correct“ oder „wrongCorrected“).
 func submit(res: Dictionary) -> void:
 	if queue.is_empty():
