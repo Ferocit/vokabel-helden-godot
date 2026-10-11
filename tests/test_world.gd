@@ -317,3 +317,13 @@ func test_inventar_mit_taste_i() -> void:
 	(w[0] as CharacterWindow).modal.close()
 	expect_false(e.busy, "Nach dem Schließen geht es weiter")
 	e.free()
+
+
+## Issue #8: Der Altar hat im Tileset einen Sandhintergrund, der entfernt wird.
+func test_kacheln_ohne_sandhintergrund() -> void:
+	for f: int in Assets.CUTOUT:
+		var img := Assets.frame_image(f)
+		expect_eq(img.get_pixel(0, 15).a, 0.0, "Kachel %d: Ecke durchsichtig" % f)
+		expect_eq(img.get_pixel(15, 15).a, 0.0, "Kachel %d: Ecke durchsichtig" % f)
+		expect_gt(img.get_pixel(8, 8).a, 0.0, "Kachel %d: Motiv bleibt" % f)
+	expect_gt(Assets.frame_image(48).get_pixel(0, 15).a, 0.0, "Bodenkacheln bleiben unverändert")
