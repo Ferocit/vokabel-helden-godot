@@ -55,7 +55,7 @@ func _ready() -> void:
 	def = GameData.get_enemy(obj.enemyId)
 	cls = Ctx.hero_class()
 	rng = run.rng
-	state = CombatService.create_combat(Ctx.combat_player(), CombatService.create_enemy(def, int(Ctx.profile.level), rng))
+	state = CombatService.create_combat(Ctx.combat_player(), CombatService.create_enemy(def, int(Ctx.profile.level), rng, int(run.get("heat", 0))))
 	wallet = Ctx.hint_wallet(int(state.player.focus))
 	_build_arena()
 	_build_combatants()

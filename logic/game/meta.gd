@@ -36,7 +36,7 @@ static func ensure(profile: Dictionary) -> Dictionary:
 			profile.skills[c.id] = {}
 		for k: String in profile.skills[c.id]:
 			profile.skills[c.id][k] = int(profile.skills[c.id][k])
-	var rec := {"runs": 0, "victories": 0, "shardsTotal": 0}
+	var rec := {"runs": 0, "victories": 0, "shardsTotal": 0, "heatUnlocked": 0}
 	if profile.get("records") is Dictionary:
 		rec.merge(profile.records, true)
 	for k: String in rec:
@@ -184,6 +184,11 @@ static func run_reward(run: Dictionary, victory: bool, profile: Dictionary) -> D
 	var subtotal := 0
 	for l: Array in lines:
 		subtotal += int(l[1])
+	var heat := int(run.get("heat", 0))
+	if heat > 0:
+		var heat_bonus := int(floor(subtotal * heat_shard_bonus(heat)))
+		lines.append(["Tempelstufe %d +%d %%" % [heat, roundi(heat_shard_bonus(heat) * 100.0)], heat_bonus])
+		subtotal += heat_bonus
 	var bonus_share := mod(mods(profile, profile.heroClass), "shardBonus")
 	var bonus := int(floor(subtotal * bonus_share))
 	if bonus > 0:
@@ -234,3 +239,31 @@ static func buy_item(profile: Dictionary, item: Dictionary) -> Dictionary:
 	next.gold = int(profile.gold) - shop_price(item)
 	(next.bag as Array).append(item.id)
 	return next
+
+
+
+# ---------- Tempelstufen (Schwierigkeit) ----------
+## Stufe 0 ist der Normalfall. Jeder Sieg schaltet die nächste Stufe frei (bis heat.max). Höhere Stufen machen
+## Gegner stärker und geben mehr Splitter – Ausgleich für die wachsende Stärke durch Skillbäume.
+
+static func heat_max_unlocked(profile: Dictionary) -> int:
+	return mini(int(cfg().heat.max), int(profile.get("records", {}).get("heatUnlocked", 0)))
+
+
+static func heat_hp_factor(heat: int) -> float:
+	return 1.0 + float(cfg().heat.enemyHp) * heat
+
+
+static func heat_attack_factor(heat: int) -> float:
+	return 1.0 + float(cfg().heat.enemyAttack) * heat
+
+
+static func heat_shard_bonus(heat: int) -> float:
+	return float(cfg().heat.shardBonus) * heat
+
+
+static func heat_text(heat: int) -> String:
+	if heat <= 0:
+		return "Tempelstufe 0 – normal"
+	return "Tempelstufe %d – Gegner +%d %% HP, +%d %% Angriff · +%d %% Splitter" % [heat,
+		roundi(float(cfg().heat.enemyHp) * heat * 100.0), roundi(float(cfg().heat.enemyAttack) * heat * 100.0), roundi(heat_shard_bonus(heat) * 100.0)]

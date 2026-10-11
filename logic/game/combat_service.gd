@@ -46,8 +46,9 @@ static func combat_player_from(base: Dictionary, cls: Dictionary, mods: Dictiona
 
 
 ## Gegnerwerte wachsen leicht mit dem Spielerlevel, damit Kämpfe spannend bleiben.
-static func create_enemy(def: Dictionary, player_level: int, rng: Variant = null) -> Dictionary:
-	var scale := 1.0 + 0.12 * (player_level - 1)
+## `heat` = Tempelstufe (Rogue-lite-Schwierigkeit), siehe Meta.heat_*.
+static func create_enemy(def: Dictionary, player_level: int, rng: Variant = null, heat: int = 0) -> Dictionary:
+	var scale := (1.0 + 0.12 * (player_level - 1)) * Meta.heat_hp_factor(heat)
 	var hp := js_round(float(def.hp) * scale)
 	var pattern: Array = def.pattern
 	var start := int(floor((rng as Callable).call() * pattern.size())) if rng is Callable else 0
@@ -55,7 +56,7 @@ static func create_enemy(def: Dictionary, player_level: int, rng: Variant = null
 		"def": def,
 		"hp": hp,
 		"maxHp": hp,
-		"attack": js_round(float(def.attack) * (1.0 + 0.05 * (player_level - 1))),
+		"attack": js_round(float(def.attack) * (1.0 + 0.05 * (player_level - 1)) * Meta.heat_attack_factor(heat)),
 		"phase": 1,
 		"poison": null,
 		"intent": pattern[start],

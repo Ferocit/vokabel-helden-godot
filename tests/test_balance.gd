@@ -7,7 +7,7 @@ static func sample_vocab() -> Array:
 	return data.vocabulary
 
 
-static func simulate_run(seed: int, accuracy: float, hero_class: String = "warrior", vocabulary: Array = []) -> Dictionary:
+static func simulate_run(seed: int, accuracy: float, hero_class: String = "warrior", vocabulary: Array = [], skills: Dictionary = {}, heat: int = 0) -> Dictionary:
 	if vocabulary.is_empty():
 		vocabulary = sample_vocab()
 	var c := GameConfig.data()
@@ -15,6 +15,9 @@ static func simulate_run(seed: int, accuracy: float, hero_class: String = "warri
 	var rng := Rng.create(seed)
 	var st := {"profile": Player.new_profile(pc), "hp": 0, "focus": 0, "defeats": 0}
 	st.profile.heroClass = hero_class
+	st.profile.unlockedClasses = ["warrior", "rogue", "mage"]
+	st.profile.skills[hero_class] = skills
+	st.profile = Meta.reset_run_fields(st.profile, pc)
 	var progress := {}
 	var items: Array = vocabulary.map(func(e: Dictionary) -> Dictionary: return {"key": "s/" + str(e.id), "entry": e})
 	var learning := LearningSession.new(items, progress, c.learning, Rng.create(seed + 1), func() -> int: return 0)
@@ -51,7 +54,7 @@ static func simulate_run(seed: int, accuracy: float, hero_class: String = "warri
 		var stats := Player.compute_stats(st.profile, pc)
 		var def := GameData.get_enemy(enemy_id)
 		var base := {"hp": st.hp, "maxHp": stats.maxHp, "focus": st.focus, "maxFocus": stats.maxFocus, "attack": stats.attack, "potions": st.profile.potions}
-		var state := CombatService.create_combat(CombatService.combat_player_from(base, GameData.get_class_def(hero_class)), CombatService.create_enemy(def, int(st.profile.level), rng))
+		var state := CombatService.create_combat(CombatService.combat_player_from(base, GameData.get_class_def(hero_class), stats.mods), CombatService.create_enemy(def, int(st.profile.level), rng, heat))
 		while state.outcome == "ongoing":
 			var action := "attack"
 			if state.player.hp < state.player.maxHp * 0.35 and CombatService.can_use_action(state, "item"):
@@ -105,7 +108,15 @@ static func simulate_run(seed: int, accuracy: float, hero_class: String = "warri
 		rest.call()
 		if boss_attempts > 10:
 			break
-	return {"questions": learning.run.questions, "words": learning.run.records.size(), "level": st.profile.level, "defeats": st.defeats, "bossAttempts": boss_attempts}
+	# Rogue-lite: Splitter für den vollständigen Lauf (alle Gegner, Truhen, Türen, Sieg).
+	var fake_run := {"map": map, "defeated": {}, "opened": {}, "learning": learning, "heat": heat}
+	for obj: Dictionary in map.objects:
+		if obj.kind == "enemy":
+			fake_run.defeated[obj.id] = true
+		elif obj.kind in ["chest", "door"]:
+			fake_run.opened[obj.id] = true
+	var shards := int(Meta.run_reward(fake_run, true, st.profile).total)
+	return {"questions": learning.run.questions, "words": learning.run.records.size(), "level": st.profile.level, "defeats": st.defeats, "bossAttempts": boss_attempts, "shards": shards}
 
 
 func test_balance_abfragen_pro_run() -> void:
@@ -154,3 +165,37 @@ func test_balance_grosse_sets_issue16() -> void:
 		expect_le(r.questions, 150)
 		total += int(r.words)
 	expect_ge(total / 15.0, 60)
+
+
+# ---------- Rogue-lite (gemessen mit einem Bot, der sich vor Elite und Boss heilt) ----------
+
+const FULL_WARRIOR := {"w_toughness": 3, "w_shieldwall": 2, "w_ironwill": 2, "w_strength": 3, "w_momentum": 2, "w_slayer": 2, "w_stride": 3, "w_supplies": 2, "w_veteran": 2}
+
+
+static func lost_runs(n: int, accuracy: float, skills: Dictionary, heat: int) -> int:
+	var lost := 0
+	for i in n:
+		if int(simulate_run(9000 + i * 7, accuracy, "warrior", [], skills, heat).defeats) >= int(Meta.cfg().lives):
+			lost += 1
+	return lost
+
+
+func test_balance_splitter_pro_sieg() -> void:
+	var total := 0
+	for i in 30:
+		total += int(simulate_run(2000 + i * 13, 0.8).shards)
+	var avg := total / 30.0
+	expect_ge(avg, 30.0, "Schurke (25) nach dem ersten Sieg freischaltbar")
+	expect_le(avg, 60.0, "Skillbaum (198) nicht nach 2–3 Läufen fertig")
+
+
+func test_balance_leben_reichen_auf_stufe_0() -> void:
+	expect_le(lost_runs(30, 0.6, {}, 0), 1, "Auch mit 60 % Treffern endet der Lauf praktisch nie vorzeitig")
+
+
+func test_balance_tempelstufen_brauchen_skills() -> void:
+	var without := lost_runs(20, 0.8, {}, 3)
+	var with_tree := lost_runs(20, 0.8, FULL_WARRIOR, 3)
+	expect_ge(without, 8, "Stufe 3 ohne Skills ist schwer")
+	expect_le(with_tree, 1, "Stufe 3 mit vollem Baum ist machbar")
+	expect_le(lost_runs(20, 0.8, FULL_WARRIOR, 5), 5, "Höchste Stufe bleibt mit vollem Baum schaffbar")

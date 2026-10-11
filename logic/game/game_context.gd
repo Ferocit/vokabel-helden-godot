@@ -65,7 +65,7 @@ func _generate_map(seed: int, scale: float, boss_runes: int, world_id: String) -
 
 
 ## Neues Abenteuer: Lauf-Werte (Level, Gold, Ausrüstung …) werden zurückgesetzt, Skills wirken ab Start.
-func start_run(unit_ids: Array, world_id: String = "jungle", seed: int = -1) -> Dictionary:
+func start_run(unit_ids: Array, world_id: String = "jungle", seed: int = -1, heat: int = 0) -> Dictionary:
 	if seed < 0:
 		seed = Rng.random_seed()
 	profile = Meta.reset_run_fields(Meta.ensure(profile), GameConfig.section("player"))
@@ -77,6 +77,7 @@ func start_run(unit_ids: Array, world_id: String = "jungle", seed: int = -1) -> 
 	run = {
 		"seed": seed,
 		"levelScale": level_scale,
+		"heat": clampi(heat, 0, Meta.heat_max_unlocked(profile)),
 		"bossRunes": boss_runes,
 		"unitIds": unit_ids.duplicate(),
 		"worldId": GameData.get_theme(world_id).id,
@@ -133,6 +134,7 @@ func resume_run() -> Dictionary:
 	run = {
 		"seed": seed,
 		"levelScale": level_scale,
+		"heat": int(snap.get("heat", 0)),
 		"bossRunes": boss_runes,
 		"unitIds": unit_ids,
 		"worldId": GameData.get_theme(snap.worldId).id,
@@ -167,6 +169,9 @@ func end_run(victory: bool = false) -> Dictionary:
 		profile.records.shardsTotal = int(profile.records.shardsTotal) + int(reward.total)
 		if victory:
 			profile.records.victories = int(profile.records.victories) + 1
+			# Ein Sieg auf der höchsten freien Tempelstufe schaltet die nächste frei.
+			if int(run.get("heat", 0)) >= int(profile.records.heatUnlocked):
+				profile.records.heatUnlocked = mini(int(Meta.cfg().heat.max), int(run.get("heat", 0)) + 1)
 		run.completed = true
 		run.victory = victory
 		run.reward = reward
@@ -263,6 +268,7 @@ func snapshot_run() -> Dictionary:
 	return {
 		"seed": run.seed,
 		"levelScale": run.levelScale,
+		"heat": run.get("heat", 0),
 		"unitIds": run.unitIds,
 		"worldId": run.worldId,
 		"hp": run.hp,

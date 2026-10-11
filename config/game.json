@@ -113,6 +113,12 @@
       "common": 20,
       "uncommon": 45,
       "rare": 90
+    },
+    "heat": {
+      "max": 5,
+      "enemyHp": 0.25,
+      "enemyAttack": 0.2,
+      "shardBonus": 0.25
     }
   }
 }

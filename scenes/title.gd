@@ -125,6 +125,7 @@ func render_menu() -> void:
 	if Ctx.can_resume():
 		start_row.add_child(UI.button("⟲ Abenteuer fortsetzen", _on_resume))
 	start_row.add_child(UI.spacer())
+	var heat_row := _heat_selector()
 	var manage_btn := UI.button("📚 Sets & Statistik", open_unit_manager)
 	var skills_btn := UI.button("🌳 Fertigkeiten", open_skills)
 
@@ -136,11 +137,12 @@ func render_menu() -> void:
 		], 14),
 		UI.label("Welche Vokabel-Sets willst du üben?", "H3"),
 		UI.hbox([filter, sort, _toggle_all]),
-		UI.scroll(_list_body, 168),
+		UI.scroll(_list_body, 168 if Meta.heat_max_unlocked(Ctx.profile) <= 0 else 128),
 		_summary,
 		UI.hbox([import_btn, UI.label("oder JSON-Datei ins Fenster ziehen", "Dim", 14)]),
 		UI.gap(4),
 		start_row,
+		heat_row,
 		UI.hbox([UI.spacer(), manage_btn, skills_btn, UI.spacer()]),
 	])
 
@@ -267,6 +269,27 @@ func _render_list() -> void:
 	_toggle_all.text = "Keine" if not list.is_empty() and list.all(func(u: Dictionary) -> bool: return _selected.has(u.id)) else "Alle"
 
 
+## Gewählte Tempelstufe (gespeichert, auf die freigeschaltete Stufe begrenzt).
+func selected_heat() -> int:
+	return clampi(int(Ctx.settings.get("heat", 0)), 0, Meta.heat_max_unlocked(Ctx.profile))
+
+
+## Auswahl der Tempelstufe; erst sichtbar, wenn nach einem Sieg Stufe 1 freigeschaltet ist.
+func _heat_selector() -> Control:
+	var max_heat := Meta.heat_max_unlocked(Ctx.profile)
+	if max_heat <= 0:
+		return null
+	var opt := OptionButton.new()
+	for h in max_heat + 1:
+		opt.add_item(("🔥 " if h > 0 else "") + Meta.heat_text(h))
+	opt.select(selected_heat())
+	opt.item_selected.connect(func(i: int) -> void:
+		Ctx.settings.heat = i
+		Ctx.save_persistent())
+	var row := UI.hbox([UI.spacer(), opt, UI.spacer()])
+	return row
+
+
 func _toggle_all_visible() -> void:
 	var list := visible_units()
 	var all_selected := list.all(func(u: Dictionary) -> bool: return _selected.has(u.id))
@@ -299,7 +322,7 @@ func _on_start() -> void:
 			Ctx.save_persistent()
 			Ctx.save.clear_run()
 			Sound.play("encounter")
-			Ctx.start_run(_selected.keys())
+			Ctx.start_run(_selected.keys(), "jungle", -1, selected_heat())
 			_enter_world())
 	if Ctx.can_resume():
 		UI.confirm(_ui, "Ein laufendes Abenteuer wird dabei beendet. Trotzdem neu starten?", go, "Neu starten")

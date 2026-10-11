@@ -13,6 +13,10 @@ func _ready() -> void:
 	if args.has("shards"):
 		Ctx.setup(KeyValueStore.new())
 		Ctx.profile.shards = int(args.shards)
+		Ctx.settings.seenIntro = true
+		if args.has("heat"):
+			Ctx.profile.records.heatUnlocked = int(args.heat)
+			Ctx.settings.heat = int(args.heat)
 	# run=1 startet ein Abenteuer mit dem Beispiel-Set (Spielstand nur im Arbeitsspeicher).
 	if args.has("run"):
 		Ctx.setup(KeyValueStore.new())

@@ -50,6 +50,7 @@ func refresh() -> void:
 		UI.gap(0), UI.label("FP", "Bold", 18), bar(run.focus, s.maxFocus, UI.FP), UI.label("%d/%d" % [int(run.focus), int(s.maxFocus)], "Bold", 18),
 		UI.gap(0), runes(int(run.runes), int(run.bossRunes)),
 		UI.gap(0), _lives(),
+		UI.label("🔥 %d" % int(run.get("heat", 0)), "Bad", 18) if int(run.get("heat", 0)) > 0 else null,
 		UI.label("🧪 %d" % int(Ctx.profile.potions), "Bold", 18),
 		UI.label("💰 %d" % int(Ctx.profile.gold), "Bold", 18),
 		UI.label("Lv %d" % int(Ctx.profile.level), "Accent", 18),
