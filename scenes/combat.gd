@@ -63,6 +63,9 @@ func _ready() -> void:
 	rng = run.rng
 	state = CombatService.create_combat(Ctx.combat_player(), CombatService.create_enemy(def, int(Ctx.profile.level), rng, Meta.run_pact(run), int(run.get("floor", 1))))
 	wallet = Ctx.hint_wallet(int(state.player.focus))
+	if def.tier == "boss":
+		nemesis = Nemesis.pick((run.learning as LearningSession).scheduler._items, Ctx.progress)
+		state.enemy.armor = nemesis.map(func(w: Dictionary) -> String: return w.key)
 	Ctx.set_bonus_reached.connect(_on_set_bonus)
 	_build_arena()
 	_build_combatants()
@@ -226,6 +229,13 @@ func refresh_panels() -> void:
 		status.append("🛡️ gepanzert")
 	if int(e.phase) == 2:
 		status.append("🔥 wütend")
+	var armor: Array = e.get("armor", [])
+	if not armor.is_empty():
+		var words: PackedStringArray = []
+		for w: Dictionary in nemesis:
+			if armor.has(w.key):
+				words.append(w.entry.de)
+		status.append("🛡 Rüstung %d (%s)" % [armor.size(), ", ".join(words)])
 	UI.clear(_enemy_panel)
 	var title := UI.hbox([UI.label(def.name, "Bold", 24)])
 	if tier_label != "":
@@ -238,7 +248,7 @@ func refresh_panels() -> void:
 	_enemy_panel.add_child(UI.hbox([UI.label("Als Nächstes:", "Dim", 17), UI.label("%s %s" % [intent.icon, intent.name], "Bold", 17)], 6))
 	_enemy_panel.add_child(UI.para(intent.hint, "Dim", 14))
 	if not status.is_empty():
-		_enemy_panel.add_child(UI.label(" · ".join(status), "", 15))
+		_enemy_panel.add_child(UI.para(" · ".join(status), "", 15))
 
 	_intent_label.text = "%s %s" % [intent.icon, intent.name]
 	var border := {"heavy": Color("#ff6a4a"), "charge": Color("#ffb04a"), "guard": Color("#8ac8ff"), "regenerate": Color("#7dffa1")}
@@ -282,6 +292,9 @@ func battle_loop() -> void:
 	await _sleep(0.3)
 	say("Boss: %s versperrt dir den Weg!" % def.name if def.tier == "boss" else "%s taucht auf!" % def.name)
 	await _sleep(0.9)
+	if def.tier == "boss":
+		say(Nemesis.taunt(def.name, nemesis))
+		await _sleep(2.6)
 	var learning: LearningSession = run.learning
 	while state.outcome == "ongoing":
 		if Ctx.time_up():
@@ -291,7 +304,9 @@ func battle_loop() -> void:
 		var mode: String = def.selection
 		say("%s: Erinnere dich an das Wort!" % label)
 		_intent.visible = false
-		var item := learning.next_word(mode)
+		# Gegen die Nemesis-Rüstung fragen Angriffe die Rüstungswörter ab.
+		var armor: Array = state.enemy.get("armor", [])
+		var item := learning.word(armor[0]) if not armor.is_empty() and action in ["attack", "skill"] else learning.next_word(mode)
 		var prompt := VocabPrompt.create({"item": Ctx.prompt_item(item), "wallet": wallet, "label": label, "hints": Ctx.hints_allowed()})
 		prompt.wallet_changed.connect(func(w: Dictionary) -> void:
 			state.player.focus = int(w.focus)
@@ -311,7 +326,14 @@ func battle_loop() -> void:
 		state.player.revengeWord = was_missed and outcome == "correct"
 		var power := float(GameConfig.section("combat").almostPower) if outcome == "almostCorrect" else 1.0
 		state.player.comboMult = Combo.multiplier(int(run.get("combo", 0)))
-		var events := CombatService.resolve_player_action(state, action, outcome != "wrongCorrected", GameConfig.section("combat"), rng, power)
+		var events: Array = []
+		if outcome == "correct":
+			events.append_array(CombatService.break_armor(state, item.key))
+		elif not armor.is_empty() and armor[0] == item.key:
+			# Nicht geschafft: Das Rüstungsteil rückt nach hinten, das Wort kommt später wieder.
+			armor.erase(item.key)
+			armor.append(item.key)
+		events.append_array(CombatService.resolve_player_action(state, action, outcome != "wrongCorrected", GameConfig.section("combat"), rng, power))
 		wallet.focus = int(state.player.focus)
 		await play_events(events, action)
 		if state.outcome != "ongoing":
@@ -424,6 +446,11 @@ func play_events(events: Array, action: String) -> void:
 			"weak":
 				say("Fast richtig – „%s“ wirkt nur halb so stark." % CombatService.action_label(ev.action, state.player))
 				await _sleep(0.8)
+			"armorBreak":
+				say("💥 Rüstungsteil zerbrochen! %s" % ("Noch %d übrig." % int(ev.left) if int(ev.left) > 0 else "Der Boss ist ungeschützt!"))
+				_burst(enemy_pos(enemy_height), Color("#c8d8ff"), 18, 1.6, true)
+				_shake(0.25, 0.12)
+				await _sleep(0.9)
 			"chain":
 				say("⚡ Kettenblitz! Kombo %d – doppelter Schaden!" % int(run.get("combo", 0)))
 				_burst(hero_pos(1.4), Color("#ffe066"), 14, 1.4, true)
@@ -608,6 +635,8 @@ static func describe_loot(loot: Dictionary) -> String:
 	return ", ".join(parts)
 
 
+## Nemesis-Wörter des Bosses (Issue #24), leer bei anderen Gegnern.
+var nemesis: Array = []
 var _result_open := false
 var _blessing_modal: UI.Modal
 var _blessing_options: Array = []

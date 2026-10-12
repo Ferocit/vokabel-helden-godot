@@ -256,5 +256,10 @@
     "enemyHp": 1.1,
     "enemyAttack": 0.8,
     "seedStep": 7919
+  },
+  "nemesis": {
+    "armorPieces": 3,
+    "armorDamageFactor": 0.5,
+    "masteredAt": 0.9
   }
 }

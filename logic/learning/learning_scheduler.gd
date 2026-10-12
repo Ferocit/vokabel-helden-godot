@@ -181,6 +181,11 @@ func _without_recent(items: Array) -> Array:
 	return items.filter(func(item: Dictionary) -> bool: return not recent.has(item.key))
 
 
+## Ein bestimmtes Wort abfragen (z. B. ein Nemesis-Wort des Bosses); zählt wie eine normale Auswahl.
+func take(key: String) -> Dictionary:
+	return _take(_by_key[key]) if _by_key.has(key) else next()
+
+
 func _take(item: Dictionary) -> Dictionary:
 	picks += 1
 	history.append(item.key)

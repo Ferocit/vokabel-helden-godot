@@ -23,6 +23,11 @@ func next_word(mode: String = "normal") -> Dictionary:
 	return scheduler.next(mode)
 
 
+## Ein bestimmtes Wort abfragen (Nemesis-Rüstung des Bosses, Issue #24).
+func word(key: String) -> Dictionary:
+	return scheduler.take(key)
+
+
 func submit(item: Dictionary, res: Dictionary) -> Dictionary:
 	# Auf Anhieb richtig: ohne Hilfe und ohne vorherigen Fehler mit diesem Wort im Abenteuer.
 	res = res.duplicate()

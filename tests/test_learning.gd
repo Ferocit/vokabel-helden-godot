@@ -423,3 +423,51 @@ func test_set_bonus_im_abenteuer() -> void:
 	Ctx.autosave()
 	Ctx.resume_run()
 	expect_eq(Ctx.run.setBonus, {"sample": "golden"}, "bleibt im Spielstand")
+
+
+# ---------- Nemesis (Issue #24) ----------
+
+func test_nemesis_waehlt_schwierigste_woerter() -> void:
+	var all := items(6)
+	var progress := {}
+	progress[all[0].key] = stats_of(6, 1, 5, 0, 0.05)  # sehr schwer
+	progress[all[1].key] = stats_of(6, 6, 0, 6, 0.95)  # beherrscht
+	progress[all[2].key] = stats_of(4, 2, 2, 0, 0.3)
+	for i in range(3, 6):
+		progress[all[i].key] = stats_of(5, 5, 0, 5, 0.8)
+	var words := Nemesis.pick(all, progress)
+	expect_eq(words.size(), int(Nemesis.cfg().armorPieces))
+	expect_eq(words[0].key, all[0].key, "schwerstes zuerst")
+	expect_eq(words[1].key, all[2].key)
+	expect_false(words.any(func(w: Dictionary) -> bool: return w.key == all[1].key), "beherrschte Wörter fehlen")
+	for i in all.size():
+		progress[all[i].key] = stats_of(6, 6, 0, 6, 0.95)
+	expect_eq(Nemesis.pick(all, progress).size(), 0, "alles beherrscht: keine Rüstung")
+	expect_true(Nemesis.taunt("Zyklop", []).contains("nichts"))
+
+
+func test_nemesis_ruestung_im_kampf() -> void:
+	var base := {"hp": 40, "maxHp": 60, "focus": 6, "maxFocus": 6, "attack": 10, "potions": 1}
+	var p := CombatService.combat_player_from(base, GameData.get_class_def("warrior"))
+	p.critChance = 0.0
+	var plain := CombatService.create_combat(p, CombatService.create_enemy(GameData.get_enemy("temple_cyclops"), 1))
+	var armored := CombatService.create_combat(p, CombatService.create_enemy(GameData.get_enemy("temple_cyclops"), 1))
+	armored.enemy.armor = ["a", "b"]
+	var rng := func() -> float: return 0.5
+	CombatService.resolve_player_action(plain, "attack", true, GameConfig.section("combat"), rng)
+	CombatService.resolve_player_action(armored, "attack", true, GameConfig.section("combat"), rng)
+	var d_plain: int = int(plain.enemy.maxHp) - int(plain.enemy.hp)
+	var d_armor: int = int(armored.enemy.maxHp) - int(armored.enemy.hp)
+	expect_lt(d_armor, d_plain, "Rüstung schluckt Schaden")
+	expect_eq(CombatService.break_armor(armored, "x"), [], "falsches Wort bricht nichts")
+	var ev := CombatService.break_armor(armored, "a")
+	expect_eq(ev[0].type, "armorBreak")
+	expect_eq(int(ev[0].left), 1)
+
+
+func test_scheduler_bestimmtes_wort() -> void:
+	var all := items(5)
+	var s := LearningScheduler.new(all, func(_k: String) -> Variant: return null, cfg(), Rng.create(2))
+	var w := s.take(all[3].key)
+	expect_eq(w.key, all[3].key)
+	expect_eq(s.picks, 1)

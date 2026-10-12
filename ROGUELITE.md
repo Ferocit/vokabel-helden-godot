@@ -82,6 +82,13 @@ Neue Effekte: Schlüssel in `SkillTrees.EFFECT_TEXT` eintragen und an der passen
   Fähigkeitsschaden). Keine Gratis-Vokabelhilfen mehr; einzige Lern-Ausnahme bleibt der Bibliotheksring
   (falsch beantwortete Wörter kommen früher wieder – hilft beim Lernen, nicht beim Antworten).
 
+## Nemesis-Boss (Issue #24, `logic/learning/nemesis.gd`, `nemesis`)
+Der Boss eröffnet mit „Ich kenne deine Schwachstellen …“ und trägt bis zu 3 Rüstungsteile – die schwierigsten
+Wörter des Spielers über alle Abenteuer (hohe Fehlerquote, wenig Mastery, zuletzt falsch). Solange Rüstung hält,
+kommt nur 50 % des Schadens durch. Angriffe fragen die Rüstungswörter ab; richtig beantwortet zerbricht das Teil,
+falsch rückt es nach hinten. Wörter mit Mastery ≥ 0,9 verschwinden aus der Rüstung – der Boss wird mit dem
+Lernfortschritt sichtbar schwächer. Simulator: Spalte „Nemesis gebrochen“.
+
 ## Ebenen (Issue #27, `config/game.json → floors`)
 Nach dem Bosssieg führt eine Treppe tiefer: „⬇ Tiefer hinab“ oder „🏆 Abenteuer beenden“ (bis Ebene 3). Unten gibt
 es eine neue Karte (Seed `Meta.floor_seed`), Gegner haben pro Ebene +110 % HP und +80 % Angriff. Held, Ausrüstung,

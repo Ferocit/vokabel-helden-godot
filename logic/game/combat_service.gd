@@ -5,7 +5,8 @@ extends RefCounted
 ## CombatState { player, enemy, defending, outcome: "ongoing"|"won"|"lost", round }
 ##   player { hp, maxHp, focus, maxFocus, attack, potions, skill, defendFactor, critChance, critMultiplier, focusOnCorrect,
 ##            armor, potionHealBonus, lifeOnWin, comboMult (Schadensfaktor der Kombo, Issue #21) }
-##   enemy  { def, hp, maxHp, attack, phase, poison ({turns, damage} oder null), intent, patternIndex, guarding }
+##   enemy  { def, hp, maxHp, attack, phase, poison ({turns, damage} oder null), intent, patternIndex, guarding,
+##            armor (Nemesis-Wörter des Bosses als Schlüssel, Issue #24) }
 ## Events sind Dictionaries mit "type": damage | enemyMove | enemyHeal | intent | poisonTick | poisoned |
 ##   heal | focus | defend | fizzle | phase | enemyDefeated | playerDefeated
 
@@ -275,10 +276,22 @@ static func _check_phase(state: Dictionary) -> Array:
 	return []
 
 
+## Nemesis-Rüstung: Ein Teil zerbricht, wenn sein Wort richtig beantwortet wurde.
+static func break_armor(state: Dictionary, key: String) -> Array:
+	var armor: Array = state.enemy.get("armor", [])
+	if not armor.has(key):
+		return []
+	armor.erase(key)
+	return [{"type": "armorBreak", "key": key, "left": armor.size()}]
+
+
 static func _damage_enemy(state: Dictionary, raw_amount: int, crit: bool) -> Array:
 	var enemy: Dictionary = state.enemy
 	var guarded: bool = enemy.guarding
 	var amount := maxi(1, int(ceil(raw_amount / 2.0))) if guarded else raw_amount
+	# Solange die Nemesis-Rüstung hält, kommt nur ein Teil des Schadens durch.
+	if not (enemy.get("armor", []) as Array).is_empty():
+		amount = maxi(1, js_round(amount * float(GameConfig.section("nemesis").armorDamageFactor)))
 	enemy.hp = maxi(0, int(enemy.hp) - amount)
 	var events: Array = [{"type": "damage", "target": "enemy", "amount": amount, "crit": crit, "guarded": guarded}]
 	if int(enemy.hp) == 0:

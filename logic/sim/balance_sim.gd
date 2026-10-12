@@ -127,7 +127,7 @@ static func _forget(knowledge: Dictionary, learner: String) -> void:
 ## Durchschnitte und Quoten über mehrere Ergebnisse.
 static func summarize(rows: Array) -> Dictionary:
 	var n := float(maxi(1, rows.size()))
-	var keys := ["shards", "level", "defeats", "questions", "words", "firstTry", "hints", "minutes", "perMinute", "talents", "blessings", "itemsBought", "knowledgeGain", "defendShare", "defendKnowledge", "otherKnowledge", "maxCombo", "setBonus", "setBonusGolden", "floorsCleared"]
+	var keys := ["shards", "level", "defeats", "questions", "words", "firstTry", "hints", "minutes", "perMinute", "talents", "blessings", "itemsBought", "knowledgeGain", "defendShare", "defendKnowledge", "otherKnowledge", "maxCombo", "setBonus", "setBonusGolden", "floorsCleared", "nemesisArmor", "nemesisBroken"]
 	var sum := {}
 	for k: String in keys:
 		sum[k] = 0.0
@@ -190,6 +190,9 @@ class _Run:
 	var combo := 0
 	var max_combo := 0
 	var last_revenge := false
+	var last_key := ""
+	var armor_broken := 0
+	var armor_total := 0
 	var set_bonus_heal := false
 	var set_bonus_level := ""
 
@@ -275,8 +278,9 @@ class _Run:
 
 	## Eine Vokabel abfragen (mit Hilfen nach Bot-Regel). Liefert das Ergebnis wie die Abfrage:
 	## "correct" | "almostCorrect" | "wrongCorrected". Ein Teil der Fehler sind Tippfehler (simulation.almostShare).
-	func ask(mode: String, wallet: Dictionary, reserve_focus: int = 0, action: String = "") -> String:
-		var item := learning.next_word(mode)
+	func ask(mode: String, wallet: Dictionary, reserve_focus: int = 0, action: String = "", key: String = "") -> String:
+		var item := learning.word(key) if key != "" else learning.next_word(mode)
+		last_key = item.key
 		var p := float(knowledge[item.key])
 		if action == "defend":
 			defend_known.append(p)
@@ -430,6 +434,9 @@ class _Run:
 		var cls := GameData.get_class_def(profile.heroClass)
 		var base := {"hp": run_state.hp, "maxHp": s.maxHp, "focus": run_state.focus, "maxFocus": s.maxFocus, "attack": s.attack, "potions": profile.potions}
 		var state := CombatService.create_combat(CombatService.combat_player_from(base, cls, s.mods), CombatService.create_enemy(def, int(profile.level), rng, pact, int(run_state.floor)))
+		if def.tier == "boss":
+			state.enemy.armor = Nemesis.pick(learning.scheduler._items, o.progress).map(func(w: Dictionary) -> String: return w.key)
+			armor_total += (state.enemy.armor as Array).size()
 		var wallet := _wallet(int(run_state.focus))
 		while state.outcome == "ongoing":
 			var p: Dictionary = state.player
@@ -444,7 +451,14 @@ class _Run:
 			wallet.focus = int(p.focus)
 			var reserve := int(p.skill.focusCost) if action == "skill" else 0
 			var level_before := int(profile.level)
-			var outcome := ask(mode, wallet, reserve, action)
+			var armor: Array = state.enemy.get("armor", [])
+			var key: String = armor[0] if not armor.is_empty() and action in ["attack", "skill"] else ""
+			var outcome := ask(mode, wallet, reserve, action, key)
+			if outcome == "correct" and not CombatService.break_armor(state, last_key).is_empty():
+				armor_broken += 1
+			elif key != "":
+				armor.erase(key)
+				armor.append(key)
 			p.focus = int(wallet.focus)
 			if set_bonus_heal:
 				set_bonus_heal = false
@@ -637,6 +651,8 @@ class _Run:
 			"perMinute": questions / maxf(0.01, seconds / 60.0),
 			"talents": talents_taken,
 			"maxCombo": max_combo,
+			"nemesisArmor": armor_total,
+			"nemesisBroken": armor_broken,
 			"setBonus": 1.0 if set_bonus_level != "" else 0.0,
 			"setBonusGolden": 1.0 if set_bonus_level == "golden" else 0.0,
 			"blessings": blessings_taken,

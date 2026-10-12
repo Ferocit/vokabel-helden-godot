@@ -122,3 +122,11 @@ func test_balance_ebenen() -> void:
 	expect_ge(s.floorsCleared, 2.2)
 	expect_gt(s.defeats, 0.0, "tiefe Ebenen sind gefährlich")
 	expect_gt(s.shards, 100.0)
+
+
+func test_balance_nemesis_ruestung_brechbar() -> void:
+	# Issue #24: Die Rüstungswörter werden im Bosskampf abgefragt und meist gebrochen; der Boss bleibt schaffbar.
+	var s := batch({"seed": 6400, "learner": "beginner"}, 20)
+	expect_gt(s.nemesisArmor, 0.0)
+	expect_ge(s.nemesisBroken, s.nemesisArmor * 0.6)
+	expect_gt(s.winRate, 0.9)
