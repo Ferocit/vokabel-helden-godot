@@ -258,7 +258,7 @@ class _Run:
 		level_cfg.eliteEnemies = {"min": int(level_cfg.eliteEnemies.min) + extra, "max": int(level_cfg.eliteEnemies.max) + extra}
 		map = LevelGenerator.generate(Meta.floor_seed(int(o.seed), floor), level_cfg, {
 			"bossRunesRequired": RunScaling.scaled_boss_runes(int(c.run.bossRunesRequired), level_scale),
-			"enemies": GameData.THEMES[0].enemies,
+			"enemies": GameData.theme_for_floor(floor).enemies,
 		})
 		run_state.floor = floor
 		run_state.map = map

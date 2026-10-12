@@ -23,6 +23,9 @@ func _ready() -> void:
 		Ctx.profile.unlockedClasses = ["warrior", "rogue", "mage"] if args.has("class") else ["warrior"]
 		Ctx.profile.heroClass = args.get("class", "warrior")
 		Ctx.start_run(["sample"], "jungle", int(args.get("seed", "12345")))
+		# floor=N steigt N−1 Ebenen ab (anderes Biom, Issue #28).
+		for i in int(args.get("floor", "1")) - 1:
+			Ctx.descend()
 		# answers=N simuliert N Abfragen (jede dritte falsch, jede fünfte mit Hilfe).
 		for i in int(args.get("answers", "0")):
 			var item: Dictionary = (Ctx.run.learning as LearningSession).next_word("normal")

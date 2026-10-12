@@ -45,7 +45,8 @@ Einstellungen (Ton, Lautstärke, Vollbild) und eine Spielanleitung gibt es im Ti
    (blaue Steintafeln) fragen drei Vokabeln ab – je mehr richtig, desto besser die Belohnung, alle drei heilen.
    **Runenplatten** in den Gängen fragen beim Drüberlaufen ein Wort ab (richtig: Gold, falsch: ein paar HP).
    Der Kristallaltar heilt und ist der Rückkehrpunkt nach einer Niederlage.
-   Nach dem Boss geht es auf Wunsch **tiefer hinab** (bis Ebene 3, stärkere Gegner, mehr Splitter).
+   Nach dem Boss geht es auf Wunsch **tiefer hinab** (bis Ebene 3, stärkere Gegner, mehr Splitter) – jede Ebene ist
+   ein eigenes Biom: Dschungeltempel → Kristallhöhle → Eistempel, jeweils mit eigenen Gegnern und Boss.
 4. **Kämpfen:** Jede Aktion verlangt eine richtig erinnerte Vokabel. Falsch → die Aktion verpufft, die
    Lösung wird gezeigt und einmal abgetippt; das Wort kommt bald wieder. **Fast richtig** (ein Tippfehler oder
    nur die Großschreibung falsch): Die Aktion wirkt halb so stark, die richtige Schreibweise wird gezeigt.
@@ -148,7 +149,8 @@ Spielstände liegen unter `user://save/` (Windows: `%APPDATA%\Godot\app_userdata
 
 ## Lizenzen
 
-Grafik und Sounds: [Kenney.nl](https://kenney.nl) (CC0). Schriften: Cinzel und Nunito (SIL Open Font
+Grafik und Sounds: [Kenney.nl](https://kenney.nl) (CC0) – Tiny Dungeon, Tiny Town und für den Eistempel
+[Tiny Ski](https://www.kenney.nl/assets/tiny-ski) (`assets/tiles/ski.png`). Schriften: Cinzel und Nunito (SIL Open Font
 License, siehe `assets/fonts`).
 Die Helm-Symbole in `assets/tiles/items.png` sind eigene Pixel-Art im Kenney-Stil, erzeugt mit
 `python tools/item_icons.py` (dort als Pixelraster beschrieben und leicht anpassbar).

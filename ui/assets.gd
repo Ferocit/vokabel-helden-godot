@@ -6,6 +6,9 @@ const DUNGEON := "res://assets/tiles/dungeon.png"
 const TOWN := "res://assets/tiles/town.png"
 ## Eigene Gegenstandssymbole (tools/item_icons.py), z. B. Helme, die es bei Kenney nicht einzeln gibt.
 const ITEMS := "res://assets/tiles/items.png"
+## Kenney Tiny Ski (CC0): Schnee, verschneite Bäume, Yetis (Issue #28).
+const SKI := "res://assets/tiles/ski.png"
+const SHEETS := {"dungeon": DUNGEON, "town": TOWN, "items": ITEMS, "ski": SKI}
 const COLS := 12
 const TILE := 16
 
@@ -67,6 +70,15 @@ static func frame(frame_no: int, path: String = DUNGEON) -> AtlasTexture:
 	t.filter_clip = true
 	_cache[key] = t
 	return t
+
+
+## Sprite eines Gegners (eigenes Sheet und Einfärbung möglich, Issue #28).
+static func enemy_frame(def: Dictionary) -> AtlasTexture:
+	return frame(int(def.frame), SHEETS.get(def.get("sheet", "dungeon"), DUNGEON))
+
+
+static func enemy_tint(def: Dictionary) -> Color:
+	return Color(def.tint) if def.has("tint") else Color.WHITE
 
 
 ## Symbol eines Gegenstands: Kachel aus dem Dungeon-Sheet oder – mit "iconSheet": "items" – aus items.png.

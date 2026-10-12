@@ -463,3 +463,41 @@ func test_level_up_talentwahl() -> void:
 	# Neues Abenteuer: Talente verfallen.
 	Ctx.start_run(["sample"], "jungle", 1)
 	expect_eq(Ctx.profile.talents, [])
+
+
+# ---------- Biome (Issue #28) ----------
+
+func test_biome_je_ebene() -> void:
+	expect_eq(GameData.theme_for_floor(1).id, "jungle")
+	expect_eq(GameData.theme_for_floor(2).id, "cave")
+	expect_eq(GameData.theme_for_floor(3).id, "ice")
+	expect_eq(GameData.theme_for_floor(9).id, "ice", "tiefer bleibt das letzte Biom")
+	for t: Dictionary in GameData.THEMES:
+		for tier: String in ["normal", "elite"]:
+			for id: String in t.enemies[tier]:
+				expect_eq(GameData.get_enemy(id).tier, tier, "%s/%s" % [t.id, id])
+		expect_eq(GameData.get_enemy(t.enemies.boss).tier, "boss")
+		for key: String in ["groundSheet", "pathSheet", "plantSheet", "floorSheet"]:
+			expect_true(Assets.SHEETS.has(String(t.look[key])), "%s.%s" % [t.id, key])
+	expect_true(Assets.enemy_frame(GameData.get_enemy("yeti_king")).atlas.resource_path.ends_with("ski.png") or Assets.enemy_frame(GameData.get_enemy("yeti_king")).atlas != null)
+
+
+func test_biome_abstieg_wechselt_welt() -> void:
+	Ctx.setup(KeyValueStore.new())
+	Ctx.start_run(["sample"], "jungle", 4242)
+	Ctx.descend()
+	expect_eq(Ctx.run.worldId, "cave")
+	expect_eq(Ctx.run.map.theme, "cave")
+	var boss: Dictionary = (Ctx.run.map.objects as Array).filter(func(o: Dictionary) -> bool: return o.kind == "enemy" and o.tier == "boss")[0]
+	expect_eq(boss.enemyId, "crystal_colossus")
+	Ctx.autosave()
+	expect_eq(Ctx.resume_run().worldId, "cave", "Biom im Spielstand")
+	Ctx.descend()
+	expect_eq(Ctx.run.worldId, "ice")
+	for theme_id in ["cave", "ice"]:
+		var map: Dictionary = Ctx.run.map.duplicate()
+		map.theme = theme_id
+		var lb := LevelBuilder.build(map)
+		expect_eq(lb.look, GameData.get_theme(theme_id).look)
+		expect_gt(lb.root.find_children("*", "MeshInstance3D", true, false).size(), 4)
+		lb.root.free()

@@ -82,6 +82,13 @@ Neue Effekte: Schlüssel in `SkillTrees.EFFECT_TEXT` eintragen und an der passen
   Fähigkeitsschaden). Keine Gratis-Vokabelhilfen mehr; einzige Lern-Ausnahme bleibt der Bibliotheksring
   (falsch beantwortete Wörter kommen früher wieder – hilft beim Lernen, nicht beim Antworten).
 
+## Biome (Issue #28, `GameData.THEMES`)
+Jede Ebene hat ein eigenes Biom (`GameData.theme_for_floor`): 1 Dschungeltempel, 2 Kristallhöhle, 3 Eistempel. Ein
+Thema bestimmt Gegner und Boss sowie `look`: Boden-, Weg- und Pflanzen-Kacheln samt Sheet, Farbtöne von Raumboden,
+Mauern und Pflanzen, Hintergrund, Nebel, Umgebungslicht, Fackellicht und Partikel. Die Kristallhöhle nutzt
+umgefärbte Dungeon-Kacheln und -Gegner (`tint`), der Eistempel Kenney „Tiny Ski“ (Schnee, verschneite Bäume, Yetis,
+Schneemann; `sheet: "ski"`). Neue Biome: Eintrag in `THEMES` mit `look` und Gegnern anlegen.
+
 ## Nemesis-Boss (Issue #24, `logic/learning/nemesis.gd`, `nemesis`)
 Der Boss eröffnet mit „Ich kenne deine Schwachstellen …“ und trägt bis zu 3 Rüstungsteile – die schwierigsten
 Wörter des Spielers über alle Abenteuer (hohe Fehlerquote, wenig Mastery, zuletzt falsch). Solange Rüstung hält,

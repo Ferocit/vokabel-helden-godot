@@ -33,6 +33,8 @@ var solid_deco := {}
 var bounds: Rect2
 var torches := 0
 
+## Aussehen des Bioms (GameData.THEMES[…].look, Issue #28): Boden, Pflanzen, Farben, Licht.
+var look: Dictionary
 var _is_gone: Callable
 var _wall_tiles := {}
 var _occupied := {}
@@ -44,6 +46,7 @@ var _materials := {}
 static func build(level: Dictionary, is_gone: Callable = func(_o: Dictionary) -> bool: return false) -> LevelBuilder:
 	var b := LevelBuilder.new()
 	b.map = level
+	b.look = GameData.get_theme(String(level.get("theme", "jungle"))).look
 	b._is_gone = is_gone
 	b._build()
 	return b
@@ -92,15 +95,22 @@ const FOLIAGE_SHADER := preload("res://world/foliage.gdshader")
 func _material(key: String) -> Material:
 	if _materials.has(key):
 		return _materials[key]
-	if key == "town_sprite":
+	if key == "plant_sprite":
 		# Urwald: eigener Shader, der Bäume vor dem Helden durchsichtig dithert.
 		var sm := ShaderMaterial.new()
 		sm.shader = FOLIAGE_SHADER
-		sm.set_shader_parameter("albedo_tex", Assets.sheet(Assets.TOWN))
+		sm.set_shader_parameter("albedo_tex", Assets.sheet(_sheet("plantSheet")))
 		_materials[key] = sm
 		return sm
 	var m := StandardMaterial3D.new()
-	m.albedo_texture = Assets.sheet(Assets.TOWN if key.begins_with("town") else Assets.DUNGEON)
+	var path := Assets.DUNGEON
+	if key == "ground":
+		path = _sheet("groundSheet")
+	elif key == "room":
+		path = _sheet("floorSheet")
+	elif key == "path":
+		path = _sheet("pathSheet")
+	m.albedo_texture = Assets.sheet(path)
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	m.vertex_color_use_as_albedo = true
 	m.roughness = 0.92
@@ -118,6 +128,14 @@ func _material(key: String) -> Material:
 		m.cull_mode = BaseMaterial3D.CULL_DISABLED
 	_materials[key] = m
 	return m
+
+
+func _sheet(look_key: String) -> String:
+	return Assets.SHEETS.get(String(look.get(look_key, "dungeon")), Assets.DUNGEON)
+
+
+func _col(look_key: String) -> Color:
+	return Color(String(look.get(look_key, "#ffffff")))
 
 
 func _st(x: float, z: float, key: String) -> SurfaceTool:
@@ -199,12 +217,12 @@ func _build_ground_and_walls(w: int, h: int) -> void:
 		for i in range(-MARGIN, w + MARGIN):
 			if _room_floor(i, j):
 				# Vereinzelt bemooste Platten.
-				_floor_tile(i, j, _pick(TD.floor), "dungeon", Color("#eef2e0") if rng.call() < 0.15 else Color.WHITE)
+				_floor_tile(i, j, _pick(look.get("floor", TD.floor)), "room", _col("mossTint") if rng.call() < 0.15 else _col("floorTint"))
 				continue
 			if _floor(i, j):
-				_floor_tile(i, j, TT.dirt, "town")
+				_floor_tile(i, j, _pick(look.path), "path", _col("pathTint"))
 				continue
-			_floor_tile(i, j, _pick(TT.grass), "town", Color("#8fa284"))
+			_floor_tile(i, j, _pick(look.ground), "ground", _col("groundTint"))
 			# Rückwand eines Tempelraums: Mauerblock direkt über dem Raum.
 			if _room_floor(i, j + 1):
 				_wall_tiles[Vector2i(i, j)] = true
@@ -219,11 +237,12 @@ func _build_ground_and_walls(w: int, h: int) -> void:
 		var upper: int = TD.wall_plain if torch else _pick(TD.wall)
 		var z := float(j + 1)
 		var st := _st(i, j, "dungeon")
-		_quad(st, Vector3(i, 1, z), Vector3(i + 1, 1, z), Vector3(i + 1, 0, z), Vector3(i, 0, z), uv_rect(lower), Vector3.BACK, Color.WHITE)
-		_quad(st, Vector3(i, 2, z), Vector3(i + 1, 2, z), Vector3(i + 1, 1, z), Vector3(i, 1, z), uv_rect(upper), Vector3.BACK, Color("#c4c8bc"))
-		_quad(st, Vector3(i, WALL_H, j), Vector3(i + 1, WALL_H, j), Vector3(i + 1, WALL_H, z), Vector3(i, WALL_H, z), uv_rect(TD.wall_plain), Vector3.UP, Color("#6d7368"))
+		var wt := _col("wallTint")
+		_quad(st, Vector3(i, 1, z), Vector3(i + 1, 1, z), Vector3(i + 1, 0, z), Vector3(i, 0, z), uv_rect(lower), Vector3.BACK, wt)
+		_quad(st, Vector3(i, 2, z), Vector3(i + 1, 2, z), Vector3(i + 1, 1, z), Vector3(i, 1, z), uv_rect(upper), Vector3.BACK, Color("#c4c8bc") * wt)
+		_quad(st, Vector3(i, WALL_H, j), Vector3(i + 1, WALL_H, j), Vector3(i + 1, WALL_H, z), Vector3(i, WALL_H, z), uv_rect(TD.wall_plain), Vector3.UP, Color("#6d7368") * wt)
 		var side := uv_rect(TD.wall_plain)
-		var shade := Color("#9aa094")
+		var shade := Color("#9aa094") * wt
 		for y0 in [0.0, 1.0]:
 			if not _wall_tiles.has(Vector2i(i - 1, j)):
 				_quad(st, Vector3(i, y0 + 1, j), Vector3(i, y0 + 1, z), Vector3(i, y0, z), Vector3(i, y0, j), side, Vector3.LEFT, shade)
@@ -236,7 +255,8 @@ static func _is_torch_column(room: Dictionary, x: int) -> bool:
 
 
 func _tint(shade: float) -> Color:
-	return Color(shade * 0.85, shade, shade * 0.8)
+	var t: Array = look.get("plantTint", [0.85, 1.0, 0.8])
+	return Color(shade * float(t[0]), shade * float(t[1]), shade * float(t[2]))
 
 
 func _build_forest(w: int, h: int) -> void:
@@ -250,9 +270,9 @@ func _build_forest(w: int, h: int) -> void:
 			var in_front := _floor(i, j - 1) or _floor(i - 1, j - 1) or _floor(i + 1, j - 1)
 			if d == 1:
 				if in_front:
-					_tree(i, j, _pick(TT.bush), 0.1, 0.62 + rng.call() * 0.12, false)
+					_tree(i, j, _pick(look.bush), 0.1, 0.62 + rng.call() * 0.12, false)
 				else:
-					var frame: int = _pick(TT.trees) if rng.call() < 0.55 else _pick(TT.bush)
+					var frame: int = _pick(look.trees) if rng.call() < 0.55 else _pick(look.bush)
 					_tree(i, j, frame, 0.0 if beside_wall else 0.15, 1.0 if beside_wall else 0.95 + rng.call() * 0.15, false)
 			else:
 				var count := 2 if d >= 3 else 1
@@ -261,16 +281,16 @@ func _build_forest(w: int, h: int) -> void:
 					var s: float = 1.0 if beside_wall else 1.0 + rng.call() * 0.45
 					if near_front:
 						s = 0.8
-					_tree(i, j, _pick(TT.trees), 0.0 if beside_wall else 0.35, s, d >= 3)
+					_tree(i, j, _pick(look.trees), 0.0 if beside_wall else 0.35, s, d >= 3)
 				if rng.call() < 0.06:
-					_tree(i, j, TT.mushrooms, 0.3, 0.7, false)
+					_tree(i, j, _pick(look.deco), 0.3, 0.7, false)
 
 
 func _tree(i: int, j: int, frame_no: int, jitter: float, scale: float, dark: bool) -> void:
 	var x: float = i + 0.5 + (rng.call() - 0.5) * jitter * 2.0
 	var z: float = j + 1.0 + (rng.call() - 0.5) * jitter - 0.15
 	var shade: float = 0.4 + rng.call() * 0.15 if dark else 0.55 + rng.call() * 0.25
-	_upright(x, z, scale, scale, frame_no, "town_sprite", _tint(shade), rng.call() < 0.5)
+	_upright(x, z, scale, scale, frame_no, "plant_sprite", _tint(shade), rng.call() < 0.5)
 
 
 func _decorate_room(room: Dictionary) -> void:
@@ -325,7 +345,7 @@ func _pillar(x: int, z: int) -> void:
 	var z1 := z + 0.6
 	var stone := uv_rect(TD.wall_plain)
 	var cap_h := 0.18
-	for seg in [[0.0, 1.0, Color("#d6d2c4")], [1.0, WALL_H - cap_h, Color("#bfbbae")]]:
+	for seg in [[0.0, 1.0, Color("#d6d2c4") * _col("wallTint")], [1.0, WALL_H - cap_h, Color("#bfbbae") * _col("wallTint")]]:
 		var y0: float = seg[0]
 		var y1: float = seg[1]
 		var c: Color = seg[2]
@@ -337,14 +357,14 @@ func _pillar(x: int, z: int) -> void:
 	var cx1 := x1 + 0.08
 	var cz1 := z1 + 0.08
 	var y0 := WALL_H - cap_h
-	var cap := Color("#e2ddcd")
+	var cap := Color("#e2ddcd") * _col("wallTint")
 	_quad(st, Vector3(cx0, WALL_H, cz1), Vector3(cx1, WALL_H, cz1), Vector3(cx1, y0, cz1), Vector3(cx0, y0, cz1), stone, Vector3.BACK, cap)
 	_quad(st, Vector3(cx0, WALL_H, z0), Vector3(cx0, WALL_H, cz1), Vector3(cx0, y0, cz1), Vector3(cx0, y0, z0), stone, Vector3.LEFT, cap.darkened(0.25))
 	_quad(st, Vector3(cx1, WALL_H, cz1), Vector3(cx1, WALL_H, z0), Vector3(cx1, y0, z0), Vector3(cx1, y0, cz1), stone, Vector3.RIGHT, cap.darkened(0.25))
-	_quad(st, Vector3(cx0, WALL_H, z0), Vector3(cx1, WALL_H, z0), Vector3(cx1, WALL_H, cz1), Vector3(cx0, WALL_H, cz1), stone, Vector3.UP, Color("#8d9184"))
+	_quad(st, Vector3(cx0, WALL_H, z0), Vector3(cx1, WALL_H, z0), Vector3(cx1, WALL_H, cz1), Vector3(cx0, WALL_H, cz1), stone, Vector3.UP, Color("#8d9184") * _col("wallTint"))
 	# Sockel.
-	_quad(st, Vector3(cx0, 0.2, cz1), Vector3(cx1, 0.2, cz1), Vector3(cx1, 0.0, cz1), Vector3(cx0, 0.0, cz1), stone, Vector3.BACK, Color("#a9a597"))
-	_quad(st, Vector3(cx0, 0.2, z1), Vector3(cx1, 0.2, z1), Vector3(cx1, 0.2, cz1), Vector3(cx0, 0.2, cz1), stone, Vector3.UP, Color("#8d9184"))
+	_quad(st, Vector3(cx0, 0.2, cz1), Vector3(cx1, 0.2, cz1), Vector3(cx1, 0.0, cz1), Vector3(cx0, 0.0, cz1), stone, Vector3.BACK, Color("#a9a597") * _col("wallTint"))
+	_quad(st, Vector3(cx0, 0.2, z1), Vector3(cx1, 0.2, z1), Vector3(cx1, 0.2, cz1), Vector3(cx0, 0.2, cz1), stone, Vector3.UP, Color("#8d9184") * _col("wallTint"))
 	var sh := Fx.shadow_quad(0.9)
 	sh.position = Vector3(x + 0.5, 0.01, z + 0.55)
 	root.add_child(sh)
@@ -368,7 +388,7 @@ func _add_torch(pos: Vector3) -> void:
 	s.add_child(anim)
 	root.add_child(s)
 	var light := Fx.Flicker.new()
-	light.light_color = Color("#ffa040")
+	light.light_color = _col("torch")
 	light.base_energy = 2.4
 	light.omni_range = 5.0
 	light.omni_attenuation = 1.3
@@ -410,7 +430,7 @@ func _add_far_ground() -> void:
 	p.size = Vector2(bounds.size.x + 80, bounds.size.y + 80)
 	mi.mesh = p
 	var m := StandardMaterial3D.new()
-	m.albedo_color = Color("#16251a")
+	m.albedo_color = _col("farGround")
 	m.roughness = 1.0
 	mi.material_override = m
 	mi.position = Vector3(bounds.get_center().x, -0.02, bounds.get_center().y)
@@ -454,7 +474,8 @@ func _create_view(obj: Dictionary) -> void:
 			var def := GameData.get_enemy(obj.enemyId)
 			var scale := 2.0 if obj.tier == "boss" else (1.4 if obj.tier == "elite" else 1.0)
 			node.add_child(Fx.shadow_quad(0.85 * scale))
-			var s := Fx.sprite(Assets.frame(int(def.frame)), 16.0 / scale)
+			var s := Fx.sprite(Assets.enemy_frame(def), 16.0 / scale)
+			s.modulate = Assets.enemy_tint(def)
 			s.rotation.x = TILT
 			s.position.y = 0.05
 			var bob := Fx.Bob.new()

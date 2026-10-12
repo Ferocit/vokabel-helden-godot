@@ -94,6 +94,7 @@ func _build_arena() -> void:
 	var map := {
 		"seed": int(run.seed) + int(obj.x) * 31 + int(obj.y), "width": ARENA_W, "height": ARENA_H, "tiles": tiles,
 		"rooms": [room], "startRoomId": 0, "bossRoomId": 0, "start": Vector2i(-50, -50), "objects": [],
+		"theme": String(run.get("worldId", "jungle")),
 	}
 	arena = LevelBuilder.build(map)
 	add_child(arena.root)
@@ -101,7 +102,7 @@ func _build_arena() -> void:
 	for l in arena.root.find_children("*", "OmniLight3D", true, false):
 		if l is Fx.Flicker:
 			(l as Fx.Flicker).base_energy *= 0.55
-	fx = WorldFx.new(0.8)
+	fx = WorldFx.new(0.8, String(run.get("worldId", "jungle")))
 	fx.pitch = 24.0
 	fx.distance = 12.5
 	fx.look_height = 1.1
@@ -123,7 +124,8 @@ func _build_combatants() -> void:
 	enemy_root = Node3D.new()
 	enemy_root.position = ENEMY_POS
 	enemy_root.add_child(Fx.shadow_quad(scale * 0.8))
-	enemy = Fx.sprite(Assets.frame(int(def.frame)), 16.0 / scale)
+	enemy = Fx.sprite(Assets.enemy_frame(def), 16.0 / scale)
+	enemy.modulate = Assets.enemy_tint(def)
 	# Die Pixel-Art schaut nach rechts; der Gegner soll den Helden ansehen.
 	enemy.flip_h = TOWARD_ENEMY > 0.0
 	var bob := Fx.Bob.new()
@@ -774,7 +776,8 @@ func _later(seconds: float, cb: Callable) -> void:
 func _restore_enemy_tint() -> void:
 	if not is_instance_valid(enemy):
 		return
-	enemy.modulate = Color("#ffa0a0") if int(state.enemy.phase) == 2 else Color.WHITE
+	var base := Assets.enemy_tint(def)
+	enemy.modulate = base * Color("#ffa0a0") if int(state.enemy.phase) == 2 else base
 
 
 func _flash_sprite(s: Sprite3D) -> void:

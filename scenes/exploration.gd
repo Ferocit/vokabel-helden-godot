@@ -59,7 +59,7 @@ func _ready() -> void:
 	_create_agents()
 	level = LevelBuilder.build(run.map, is_gone)
 	add_child(level.root)
-	fx = WorldFx.new()
+	fx = WorldFx.new(1.0, String(run.get("worldId", "jungle")))
 	add_child(fx)
 	_build_hero()
 	_build_ui()
@@ -72,7 +72,7 @@ func _ready() -> void:
 	if _boss_defeated() and Ctx.can_descend():
 		open_descend_choice.call_deferred()
 	elif int(run.get("floor", 1)) > 1 and (run.defeated as Dictionary).is_empty() and (run.opened as Dictionary).is_empty():
-		get_tree().create_timer(0.7).timeout.connect(toast.bind("⬇ Ebene %d von %d: Die Gegner hier unten sind stärker – und die Beute auch." % [int(run.floor), Meta.max_floors()]))
+		get_tree().create_timer(0.7).timeout.connect(toast.bind("⬇ Ebene %d von %d – %s: Die Gegner hier unten sind stärker – und die Beute auch." % [int(run.floor), Meta.max_floors(), GameData.get_theme(String(run.worldId)).name]))
 	elif learning.run.questions == 0 and (run.defeated as Dictionary).is_empty():
 		get_tree().create_timer(0.7).timeout.connect(toast.bind("Willkommen im geheimen Dschungeltempel! Sammle %d Runen ◆, um das Siegeltor zum Boss zu öffnen." % int(run.bossRunes)))
 		get_tree().create_timer(2.2).timeout.connect(toast.bind("Runen bekommst du für besiegte Gegner und geöffnete Türen. Truhen enthalten Beute."))
@@ -691,9 +691,10 @@ func open_descend_choice() -> UI.Modal:
 	_clock_paused = true
 	var next := int(run.floor) + 1
 	var m := UI.modal(ui, "Der Boss ist besiegt!", 760, false)
+	var next_theme := GameData.theme_for_floor(int(run.floor) + 1)
 	m.body.add_child(UI.para("Hinter dem Thron führt eine Treppe tiefer in den Tempel. Unten warten stärkere Gegner (+%d %% HP, +%d %% Angriff) – und mehr Beute und Splitter. Alles bisher Verdiente bleibt dir sicher." % [
 		roundi(float(Meta.floors_cfg().enemyHp) * (next - 1) * 100.0), roundi(float(Meta.floors_cfg().enemyAttack) * (next - 1) * 100.0)], "", 17))
-	var down := UI.button("⬇ Tiefer hinab (Ebene %d von %d)" % [next, Meta.max_floors()], func() -> void:
+	var down := UI.button("⬇ Tiefer hinab: %s (Ebene %d von %d)" % [next_theme.name, next, Meta.max_floors()], func() -> void:
 		m.close()
 		descend())
 	down.name = "Descend"

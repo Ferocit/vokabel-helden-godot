@@ -64,10 +64,13 @@ func autosave() -> void:
 func _generate_map(seed: int, scale: float, boss_runes: int, world_id: String, pact: Dictionary = {}) -> Dictionary:
 	var theme := GameData.get_theme(world_id)
 	var cfg := RunScaling.scale_level_config(GameConfig.section("level"), scale).duplicate(true)
+	cfg.theme = theme.id
 	# Pakt „Elite-Horden“: mehr Elite-Gegner.
 	var extra := Pact.rank(pact, "p_elite")
 	cfg.eliteEnemies = {"min": int(cfg.eliteEnemies.min) + extra, "max": int(cfg.eliteEnemies.max) + extra}
-	return LevelGenerator.generate(seed, cfg, {"bossRunesRequired": boss_runes, "enemies": theme.enemies})
+	var map := LevelGenerator.generate(seed, cfg, {"bossRunesRequired": boss_runes, "enemies": theme.enemies})
+	map.theme = theme.id
+	return map
 
 
 ## Neues Abenteuer: Lauf-Werte (Level, Gold, Ausrüstung …) werden zurückgesetzt, Skills wirken ab Start.
@@ -212,6 +215,8 @@ func descend() -> void:
 		return
 	run.pastCounts = Meta.progress_counts(run)
 	run.floor = int(run.floor) + 1
+	# Issue #28: Jede Ebene ist ein eigenes Biom.
+	run.worldId = GameData.theme_for_floor(int(run.floor)).id
 	var map := _generate_map(Meta.floor_seed(int(run.seed), int(run.floor)), float(run.levelScale), int(run.bossRunes), run.worldId, Meta.run_pact(run))
 	run.map = map
 	run.defeated = {}

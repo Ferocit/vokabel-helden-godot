@@ -26,9 +26,11 @@ var _atmosphere: Node3D
 var _vignette_layer: CanvasLayer
 
 
-func _init(density: float = 1.0) -> void:
+## `theme_id`: Biom (GameData.THEMES), bestimmt Hintergrund, Nebel, Umgebungslicht und Partikelfarben (Issue #28).
+func _init(density: float = 1.0, theme_id: String = "jungle") -> void:
 	name = "WorldFx"
-	environment = _make_environment()
+	var look: Dictionary = GameData.get_theme(theme_id).look
+	environment = _make_environment(look)
 
 	sun = DirectionalLight3D.new()
 	sun.light_color = Color("#c8dcff")
@@ -50,8 +52,8 @@ func _init(density: float = 1.0) -> void:
 	add_child(camera)
 
 	_atmosphere = Node3D.new()
-	_atmosphere.add_child(_fireflies(density))
-	_atmosphere.add_child(_leaves(density))
+	_atmosphere.add_child(_fireflies(density, Color(String(look.get("fireflies", "#ffe680")))))
+	_atmosphere.add_child(_leaves(density, Color(String(look.get("particles", "#7fbf4a")))))
 	add_child(_atmosphere)
 
 	_vignette_layer = CanvasLayer.new()
@@ -69,12 +71,12 @@ func set_active(on: bool) -> void:
 	set_process(on)
 
 
-static func _make_environment() -> Environment:
+static func _make_environment(look: Dictionary = {}) -> Environment:
 	var e := Environment.new()
 	e.background_mode = Environment.BG_COLOR
-	e.background_color = BACKGROUND
+	e.background_color = Color(String(look.get("background", BACKGROUND.to_html())))
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	e.ambient_light_color = AMBIENT
+	e.ambient_light_color = Color(String(look.get("ambient", AMBIENT.to_html())))
 	e.ambient_light_energy = 0.2
 	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	e.tonemap_exposure = 1.05
@@ -96,7 +98,7 @@ static func _make_environment() -> Environment:
 	e.ssao_power = 1.3
 	e.fog_enabled = true
 	e.fog_mode = Environment.FOG_MODE_EXPONENTIAL
-	e.fog_light_color = Color("#1c3022")
+	e.fog_light_color = Color(String(look.get("fog", "#1c3022")))
 	e.fog_light_energy = 0.8
 	e.fog_density = 0.012
 	e.fog_sky_affect = 0.0
@@ -161,7 +163,7 @@ static func _particle_quad(size: float, color: Color, unshaded: bool) -> QuadMes
 	return q
 
 
-static func _fireflies(density: float) -> GPUParticles3D:
+static func _fireflies(density: float, tint: Color = Color("#ffe680")) -> GPUParticles3D:
 	var p := GPUParticles3D.new()
 	p.name = "Fireflies"
 	p.amount = int(40 * density)
@@ -188,11 +190,13 @@ static func _fireflies(density: float) -> GPUParticles3D:
 	pm.color_ramp = ramp
 	p.process_material = pm
 	p.position.y = 1.2
-	p.draw_pass_1 = _particle_quad(0.07, Color(2.2, 2.6, 1.2), true)
+	# Leicht überhell, damit der Glow greift.
+	p.draw_pass_1 = _particle_quad(0.07, Color(tint.r * 2.4, tint.g * 2.4, tint.b * 2.4), true)
 	return p
 
 
-static func _leaves(density: float) -> GPUParticles3D:
+## Fallende Blätter (Dschungel), Kristallstaub (Höhle) oder Schneeflocken (Eistempel).
+static func _leaves(density: float, tint: Color = Color("#7fbf4a")) -> GPUParticles3D:
 	var p := GPUParticles3D.new()
 	p.name = "Leaves"
 	p.amount = int(14 * density)
@@ -210,7 +214,7 @@ static func _leaves(density: float) -> GPUParticles3D:
 	pm.gravity = Vector3(0, -0.15, 0)
 	pm.angular_velocity_min = -90.0
 	pm.angular_velocity_max = 90.0
-	pm.color = Color("#7fbf4a")
+	pm.color = tint
 	var fade := Gradient.new()
 	fade.colors = PackedColorArray([Color(1, 1, 1, 0.9), Color(1, 1, 1, 0.9), Color(1, 1, 1, 0)])
 	fade.offsets = PackedFloat32Array([0.0, 0.8, 1.0])

@@ -113,9 +113,12 @@ static func _render_collection(box: VBoxContainer) -> void:
 	grid.add_theme_constant_override("h_separation", 12)
 	for e: Dictionary in GameData.ENEMIES:
 		var known := seen.has(e.id)
-		var icon := UI.sprite(int(e.frame), 48)
-		if not known:
-			icon.modulate = Color(0, 0, 0, 0.75)
+		var icon := TextureRect.new()
+		icon.texture = Assets.enemy_frame(e)
+		icon.custom_minimum_size = Vector2(48, 48)
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon.modulate = Assets.enemy_tint(e) if known else Color(0, 0, 0, 0.75)
 		var cell := UI.vbox([icon, UI.label(e.name if known else "???", "" if known else "Dim", 14), UI.label("%d×" % int(seen.get(e.id, 0)) if known else "", "Dim", 13)], 2)
 		cell.custom_minimum_size.x = 110
 		grid.add_child(cell)
