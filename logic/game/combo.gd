@@ -1,7 +1,8 @@
 class_name Combo
 extends RefCounted
 ## Kombo-Zähler (Issue #21): Richtige Antworten in Folge machen Angriffe und Fähigkeiten stärker.
-## Auf Anhieb richtig (ohne Hilfe) → +1; mit Hilfe oder „fast richtig“ bleibt die Kombo stehen; falsch → 0.
+## Auf Anhieb richtig (ohne Hilfe) → +1; mit Hilfe, im zweiten Versuch oder „fast richtig“ bleibt die Kombo stehen;
+## falsch → 0.
 ## Die Kombo gilt für das ganze Abenteuer (Kämpfe, Truhen, Türen) und steht in run.combo.
 ## Werte: config/game.json → combat.combo { step, max }.
 
@@ -13,7 +14,7 @@ static func cfg() -> Dictionary:
 static func next(combo: int, res: Dictionary) -> int:
 	match res.outcome:
 		"correct":
-			return combo + 1 if int(res.get("hintsUsed", 0)) == 0 else combo
+			return combo + 1 if Vocab.unaided(res) else combo
 		"almostCorrect":
 			return combo
 	return 0

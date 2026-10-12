@@ -11,6 +11,8 @@ extends RefCounted
 ##                 ohne Hilfe und ohne vorherigen Fehler in dieser Sitzung) }
 ##   „almostCorrect“: ein Tippfehler (ein Buchstabe falsch, zu viel, zu wenig oder zwei vertauscht) oder nur die
 ##   Großschreibung falsch – zählt halb (Issue #17).
+##   secondTry: Nach „fast richtig“ gibt es eine zweite Chance (Issue #32). Richtig im zweiten Versuch → outcome
+##   „correct“ mit secondTry = true: volle Wirkung, aber nicht „auf Anhieb“ (wie mit Hilfe).
 
 
 static func item_key(unit_id: String, vocab_id: String) -> String:
@@ -25,8 +27,16 @@ static func entry(id: String, de: String, en: String, alternatives: Array = [], 
 	return {"id": id, "de": de, "en": en, "alternatives": alternatives, "caseSensitive": case_sensitive}
 
 
-static func result(outcome: String, hints_used: int = 0) -> Dictionary:
-	return {"outcome": outcome, "hintsUsed": hints_used}
+static func result(outcome: String, hints_used: int = 0, second_try: bool = false) -> Dictionary:
+	var r := {"outcome": outcome, "hintsUsed": hints_used}
+	if second_try:
+		r.secondTry = true
+	return r
+
+
+## Ohne jede Hilfe: keine Hilfen und nicht erst im zweiten Versuch.
+static func unaided(res: Dictionary) -> bool:
+	return int(res.get("hintsUsed", 0)) == 0 and not bool(res.get("secondTry", false))
 
 
 static func now_ms() -> int:
@@ -114,7 +124,7 @@ static func next_mastery(current: float, res: Dictionary, cfg: Dictionary) -> fl
 		return clamp_mastery(current - cfg.masteryWrongLoss)
 	if res.outcome == "almostCorrect":
 		return clamp_mastery(current + float(cfg.get("masteryAlmostGain", 0.0)))
-	var bonus: float = cfg.masteryNoHintBonus if res.hintsUsed == 0 else 0.0
+	var bonus: float = cfg.masteryNoHintBonus if unaided(res) else 0.0
 	return clamp_mastery(current + cfg.masteryCorrectGain + bonus)
 
 

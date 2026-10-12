@@ -31,7 +31,7 @@ func word(key: String) -> Dictionary:
 func submit(item: Dictionary, res: Dictionary) -> Dictionary:
 	# Auf Anhieb richtig: ohne Hilfe und ohne vorherigen Fehler mit diesem Wort im Abenteuer.
 	res = res.duplicate()
-	res.firstTry = res.outcome == "correct" and int(res.hintsUsed) == 0 and not scheduler.wrong_in_run.has(item.key)
+	res.firstTry = res.outcome == "correct" and Vocab.unaided(res) and not scheduler.wrong_in_run.has(item.key)
 	var before: Variant = _progress.get(item.key)
 	var updated := Vocab.record_answer(before, res, _cfg, int(_now.call()))
 	_progress[item.key] = updated

@@ -3,7 +3,8 @@ extends PanelContainer
 ## Gemeinsame Lernabfrage für Kampf, Truhen und Türen:
 ## deutsche Aufgabe → englische Eingabe → Prüfung → bei Fehler Lösung zeigen und abtippen lassen.
 ## Ein einzelner Tippfehler (oder nur falsche Großschreibung) gilt als „fast richtig“ (Issue #17): Die richtige
-## Schreibweise wird gezeigt und muss wie bei einem Fehler einmal abgetippt werden (Issue #32).
+## Daraufhin gibt es eine zweite Chance (Issue #32): Richtig im zweiten Versuch wirkt voll. Ist auch der zweite
+## Versuch nur fast richtig, wird die Schreibweise gezeigt und einmal abgetippt (halbe Wirkung); falsch → Fehler.
 ## Kein Zeitlimit. Hilfen (Alt+1/Alt+2) kosten Fokus oder eine Gratis-Ladung.
 ## Ergebnis (Signal `finished`): { cancelled: bool, result: AnswerResult (falls nicht abgebrochen), wallet }
 
@@ -28,6 +29,8 @@ var show_hints := true
 var phase := "answer"  # answer | correction | done
 ## In der Korrektur nach „fast richtig“ (zählt danach als almostCorrect statt als Fehler).
 var _almost := false
+## Zweite Chance nach dem ersten „fast richtig“ läuft gerade.
+var _second := false
 var hints: Dictionary
 
 var input: LineEdit
@@ -193,6 +196,17 @@ func _submit() -> void:
 
 func _submit_answer(value: String) -> void:
 	var check := Vocab.check_answer(entry, value)
+	if check == "almostCorrect" and not _second:
+		# Zweite Chance: ohne Lösung noch einmal versuchen, die Eingabe bleibt zum Verbessern stehen.
+		_second = true
+		Sound.play("hint")
+		var case_only := Vocab.accepted_answers(entry).any(func(a: String) -> bool: return a.to_lower() == value.strip_edges().to_lower())
+		_set_input_state(false, UI.ACCENT)
+		_feedback.theme_type_variation = "Accent"
+		_feedback.text = "Fast! %s Du hast noch einen Versuch." % ("Achte auf die Großschreibung." if case_only else "Ein Buchstabe stimmt nicht.")
+		input.caret_column = input.text.length()
+		_focus_input()
+		return
 	if check == "almostCorrect":
 		Sound.play("hint")
 		phase = "correction"
@@ -204,9 +218,12 @@ func _submit_answer(value: String) -> void:
 		input.editable = false
 		_set_input_state(true)
 		_feedback.theme_type_variation = "Good"
-		_feedback.text = "Richtig!" if not (hints.used as Array).is_empty() else "Richtig – ganz ohne Hilfe!"
+		if _second:
+			_feedback.text = "Richtig – zweite Chance genutzt!"
+		else:
+			_feedback.text = "Richtig!" if not (hints.used as Array).is_empty() else "Richtig – ganz ohne Hilfe!"
 		Sound.play("correct")
-		_finish_later({"cancelled": false, "result": Vocab.result("correct", (hints.used as Array).size()), "wallet": wallet}, CORRECT_DELAY)
+		_finish_later({"cancelled": false, "result": Vocab.result("correct", (hints.used as Array).size(), _second), "wallet": wallet}, CORRECT_DELAY)
 		return
 	Sound.play("wrong")
 	phase = "correction"

@@ -241,7 +241,8 @@
     },
     "restBelowHp": 0.5,
     "daysBetweenRuns": 1.0,
-    "almostShare": 0.3
+    "almostShare": 0.3,
+    "secondChanceSuccess": 0.7
   },
   "shrine": {
     "words": 3,

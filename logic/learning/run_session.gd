@@ -25,7 +25,8 @@ static func restore(snap: Dictionary) -> RunSession:
 func record(item: Dictionary, res: Dictionary, mastery_before: float, mastery_after: float) -> void:
 	questions += 1
 	var correct: bool = res.outcome == "correct"
-	var almost: bool = res.outcome == "almostCorrect"
+	# Richtig erst im zweiten Versuch erscheint in der Auswertung bei „fast richtig“ (Issue #32).
+	var almost: bool = res.outcome == "almostCorrect" or bool(res.get("secondTry", false))
 	var wrong: bool = res.outcome == "wrongCorrected"
 	if not records.has(item.key):
 		records[item.key] = {
@@ -34,7 +35,7 @@ func record(item: Dictionary, res: Dictionary, mastery_before: float, mastery_af
 			"correct": 1 if correct else 0,
 			"almost": 1 if almost else 0,
 			"wrong": 1 if wrong else 0,
-			"firstTryCorrect": correct and int(res.hintsUsed) == 0,
+			"firstTryCorrect": correct and Vocab.unaided(res),
 			"hintsUsed": int(res.hintsUsed),
 			"masteryBefore": mastery_before,
 			"masteryAfter": mastery_after,

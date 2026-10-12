@@ -303,6 +303,7 @@ func test_kombo_zaehler() -> void:
 	expect_eq(Combo.next(0, Vocab.result("correct")), 1)
 	expect_eq(Combo.next(3, Vocab.result("correct", 1)), 3, "mit Hilfe bleibt die Kombo stehen")
 	expect_eq(Combo.next(3, Vocab.result("almostCorrect")), 3, "fast richtig hält die Kombo")
+	expect_eq(Combo.next(3, Vocab.result("correct", 0, true)), 3, "zweite Chance hält die Kombo")
 	expect_eq(Combo.next(3, Vocab.result("wrongCorrected")), 0)
 	expect_near(Combo.multiplier(0), 1.0)
 	expect_near(Combo.multiplier(3), 1.3)

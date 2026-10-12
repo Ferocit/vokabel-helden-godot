@@ -52,18 +52,41 @@ func test_abfrage_falsch_dann_abtippen() -> void:
 	expect_eq(out[0].result.outcome, "wrongCorrected")
 
 
-func test_abfrage_fast_richtig_mit_abtippen() -> void:
+func test_abfrage_fast_richtig_zweite_chance() -> void:
 	var p := prompt(item(), wallet())
 	var out := []
 	p.finished.connect(func(o: Dictionary) -> void: out.append(o))
 	answer(p, "hosue")
-	expect_eq(p.phase, "correction", "Tippfehler: richtige Schreibweise abtippen (Issue #32)")
-	expect_true(out.is_empty(), "Fenster bleibt offen")
-	answer(p, "hosue")
-	expect_eq(p.phase, "correction", "falsch abgetippt bleibt offen")
+	expect_eq(p.phase, "answer", "Tippfehler: zweite Chance ohne Lösung (Issue #32)")
+	expect_true(out.is_empty())
+	expect_false(p._feedback.text.contains("house"), "Lösung wird noch nicht verraten")
 	answer(p, "house")
 	expect_eq(out.size(), 1)
-	expect_eq(out[0].result.outcome, "almostCorrect", "zählt weiter als fast richtig")
+	expect_eq(out[0].result.outcome, "correct", "zweite Chance genutzt: volle Wirkung")
+	expect_true(out[0].result.secondTry)
+	expect_false(Vocab.unaided(out[0].result), "zählt nicht als auf Anhieb")
+
+
+func test_abfrage_fast_richtig_zweimal_dann_abtippen() -> void:
+	var p := prompt(item(), wallet())
+	var out := []
+	p.finished.connect(func(o: Dictionary) -> void: out.append(o))
+	answer(p, "hosue")
+	answer(p, "huose")
+	expect_eq(p.phase, "correction", "zweiter Versuch wieder nur fast: Lösung abtippen")
+	answer(p, "house")
+	expect_eq(out[0].result.outcome, "almostCorrect")
+
+
+func test_abfrage_zweite_chance_dann_falsch() -> void:
+	var p := prompt(item(), wallet())
+	var out := []
+	p.finished.connect(func(o: Dictionary) -> void: out.append(o))
+	answer(p, "hosue")
+	answer(p, "garden")
+	expect_eq(p.phase, "correction")
+	answer(p, "house")
+	expect_eq(out[0].result.outcome, "wrongCorrected")
 
 
 func test_abfrage_grossschreibung_egal_bei_kleiner_loesung() -> void:

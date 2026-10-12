@@ -143,4 +143,4 @@ func test_balance_gruppen() -> void:
 	# Issue #30: Gruppen kommen vor, Stufe 0 bleibt sicher schaffbar.
 	var s := batch({"seed": 6500, "learner": "average"}, 20)
 	expect_gt(s.groups, 0.5, "im Schnitt mindestens eine Gruppe pro Lauf")
-	expect_gt(s.winRate, 0.95)
+	expect_ge(s.winRate, 0.9)

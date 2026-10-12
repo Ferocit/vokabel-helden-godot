@@ -52,7 +52,7 @@ static func record(run: Dictionary, items: Array, item: Dictionary, res: Diction
 	if not run.has("setWords") or res.outcome != "correct":
 		return []
 	run.setHits[item.key] = true
-	if int(res.get("hintsUsed", 0)) == 0:
+	if Vocab.unaided(res):
 		run.setClean[item.key] = true
 	var u := unit_of(item)
 	var p: Dictionary = progress(run, items).get(u, {})

@@ -323,10 +323,16 @@ class _Run:
 		var correct: bool = rng.call() < p
 		last_revenge = was_missed and correct
 		var outcome := "correct" if correct else ("almostCorrect" if rng.call() < float(sc.almostShare) else "wrongCorrected")
+		# Zweite Chance nach „fast richtig“ (Issue #32): meist klappt der zweite Versuch.
+		var second := false
+		if outcome == "almostCorrect" and rng.call() < float(sc.get("secondChanceSuccess", 0.7)):
+			outcome = "correct"
+			second = true
+			correct = true
 		_spend(float(sc.time.answerSec) + used * float(sc.time.hintSec) + (float(sc.time.wrongExtraSec) if outcome != "correct" else 0.0))
-		learning.submit(item, Vocab.result(outcome, used))
-		combo = Combo.next(combo, Vocab.result(outcome, used))
-		for bonus: Dictionary in SetBonus.record(run_state, learning.scheduler._items, item, Vocab.result(outcome, used)):
+		learning.submit(item, Vocab.result(outcome, used, second))
+		combo = Combo.next(combo, Vocab.result(outcome, used, second))
+		for bonus: Dictionary in SetBonus.record(run_state, learning.scheduler._items, item, Vocab.result(outcome, used, second)):
 			var st := _stats()
 			run_state.hp = int(st.maxHp)
 			run_state.focus = int(st.maxFocus)
