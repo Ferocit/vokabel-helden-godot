@@ -434,7 +434,10 @@ func notify(text: String, link: String = "") -> void:
 		row.add_child(UI.button("Öffnen", func() -> void: OS.shell_open(link), "SmallButton"))
 	_notify.add_child(row)
 	UI.pin(self, _notify, Control.PRESET_CENTER_BOTTOM, Vector2(0, -60))
-	var n := _notify
+	# Über die Instanz-ID statt den Knoten selbst: Ersetzt eine neue Meldung diese vorher, wäre ein im Lambda
+	# gefangener Knoten schon freigegeben („Lambda capture … was freed“).
+	var id := _notify.get_instance_id()
 	get_tree().create_timer(7.0, true).timeout.connect(func() -> void:
-		if is_instance_valid(n):
-			n.queue_free())
+		var n := instance_from_id(id)
+		if n != null:
+			(n as Node).queue_free())
