@@ -411,3 +411,32 @@ func test_kampf_gegen_gruppe_szene() -> void:
 	expect_eq(int(Ctx.profile.bestiary.get("bat", 0)) >= 1, true, "jeder Gegner zählt fürs Bestiarium")
 	expect_ge(int(Ctx.profile.gold), gold)
 	obj.erase("group")
+
+
+func test_kampf_esc_pause_und_beenden() -> void:
+	# Issue #34: Esc öffnet im Kampf ein Pausenmenü, darüber lässt sich das Abenteuer beenden.
+	start_run()
+	var c := open_combat()
+	var out := []
+	c.finished.connect(func(d: Dictionary) -> void: out.append(d))
+	var esc := InputEventKey.new()
+	esc.keycode = KEY_ESCAPE
+	esc.pressed = true
+	c._unhandled_key_input(esc)
+	expect_true(c._pause_modal != null, "Pausenmenü offen")
+	var one := InputEventKey.new()
+	one.keycode = KEY_1
+	one.pressed = true
+	c._menu_active = true
+	c._unhandled_key_input(one)
+	expect_true(VocabPrompt != null and prompt_of(c) == null, "Zifferntasten ruhen in der Pause")
+	(c.ui.find_child("PauseResume", true, false) as Button).pressed.emit()
+	expect_true(c._pause_modal == null, "weiterkämpfen schließt")
+	c._unhandled_key_input(esc)
+	(c.ui.find_child("PauseFinish", true, false) as Button).pressed.emit()
+	var yes: Array = c.ui.find_children("*", "Button", true, false).filter(func(b: Button) -> bool: return b.text == "Beenden")
+	expect_eq(yes.size(), 1, "Sicherheitsabfrage")
+	(yes[0] as Button).pressed.emit()
+	expect_eq(out.size(), 1)
+	expect_true(out[0].get("gameOver", false), "Abenteuer endet")
+	expect_eq(out[0].outcome, "fled")

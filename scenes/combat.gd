@@ -483,6 +483,13 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	var k := event as InputEventKey
 	if not k.pressed or k.echo:
 		return
+	# Esc: Pausenmenü (Issue #34) – auch während einer Abfrage, solange kein anderes Fenster offen ist.
+	if k.keycode == KEY_ESCAPE and _pause_modal == null and _blessing_modal == null and _result_modal == null:
+		get_viewport().set_input_as_handled()
+		open_pause()
+		return
+	if _pause_modal != null:
+		return  # Kampftasten ruhen, solange die Pause offen ist
 	if _menu_active and k.keycode == KEY_TAB and _alive_count() > 1:
 		get_viewport().set_input_as_handled()
 		cycle_target()
@@ -812,6 +819,46 @@ func close_result() -> void:
 	_result_modal = null
 	m.close()
 	result_closed.emit()
+
+
+var _pause_modal: UI.Modal
+
+
+## Pausenmenü im Kampf (Issue #34): weiterkämpfen, speichern & zum Titel oder das Abenteuer beenden.
+## Die Zeit-Challenge-Uhr läuft im Kampf ohnehin nur über die Erkundung weiter.
+func open_pause() -> UI.Modal:
+	var m := UI.modal(ui, "Pause", 640)
+	_pause_modal = m
+	m.closed.connect(func() -> void: _pause_modal = null)
+	m.body.add_child(UI.para("Der Kampf ist angehalten. Beim Speichern & Verlassen beginnt dieser Kampf beim nächsten Mal neu; deine HP bleiben so, wie sie gerade sind.", "Dim", 16))
+	var finish := UI.button("Abenteuer beenden", func() -> void:
+		UI.confirm(ui, "Abenteuer jetzt beenden und zur Auswertung gehen? Dein Lernfortschritt bleibt gespeichert.", func() -> void:
+			m.close()
+			_leave_fight()
+			_finish({"objectId": obj.id, "outcome": "fled", "messages": [], "gameOver": true}), "Beenden"), "DangerButton")
+	finish.name = "PauseFinish"
+	var to_title := UI.button("Speichern & zum Titel", func() -> void:
+		m.close()
+		_leave_fight()
+		Ctx.autosave()
+		var tree := get_tree()
+		# Erkundung (aktuelle Szene) und Kampf verlassen.
+		queue_free()
+		tree.change_scene_to_file("res://scenes/title.tscn"))
+	to_title.name = "PauseTitle"
+	var resume := UI.button("Weiterkämpfen", m.close)
+	resume.name = "PauseResume"
+	m.body.add_child(UI.gap(8))
+	m.body.add_child(UI.hbox([finish, UI.spacer(), to_title, resume]))
+	UI.focus_later(resume)
+	return m
+
+
+## Kampfwerte in den Lauf übernehmen, wenn man den Kampf vorzeitig verlässt (HP und Tränke bleiben).
+func _leave_fight() -> void:
+	run.hp = maxi(1, int(state.player.hp))
+	run.focus = int(state.player.focus)
+	Ctx.profile.potions = int(state.player.potions)
 
 
 func _finish(data: Dictionary) -> void:

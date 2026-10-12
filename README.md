@@ -28,7 +28,7 @@ Die Vorlagen stehen in `export_presets.cfg`. In der exportierten Version landen 
 | WASD / Pfeiltasten | bewegen |
 | E / Enter / Leertaste | interagieren (Truhe, Tür, Altar, Siegeltor) |
 | I | Charakter & Inventar (Ausrüstung an-/ablegen, verkaufen, Werte) |
-| Esc | Menü (Lernstand, Speichern, Beenden) |
+| Esc | Menü (Lernstand, Speichern, Beenden); im Kampf Pause mit „Abenteuer beenden“ / „Speichern & zum Titel“ |
 | 1–4, ↑↓ / W S + Enter | Kampfbefehl wählen |
 | Alt+1 / Alt+2 | Hilfe: Wortlänge / erster Buchstabe |
 | F8 oder 🐞 unten rechts | etwas melden |
