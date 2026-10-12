@@ -173,7 +173,7 @@ static func progress_counts(run: Dictionary) -> Dictionary:
 		counts[k] = int(counts.get(k, 0)) + int(past[k])
 	for obj: Dictionary in run.map.objects:
 		if obj.kind == "enemy" and run.defeated.has(obj.id):
-			counts[obj.tier] += 1
+			counts[obj.tier] += (obj.get("group", [obj.enemyId]) as Array).size()
 		elif obj.kind == "chest" and run.opened.has(obj.id):
 			counts.chest += 1
 		elif obj.kind == "door" and run.opened.has(obj.id):

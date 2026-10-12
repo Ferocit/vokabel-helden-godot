@@ -483,6 +483,19 @@ func _create_view(obj: Dictionary) -> void:
 			bob.period = 1.3 + float((int(obj.x) * 37 + int(obj.y) * 11) % 400) / 500.0
 			s.add_child(bob)
 			node.add_child(s)
+			# Gruppe (Issue #30): Begleiter etwas kleiner seitlich daneben – sie bewegen sich mit.
+			var group: Array = obj.get("group", [])
+			for k in range(1, group.size()):
+				var md := GameData.get_enemy(group[k])
+				var ms := Fx.sprite(Assets.enemy_frame(md), 16.0 / 0.8)
+				ms.modulate = Assets.enemy_tint(md)
+				ms.rotation.x = TILT
+				ms.position = Vector3(-0.45 if k == 1 else 0.45, 0.04, -0.3 if k == 1 else 0.25)
+				var mb := Fx.Bob.new()
+				mb.amplitude = 0.1
+				mb.period = bob.period + 0.3 * k
+				ms.add_child(mb)
+				node.add_child(ms)
 			if obj.tier != "normal":
 				node.add_child(_light(Color("#ff5040") if obj.tier == "boss" else Color("#ffb030"), 1.2, 2.5 * scale, Vector3(0, 0.8 * scale, 0.5)))
 		"chest":

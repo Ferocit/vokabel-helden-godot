@@ -119,10 +119,12 @@ func test_belohnung_und_einmalige_auszahlung() -> void:
 	Ctx.start_run(["sample"], "jungle", 3)
 	var run: Dictionary = Ctx.run
 	var n := 0
+	var members := 0
 	for o: Dictionary in run.map.objects:
 		if o.kind == "enemy" and o.tier == "normal" and n < 2:
 			run.defeated[o.id] = true
 			n += 1
+			members += (o.get("group", [o.enemyId]) as Array).size()  # Gruppen zählen je Gegner (Issue #30)
 		elif o.kind == "chest":
 			run.opened[o.id] = true
 	var chests := (run.map.objects as Array).filter(func(o: Dictionary) -> bool: return o.kind == "chest").size()
@@ -131,7 +133,7 @@ func test_belohnung_und_einmalige_auszahlung() -> void:
 		Ctx.submit_answer(learning.next_word("normal"), Vocab.result("correct", 0))
 	var r := Ctx.end_run(true)
 	var c: Dictionary = Meta.cfg().shards
-	expect_eq(int(r.total), 2 * int(c.normalEnemy) + chests * int(c.chest) + 10 / int(c.correctPer) + int(c.victory))
+	expect_eq(int(r.total), members * int(c.normalEnemy) + chests * int(c.chest) + 10 / int(c.correctPer) + int(c.victory))
 	expect_eq(int(Ctx.profile.shards), int(r.total))
 	expect_eq(int(Ctx.profile.records.runs), 1)
 	expect_eq(int(Ctx.profile.records.victories), 1)

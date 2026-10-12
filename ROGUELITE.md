@@ -96,6 +96,14 @@ Mauern und Pflanzen, Hintergrund, Nebel, Umgebungslicht, Fackellicht und Partike
 umgefärbte Dungeon-Kacheln und -Gegner (`tint`), der Eistempel Kenney „Tiny Ski“ (Schnee, verschneite Bäume, Yetis,
 Schneemann; `sheet: "ski"`). Neue Biome: Eintrag in `THEMES` mit `look` und Gegnern anlegen.
 
+## Gegnergruppen (Issue #30, `combat.group`)
+Normale Gegner treten mit 30 % Chance zu zweit und mit 12 % zu dritt auf (eigener Zufall im Levelgenerator, die
+übrigen Karten bleiben gleich). In Gruppen haben die Einzelnen 70 % HP und 75 % Angriff. Der Held greift das
+gewählte Ziel an (Tab oder Klick in der Gegnerliste), danach handeln alle lebenden Gegner – Verteidigen schützt
+vor allen Treffern der Runde. Fällt das Ziel, wird automatisch das nächste gewählt. XP, Beute und Splitter gibt
+es pro Gegner, eine Rune pro Begegnung. In der Welt stehen die Begleiter sichtbar neben dem Anführer.
+Simulator (Durchschnitt): Stufe 0 weiter 100 % Siege, Ø Splitter 51 → 56; Stufe 3 ohne Skills ≈ 48 % Siege.
+
 ## Nemesis-Boss (Issue #24, `logic/learning/nemesis.gd`, `nemesis`)
 Der Boss eröffnet mit „Ich kenne deine Schwachstellen …“ und trägt bis zu 3 Rüstungsteile – die schwierigsten
 Wörter des Spielers über alle Abenteuer (hohe Fehlerquote, wenig Mastery, zuletzt falsch). Solange Rüstung hält,

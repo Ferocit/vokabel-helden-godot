@@ -2,7 +2,10 @@ class_name CombatService
 extends RefCounted
 ## Reine Rundenlogik ohne Darstellung.
 ## Aktionen: "attack" | "defend" | "skill" | "item"
-## CombatState { player, enemy, defending, outcome: "ongoing"|"won"|"lost", round }
+## CombatState { player, enemy (aktuelles Ziel), enemies (Gruppe, Issue #30), target (Index), defending,
+##               outcome: "ongoing"|"won"|"lost", round }
+## Gruppen: Der Held greift das Ziel an, danach handeln alle lebenden Gegner nacheinander. Gegner-Ereignisse
+## tragen "enemy" (Index in enemies). Gewonnen ist, wenn alle Gegner besiegt sind.
 ##   player { hp, maxHp, focus, maxFocus, attack, potions, skill, defendFactor, critChance, critMultiplier, focusOnCorrect,
 ##            armor, potionHealBonus, lifeOnWin, comboMult (Schadensfaktor der Kombo, Issue #21) }
 ##   enemy  { def, hp, maxHp, attack, phase, poison ({turns, damage} oder null), intent, patternIndex, guarding,
@@ -103,14 +106,68 @@ static func create_enemy(def: Dictionary, player_level: int, rng: Variant = null
 	}
 
 
+## Alle Gegner eines Kartenobjekts (Gruppe bis 3, Issue #30). In Gruppen sind die Einzelnen etwas schwächer.
+static func create_group(obj: Dictionary, player_level: int, rng: Variant = null, pact: Variant = {}, floor: int = 1) -> Array:
+	var ids: Array = obj.get("group", [obj.enemyId])
+	var g: Dictionary = GameConfig.section("combat").group
+	var out: Array = []
+	for id: String in ids:
+		var e := create_enemy(GameData.get_enemy(id), player_level, rng, pact, floor)
+		if ids.size() > 1:
+			e.hp = maxi(1, js_round(int(e.hp) * float(g.hpFactor)))
+			e.maxHp = e.hp
+			e.attack = maxi(1, js_round(int(e.attack) * float(g.attackFactor)))
+		out.append(e)
+	return out
+
+
 static func _current_pattern(enemy: Dictionary) -> Array:
 	if int(enemy.phase) == 2 and enemy.def.has("phase2Pattern"):
 		return enemy.def.phase2Pattern
 	return enemy.def.pattern
 
 
-static func create_combat(player: Dictionary, enemy: Dictionary) -> Dictionary:
-	return {"player": player.duplicate(), "enemy": enemy.duplicate(), "defending": false, "outcome": "ongoing", "round": 1}
+## `enemy`: ein Gegner oder eine Liste (Gruppe bis 3, Issue #30).
+static func create_combat(player: Dictionary, enemy: Variant) -> Dictionary:
+	var list: Array = (enemy as Array) if enemy is Array else [enemy]
+	var enemies: Array = list.map(func(e: Dictionary) -> Dictionary: return e.duplicate())
+	return {"player": player.duplicate(), "enemy": enemies[0], "enemies": enemies, "target": 0, "defending": false, "outcome": "ongoing", "round": 1}
+
+
+static func alive(e: Dictionary) -> bool:
+	return int(e.hp) > 0
+
+
+## Ziel wechseln (nur auf lebende Gegner).
+static func set_target(state: Dictionary, index: int) -> bool:
+	var enemies: Array = state.get("enemies", [state.enemy])
+	if index < 0 or index >= enemies.size() or not alive(enemies[index]):
+		return false
+	state.target = index
+	state.enemy = enemies[index]
+	return true
+
+
+## Nächster lebender Gegner nach `from` (reihum), -1 wenn keiner mehr lebt.
+static func next_alive(state: Dictionary, from: int) -> int:
+	var enemies: Array = state.get("enemies", [state.enemy])
+	for k in range(1, enemies.size() + 1):
+		var i := (from + k) % enemies.size()
+		if alive(enemies[i]):
+			return i
+	return -1
+
+
+## Ein Gegner ist gefallen: Ist die Gruppe besiegt? Sonst neues Ziel.
+static func _on_enemy_down(state: Dictionary, index: int) -> Array:
+	var events: Array = [{"type": "enemyDefeated", "enemy": index}]
+	var nxt := next_alive(state, index)
+	if nxt < 0:
+		state.outcome = "won"
+	elif int(state.get("target", 0)) == index:
+		set_target(state, nxt)
+		events.append({"type": "retarget", "enemy": nxt})
+	return events
 
 
 static func can_use_action(state: Dictionary, action: String) -> bool:
@@ -194,12 +251,30 @@ static func resolve_player_action(state: Dictionary, action: String, answered_co
 	return events
 
 
+## Alle lebenden Gegner handeln nacheinander; das Verteidigen des Helden gilt für die ganze Runde.
 static func resolve_enemy_turn(state: Dictionary, rng: Callable) -> Array:
 	if state.outcome != "ongoing":
 		return []
 	var events: Array = []
-	var enemy: Dictionary = state.enemy
+	var enemies: Array = state.get("enemies", [state.enemy])
+	for i in enemies.size():
+		if state.outcome != "ongoing":
+			break
+		if alive(enemies[i]):
+			events.append_array(_enemy_act(state, i, rng))
+	state.defending = false
+	state.round = int(state.round) + 1
+	return events
+
+
+static func _enemy_act(state: Dictionary, index: int, rng: Callable) -> Array:
+	var events: Array = []
+	var enemies: Array = state.get("enemies", [state.enemy])
+	var enemy: Dictionary = enemies[index]
 	var player: Dictionary = state.player
+	var tag := func(ev: Dictionary) -> Dictionary:
+		ev.enemy = index
+		return ev
 
 	if enemy.poison != null:
 		var poison: Dictionary = enemy.poison
@@ -208,21 +283,20 @@ static func resolve_enemy_turn(state: Dictionary, rng: Callable) -> Array:
 		poison.turns = int(poison.turns) - 1
 		if int(poison.turns) <= 0:
 			enemy.poison = null
-		events.append({"type": "poisonTick", "amount": amount})
+		events.append(tag.call({"type": "poisonTick", "amount": amount}))
 		if int(enemy.hp) <= 0:
-			state.outcome = "won"
-			events.append({"type": "enemyDefeated"})
+			events.append_array(_on_enemy_down(state, index))
 			return events
-		events.append_array(_check_phase(state))
+		events.append_array(_check_phase(state, enemy).map(tag))
 
 	var move: Dictionary = GameData.ENEMY_MOVES[enemy.intent]
-	events.append({"type": "enemyMove", "move": move.id})
+	events.append(tag.call({"type": "enemyMove", "move": move.id}))
 	if move.id == "guard":
 		enemy.guarding = true
 	if move.id == "regenerate":
 		var heal := mini(int(enemy.maxHp) - int(enemy.hp), maxi(1, js_round(int(enemy.maxHp) * 0.2)))
 		enemy.hp = int(enemy.hp) + heal
-		events.append({"type": "enemyHeal", "amount": heal})
+		events.append(tag.call({"type": "enemyHeal", "amount": heal}))
 	var hit := 0
 	while hit < int(move.hits) and int(player.hp) > 0:
 		var raw := maxi(1, js_round(int(enemy.attack) * float(move.power)) + Rng.rand_int(rng, -1, 1))
@@ -231,10 +305,8 @@ static func resolve_enemy_turn(state: Dictionary, rng: Callable) -> Array:
 		var amount := maxi(1, int(floor(raw * factor))) if state.defending else raw
 		amount = maxi(1, amount - int(player.get("armor", 0)))
 		player.hp = maxi(0, int(player.hp) - amount)
-		events.append({"type": "damage", "target": "player", "amount": amount, "blocked": state.defending})
+		events.append(tag.call({"type": "damage", "target": "player", "amount": amount, "blocked": state.defending}))
 		hit += 1
-	state.defending = false
-	state.round = int(state.round) + 1
 	if int(player.hp) == 0:
 		state.outcome = "lost"
 		events.append({"type": "playerDefeated"})
@@ -242,7 +314,7 @@ static func resolve_enemy_turn(state: Dictionary, rng: Callable) -> Array:
 	var pattern := _current_pattern(enemy)
 	enemy.patternIndex = (int(enemy.patternIndex) + 1) % pattern.size()
 	enemy.intent = pattern[enemy.patternIndex]
-	events.append({"type": "intent", "move": enemy.intent})
+	events.append(tag.call({"type": "intent", "move": enemy.intent}))
 	return events
 
 
@@ -261,8 +333,8 @@ static func _on_crit(state: Dictionary) -> Array:
 	return events
 
 
-static func _check_phase(state: Dictionary) -> Array:
-	var enemy: Dictionary = state.enemy
+static func _check_phase(state: Dictionary, which: Variant = null) -> Array:
+	var enemy: Dictionary = which if which is Dictionary else state.enemy
 	var def: Dictionary = enemy.def
 	if int(enemy.hp) > 0 and int(enemy.phase) == 1 and def.has("phase2At") and int(enemy.hp) <= int(enemy.maxHp) * float(def.phase2At):
 		enemy.phase = 2
@@ -293,8 +365,8 @@ static func _damage_enemy(state: Dictionary, raw_amount: int, crit: bool) -> Arr
 	if not (enemy.get("armor", []) as Array).is_empty():
 		amount = maxi(1, js_round(amount * float(GameConfig.section("nemesis").armorDamageFactor)))
 	enemy.hp = maxi(0, int(enemy.hp) - amount)
-	var events: Array = [{"type": "damage", "target": "enemy", "amount": amount, "crit": crit, "guarded": guarded}]
+	var index := int(state.get("target", 0))
+	var events: Array = [{"type": "damage", "target": "enemy", "amount": amount, "crit": crit, "guarded": guarded, "enemy": index}]
 	if int(enemy.hp) == 0:
-		state.outcome = "won"
-		events.append({"type": "enemyDefeated"})
+		events.append_array(_on_enemy_down(state, index))
 	return events

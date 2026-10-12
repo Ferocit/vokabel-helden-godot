@@ -51,6 +51,7 @@ Einstellungen (Ton, Lautstärke, Vollbild) und eine Spielanleitung gibt es im Ti
    Lösung wird gezeigt und einmal abgetippt; das Wort kommt bald wieder. **Fast richtig** (ein Tippfehler oder
    nur die Großschreibung falsch): Die Aktion wirkt halb so stark, die richtige Schreibweise wird gezeigt.
    Kleingeschriebene Lösungen dürfen auch großgeschrieben werden („House“ für „house“).
+   **Gruppen:** Manchmal kommen bis zu drei Gegner zusammen – Ziel mit Tab oder Klick wählen, alle greifen an.
    **Kombo ⚡:** Richtige Antworten in Folge ohne Hilfe machen Angriffe stärker (bis ×1,5); ein Fehler setzt sie zurück.
    **Set-Meister ⭐:** Wer jede Vokabel eines Sets in einem Abenteuer einmal richtig schreibt (Anzeige 📘 im HUD),
    wird sofort voll geheilt und bekommt am Ende +5 🔷 und einen Stern am Set; jede ohne Hilfe = 🌟 golden (+10 🔷). Gegner kündigen ihre nächste

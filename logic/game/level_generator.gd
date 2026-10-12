@@ -10,6 +10,7 @@ const DIRS: Array[Vector2i] = [Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), 
 const TURN_COST := 3.0
 
 var rng: Callable
+var seed_value := 0
 var cfg: Dictionary
 var options: Dictionary
 var W: int
@@ -31,6 +32,7 @@ static func generate(seed: int, level_cfg: Dictionary, opts: Dictionary) -> Dict
 	for attempt in MAX_ATTEMPTS:
 		var gen := LevelGenerator.new()
 		gen.rng = Rng.create((seed + attempt * 7919) & Rng.MASK)
+		gen.seed_value = seed
 		gen.cfg = level_cfg
 		gen.options = opts
 		var map := gen._try_generate()
@@ -287,6 +289,22 @@ func _try_generate() -> Dictionary:
 		if not _place(rotated, func(x: int, y: int, id: String) -> Dictionary:
 			return {"id": id, "kind": "chest", "x": x, "y": y, "chestType": chest_type}):
 			return {}
+
+	# Gegnergruppen (Issue #30): Manche normalen Gegner treten zu zweit oder zu dritt auf. Eigener Zufall,
+	# damit sich die übrigen Karten nicht verschieben.
+	var group_cfg: Dictionary = options.get("group", {})
+	if not group_cfg.is_empty():
+		var grng := Rng.create((seed_value ^ 0x51ED27) & Rng.MASK)
+		for o: Dictionary in objects:
+			if o.kind != "enemy" or o.tier != "normal":
+				continue
+			var roll: float = grng.call()
+			var size := 3 if roll < float(group_cfg.chance3) else (2 if roll < float(group_cfg.chance3) + float(group_cfg.chance2) else 1)
+			if size > 1:
+				var members: Array = [o.enemyId]
+				for k in size - 1:
+					members.append(Rng.pick(grng, options.enemies.normal))
+				o.group = members
 
 	# Wissensschreine in Räumen, Runenplatten in Gängen (Issue #16: mehr Abfragen unterwegs).
 	var shrine_rooms: Array = Rng.shuffle(rng, non_start)

@@ -73,6 +73,9 @@ func _ready() -> void:
 	if args.has("enemy"):
 		for o: Dictionary in Ctx.run.map.objects:
 			if o.kind == "enemy" and o.tier == args.enemy:
+				# group=1 macht daraus eine Dreiergruppe (Issue #30).
+				if args.has("group"):
+					o.group = [o.enemyId, "bat", "spider"]
 				node.set("object_id", o.id)
 				break
 	get_tree().root.add_child.call_deferred(node)

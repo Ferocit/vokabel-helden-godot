@@ -137,3 +137,10 @@ func test_balance_kampagne_schaltet_inhalte_frei() -> void:
 	var runs := BalanceSim.campaign({"seed": 4100, "learner": "average"}, 8)
 	expect_gt(int(runs[7].unlocks), 3)
 	expect_lt(int(runs[2].unlocks), Unlocks.ALL.size(), "nicht alles nach drei Läufen")
+
+
+func test_balance_gruppen() -> void:
+	# Issue #30: Gruppen kommen vor, Stufe 0 bleibt sicher schaffbar.
+	var s := batch({"seed": 6500, "learner": "average"}, 20)
+	expect_gt(s.groups, 0.5, "im Schnitt mindestens eine Gruppe pro Lauf")
+	expect_gt(s.winRate, 0.95)

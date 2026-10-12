@@ -144,7 +144,7 @@ static func _forget(knowledge: Dictionary, learner: String) -> void:
 ## Durchschnitte und Quoten über mehrere Ergebnisse.
 static func summarize(rows: Array) -> Dictionary:
 	var n := float(maxi(1, rows.size()))
-	var keys := ["shards", "level", "defeats", "questions", "words", "firstTry", "hints", "minutes", "perMinute", "talents", "blessings", "itemsBought", "knowledgeGain", "defendShare", "defendKnowledge", "otherKnowledge", "maxCombo", "setBonus", "setBonusGolden", "floorsCleared", "nemesisArmor", "nemesisBroken"]
+	var keys := ["shards", "level", "defeats", "questions", "words", "firstTry", "hints", "minutes", "perMinute", "talents", "blessings", "itemsBought", "knowledgeGain", "defendShare", "defendKnowledge", "otherKnowledge", "maxCombo", "setBonus", "setBonusGolden", "floorsCleared", "nemesisArmor", "nemesisBroken", "groups"]
 	var sum := {}
 	for k: String in keys:
 		sum[k] = 0.0
@@ -207,6 +207,7 @@ class _Run:
 	var combo := 0
 	var max_combo := 0
 	var last_revenge := false
+	var groups_fought := 0
 	var last_key := ""
 	var armor_broken := 0
 	var armor_total := 0
@@ -258,7 +259,7 @@ class _Run:
 		level_cfg.eliteEnemies = {"min": int(level_cfg.eliteEnemies.min) + extra, "max": int(level_cfg.eliteEnemies.max) + extra}
 		map = LevelGenerator.generate(Meta.floor_seed(int(o.seed), floor), level_cfg, {
 			"bossRunesRequired": RunScaling.scaled_boss_runes(int(c.run.bossRunesRequired), level_scale),
-			"enemies": GameData.theme_for_floor(floor).enemies,
+			"enemies": GameData.theme_for_floor(floor).enemies, "group": c.combat.group,
 		})
 		run_state.floor = floor
 		run_state.map = map
@@ -451,17 +452,28 @@ class _Run:
 		var s := _stats()
 		var cls := GameData.get_class_def(profile.heroClass)
 		var base := {"hp": run_state.hp, "maxHp": s.maxHp, "focus": run_state.focus, "maxFocus": s.maxFocus, "attack": s.attack, "potions": profile.potions}
-		var state := CombatService.create_combat(CombatService.combat_player_from(base, cls, s.mods), CombatService.create_enemy(def, int(profile.level), rng, pact, int(run_state.floor)))
+		var group := CombatService.create_group(obj, int(profile.level), rng, pact, int(run_state.floor))
+		var state := CombatService.create_combat(CombatService.combat_player_from(base, cls, s.mods), group)
+		if group.size() > 1:
+			groups_fought += 1
 		if def.tier == "boss":
 			state.enemy.armor = Nemesis.pick(learning.scheduler._items, o.progress).map(func(w: Dictionary) -> String: return w.key)
 			armor_total += (state.enemy.armor as Array).size()
 		var wallet := _wallet(int(run_state.focus))
 		while state.outcome == "ongoing":
 			var p: Dictionary = state.player
+			# Gruppen: den schwächsten lebenden Gegner zuerst angreifen.
+			var weakest := -1
+			for i in (state.enemies as Array).size():
+				var e: Dictionary = state.enemies[i]
+				if CombatService.alive(e) and (weakest < 0 or int(e.hp) < int(state.enemies[weakest].hp)):
+					weakest = i
+			CombatService.set_target(state, weakest)
+			var heavy_coming := (state.enemies as Array).any(func(e: Dictionary) -> bool: return CombatService.alive(e) and e.intent == "heavy")
 			var action := "attack"
 			if int(p.hp) < int(p.maxHp) * 0.35 and CombatService.can_use_action(state, "item"):
 				action = "item"
-			elif state.enemy.intent == "heavy" and int(p.hp) < int(p.maxHp) * 0.7:
+			elif heavy_coming and int(p.hp) < int(p.maxHp) * 0.7:
 				action = "defend"
 			elif CombatService.can_use_action(state, "skill") and (def.tier != "normal" or profile.heroClass == "mage"):
 				action = "skill"
@@ -505,8 +517,9 @@ class _Run:
 		run_state.hp = int(p.hp) + mini(int(p.get("lifeOnWin", 0)), int(p.maxHp) - int(p.hp))
 		run_state.focus = mini(int(p.maxFocus), int(p.focus) + 1)
 		run_state.defeated[obj.id] = true
-		gain_xp(int(c.xp.boss) if def.tier == "boss" else (int(c.xp.eliteEnemy) if def.tier == "elite" else int(c.xp.normalEnemy)))
-		add_loot(def.tier)
+		for member in group.size():
+			gain_xp(int(c.xp.boss) if def.tier == "boss" else (int(c.xp.eliteEnemy) if def.tier == "elite" else int(c.xp.normalEnemy)))
+			add_loot(def.tier)
 		if def.tier != "boss":
 			run_state.runes = int(run_state.runes) + 1
 		if def.tier == "elite":
@@ -669,6 +682,7 @@ class _Run:
 			"perMinute": questions / maxf(0.01, seconds / 60.0),
 			"talents": talents_taken,
 			"maxCombo": max_combo,
+			"groups": groups_fought,
 			"nemesisArmor": armor_total,
 			"nemesisBroken": armor_broken,
 			"setBonus": 1.0 if set_bonus_level != "" else 0.0,

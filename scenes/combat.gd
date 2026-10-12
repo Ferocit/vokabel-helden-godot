@@ -32,9 +32,16 @@ var rng: Callable
 var fx: WorldFx
 var arena: LevelBuilder
 var hero: Sprite3D
+## Aktuell betrachteter Gegner (Ziel oder der gerade handelnde Gegner einer Gruppe, Issue #30).
 var enemy: Sprite3D
 var enemy_root: Node3D
 var enemy_height := 2.0
+## Alle Gegner der Begegnung (Gruppe bis 3): Definitionen, Sprites, Wurzelknoten, Höhen.
+var defs: Array = []
+var enemy_sprites: Array = []
+var enemy_roots: Array = []
+var enemy_heights: Array = []
+var _focused := 0
 var weapon: HeldWeapon
 var _shield: MeshInstance3D
 
@@ -61,7 +68,8 @@ func _ready() -> void:
 	def = GameData.get_enemy(obj.enemyId)
 	cls = Ctx.hero_class()
 	rng = run.rng
-	state = CombatService.create_combat(Ctx.combat_player(), CombatService.create_enemy(def, int(Ctx.profile.level), rng, Meta.run_pact(run), int(run.get("floor", 1))))
+	defs = (obj.get("group", [obj.enemyId]) as Array).map(func(id: String) -> Dictionary: return GameData.get_enemy(id))
+	state = CombatService.create_combat(Ctx.combat_player(), CombatService.create_group(obj, int(Ctx.profile.level), rng, Meta.run_pact(run), int(run.get("floor", 1))))
 	wallet = Ctx.hint_wallet(int(state.player.focus))
 	if def.tier == "boss":
 		nemesis = Nemesis.pick((run.learning as LearningSession).scheduler._items, Ctx.progress)
@@ -118,24 +126,39 @@ func _build_arena() -> void:
 	fx.snap()
 
 
+## Aufstellung einer Gruppe (Versatz zur Gegnerposition, hintere zuerst).
+const GROUP_OFFSETS := {
+	1: [Vector3.ZERO],
+	2: [Vector3(-1.0, 0, -0.7), Vector3(1.2, 0, 0.0)],
+	3: [Vector3(-2.0, 0, -0.5), Vector3(-0.1, 0, -1.2), Vector3(1.6, 0, 0.1)],
+}
+
+
 func _build_combatants() -> void:
-	var scale := 3.0 if def.tier == "boss" else (2.5 if def.tier == "elite" else 2.0)
-	enemy_height = scale
-	enemy_root = Node3D.new()
-	enemy_root.position = ENEMY_POS
-	enemy_root.add_child(Fx.shadow_quad(scale * 0.8))
-	enemy = Fx.sprite(Assets.enemy_frame(def), 16.0 / scale)
-	enemy.modulate = Assets.enemy_tint(def)
-	# Die Pixel-Art schaut nach rechts; der Gegner soll den Helden ansehen.
-	enemy.flip_h = TOWARD_ENEMY > 0.0
-	var bob := Fx.Bob.new()
-	bob.amplitude = 0.1
-	bob.period = 1.8
-	enemy.add_child(bob)
-	enemy_root.add_child(enemy)
-	if def.tier != "normal":
-		enemy_root.add_child(LevelBuilder._light(Color("#ff5040") if def.tier == "boss" else Color("#ffb030"), 0.7, scale * 1.6, Vector3(0, 0.3, -0.6)))
-	add_child(enemy_root)
+	var n := defs.size()
+	for i in n:
+		var d: Dictionary = defs[i]
+		var scale := 3.0 if d.tier == "boss" else (2.5 if d.tier == "elite" else (2.0 if n == 1 else 1.7))
+		var root := Node3D.new()
+		root.position = ENEMY_POS + (GROUP_OFFSETS[mini(n, 3)][i] as Vector3)
+		root.add_child(Fx.shadow_quad(scale * 0.8))
+		var s := Fx.sprite(Assets.enemy_frame(d), 16.0 / scale)
+		s.modulate = Assets.enemy_tint(d)
+		# Die Pixel-Art schaut nach rechts; der Gegner soll den Helden ansehen.
+		s.flip_h = TOWARD_ENEMY > 0.0
+		var bob := Fx.Bob.new()
+		bob.amplitude = 0.1
+		bob.period = 1.8 + i * 0.23
+		s.add_child(bob)
+		root.add_child(s)
+		if d.tier != "normal":
+			root.add_child(LevelBuilder._light(Color("#ff5040") if d.tier == "boss" else Color("#ffb030"), 0.7, scale * 1.6, Vector3(0, 0.3, -0.6)))
+		add_child(root)
+		defs[i] = d
+		enemy_sprites.append(s)
+		enemy_roots.append(root)
+		enemy_heights.append(scale)
+	_focus(0)
 	if def.tier == "boss":
 		_shake(0.3, 0.1)
 
@@ -248,9 +271,27 @@ func refresh_panels() -> void:
 	bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_enemy_panel.add_child(bar)
 	_enemy_panel.add_child(UI.hbox([UI.label("Als Nächstes:", "Dim", 17), UI.label("%s %s" % [intent.icon, intent.name], "Bold", 17)], 6))
-	_enemy_panel.add_child(UI.para(intent.hint, "Dim", 14))
+	# In Gruppen ist der Platz knapp: die Erklärung der Absicht steht dann im Tooltip der Liste.
+	if (state.get("enemies", [e]) as Array).size() == 1:
+		_enemy_panel.add_child(UI.para(intent.hint, "Dim", 14))
 	if not status.is_empty():
 		_enemy_panel.add_child(UI.para(" · ".join(status), "", 15))
+	# Gruppe (Issue #30): alle Gegner mit HP und Absicht; Klick wählt das Ziel.
+	var enemies: Array = state.get("enemies", [e])
+	if enemies.size() > 1:
+		for i in enemies.size():
+			var m: Dictionary = enemies[i]
+			var d: Dictionary = defs[i]
+			var down := not CombatService.alive(m)
+			var mi: Dictionary = GameData.ENEMY_MOVES[m.intent]
+			var text := "%s %s  %d/%d HP%s" % ["▶" if i == int(state.target) else "  ", d.name, int(m.hp), int(m.maxHp), "  ·  %s" % mi.icon if not down else "  ·  besiegt"]
+			var b := UI.button(text, cycle_target.bind(i), "SmallButton")
+			b.name = "Target_%d" % i
+			b.tooltip_text = "%s %s – %s" % [mi.icon, mi.name, mi.hint]
+			b.disabled = down or i == int(state.target)
+			b.focus_mode = Control.FOCUS_NONE
+			b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			_enemy_panel.add_child(b)
 
 	_intent_label.text = "%s %s" % [intent.icon, intent.name]
 	var border := {"heavy": Color("#ff6a4a"), "charge": Color("#ffb04a"), "guard": Color("#8ac8ff"), "regenerate": Color("#7dffa1")}
@@ -292,7 +333,10 @@ func say(text: String) -> void:
 
 func battle_loop() -> void:
 	await _sleep(0.3)
-	say("Boss: %s versperrt dir den Weg!" % def.name if def.tier == "boss" else "%s taucht auf!" % def.name)
+	if defs.size() > 1:
+		say("Eine Gruppe greift an: %s!" % ", ".join(PackedStringArray(defs.map(func(d: Dictionary) -> String: return d.name))))
+	else:
+		say("Boss: %s versperrt dir den Weg!" % def.name if def.tier == "boss" else "%s taucht auf!" % def.name)
 	await _sleep(0.9)
 	if def.tier == "boss":
 		say(Nemesis.taunt(def.name, nemesis))
@@ -354,8 +398,10 @@ func battle_loop() -> void:
 
 
 func choose_command() -> String:
+	_focus(int(state.get("target", 0)))
 	var intent: Dictionary = GameData.ENEMY_MOVES[state.enemy.intent]
-	say("Was tust du? %s plant: %s %s" % [def.name, intent.icon, intent.name])
+	var others := _alive_count() - 1
+	say("Was tust du? %s plant: %s %s%s" % [def.name, intent.icon, intent.name, " (+%d weitere, Tab = Ziel wechseln)" % others if others > 0 else ""])
 	UI.clear(_command_panel)
 	_command_buttons.clear()
 	for i in COMMANDS.size():
@@ -393,6 +439,10 @@ func choose_command() -> String:
 	return await command_chosen
 
 
+func _alive_count() -> int:
+	return (state.get("enemies", [state.enemy]) as Array).filter(func(e: Dictionary) -> bool: return CombatService.alive(e)).size()
+
+
 func choose(i: int) -> void:
 	if not _menu_active or i < 0 or i >= COMMANDS.size():
 		return
@@ -412,6 +462,10 @@ func choose(i: int) -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	var k := event as InputEventKey
 	if not k.pressed or k.echo:
+		return
+	if _menu_active and k.keycode == KEY_TAB and _alive_count() > 1:
+		get_viewport().set_input_as_handled()
+		cycle_target()
 		return
 	if _menu_active:
 		var idx := [KEY_1, KEY_2, KEY_3, KEY_4].find(k.keycode)
@@ -440,7 +494,13 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 func play_events(events: Array, action: String) -> void:
 	for ev: Dictionary in events:
+		if ev.has("enemy"):
+			_focus(int(ev.enemy))
 		match ev.type:
+			"retarget":
+				say("Nächstes Ziel: %s" % def.name)
+				refresh_panels()
+				await _sleep(0.5)
 			"fizzle":
 				say("„%s“ verpufft – das Wort kommt bald noch einmal." % CombatService.action_label(ev.action, state.player))
 				_burst(hero_pos(1.4), Color("#bfc4d8"), 10, 1.2, false)
@@ -550,6 +610,7 @@ func play_events(events: Array, action: String) -> void:
 				create_tween().tween_property(hero, "rotation:z", -PI / 2.0, 0.5)
 				hero.modulate.a = 0.5
 				await _sleep(0.7)
+	_focus(int(state.get("target", 0)))
 
 
 # ---------- Ergebnis ----------
@@ -562,16 +623,26 @@ func victory() -> void:
 	run.hp = int(state.player.hp) + life
 	run.focus = mini(int(state.player.maxFocus), int(state.player.focus) + 1)
 	Ctx.profile.potions = int(state.player.potions)
+	_focus(0)
 	var xp_cfg := GameConfig.section("xp")
-	var xp := int(xp_cfg.boss) if def.tier == "boss" else (int(xp_cfg.eliteEnemy) if def.tier == "elite" else int(xp_cfg.normalEnemy))
+	# Gruppen (Issue #30): XP und Beute für jeden besiegten Gegner, eine Rune für die Begegnung.
+	var xp := (int(xp_cfg.boss) if def.tier == "boss" else (int(xp_cfg.eliteEnemy) if def.tier == "elite" else int(xp_cfg.normalEnemy))) * defs.size()
 	var levels := Ctx.gain_xp(xp)
-	var loot := LootService.roll_loot(def.tier, rng, Ctx.owns, Ctx.profile)
-	Ctx.record_defeat(def.id)
-	Ctx.apply_loot(loot)
+	var loot := {"gold": 0, "potions": 0, "itemId": null}
+	var found: Array = []
+	for d: Dictionary in defs:
+		var part := LootService.roll_loot(d.tier, rng, Ctx.owns, Ctx.profile)
+		Ctx.record_defeat(d.id)
+		Ctx.apply_loot(part)
+		loot.gold = int(loot.gold) + int(part.gold)
+		loot.potions = int(loot.potions) + int(part.potions)
+		if part.itemId != null:
+			found.append(LootView.item_entry(GameData.get_item(part.itemId)))
+			loot.itemId = part.itemId
 	var got_rune: bool = def.tier != "boss"
 	if got_rune:
 		run.runes = int(run.runes) + 1
-	var found := LootView.entries(loot, xp)
+	found = LootView.entries({"gold": loot.gold, "potions": loot.potions, "itemId": null}, xp) + found
 	if got_rune:
 		found.append({"icon": "◆", "title": "Rune", "detail": "%d von %d für das Siegeltor" % [mini(int(run.runes), int(run.bossRunes)), int(run.bossRunes)], "amount": "+1", "color": UI.ACCENT})
 	if life > 0:
@@ -579,11 +650,12 @@ func victory() -> void:
 	if levels > 0:
 		Sound.play("levelup")
 		found.push_front({"icon": "⭐", "title": "Level up!", "detail": "Jetzt Level %d – HP und Fokus aufgefüllt" % int(Ctx.profile.level), "amount": "Lv %d" % int(Ctx.profile.level), "color": UI.GOOD, "highlight": true})
-	say("%s wurde besiegt!" % def.name)
+	var who: String = def.name if defs.size() == 1 else "Die Gruppe (%s)" % ", ".join(PackedStringArray(defs.map(func(d: Dictionary) -> String: return d.name)))
+	say("%s wurde besiegt!" % who)
 	_victory_hop()
-	var sub := UI.label("%s besiegt – deine Beute:" % def.name, "Dim", 17)
+	var sub := UI.label("%s besiegt – deine Beute:" % who, "Dim", 17)
 	await result_window("Sieg!", [sub, LootView.list(found)])
-	var messages: Array[String] = ["%s besiegt: %s%s" % [def.name, describe_loot(loot), ", +1 Rune" if got_rune else ""]]
+	var messages: Array[String] = ["%s besiegt: %s%s" % [who, describe_loot(loot), ", +1 Rune" if got_rune else ""]]
 	if def.tier == "elite":
 		await choose_blessing_window()
 	if def.tier != "boss":
@@ -762,7 +834,29 @@ func hero_pos(h: float) -> Vector3:
 
 
 func enemy_pos(h: float) -> Vector3:
-	return ENEMY_POS + Vector3(0, h, 0.2)
+	return (enemy_root.position if enemy_root != null else ENEMY_POS) + Vector3(0, h, 0.2)
+
+
+## Ansicht auf einen Gegner der Gruppe richten (für Animationen und Anzeigen).
+func _focus(i: int) -> void:
+	if i < 0 or i >= enemy_sprites.size():
+		return
+	_focused = i
+	def = defs[i]
+	enemy = enemy_sprites[i]
+	enemy_root = enemy_roots[i]
+	enemy_height = enemy_heights[i]
+
+
+## Ziel wechseln (Tab, Klick in der Gegnerliste); nur auf lebende Gegner.
+func cycle_target(to: int = -1) -> void:
+	var i := to if to >= 0 else CombatService.next_alive(state, int(state.target))
+	if i >= 0 and CombatService.set_target(state, i):
+		_focus(i)
+		Sound.play("select", 0.3)
+		refresh_panels()
+		var intent: Dictionary = GameData.ENEMY_MOVES[state.enemy.intent]
+		say("Ziel: %s – plant %s %s" % [def.name, intent.icon, intent.name])
 
 
 ## Verzögerter Aufruf, der mit dem Kampf endet: Ein Tween gehört zum Knoten und verfällt mit ihm.
@@ -778,7 +872,7 @@ func _restore_enemy_tint() -> void:
 	if not is_instance_valid(enemy):
 		return
 	var base := Assets.enemy_tint(def)
-	enemy.modulate = base * Color("#ffa0a0") if int(state.enemy.phase) == 2 else base
+	enemy.modulate = base * Color("#ffa0a0") if int(state.enemies[_focused].phase) == 2 else base
 
 
 func _flash_sprite(s: Sprite3D) -> void:

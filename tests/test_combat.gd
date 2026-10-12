@@ -335,3 +335,73 @@ func test_kombo_im_abenteuer_und_spielstand() -> void:
 	expect_eq(int(Ctx.run.combo), 2, "Kombo wird gespeichert")
 	Ctx.submit_answer(item, Vocab.result("wrongCorrected"))
 	expect_eq(int(Ctx.run.combo), 0)
+
+
+# ---------- Gegnergruppen (Issue #30) ----------
+
+static func group_state(n: int) -> Dictionary:
+	var base := {"hp": 60, "maxHp": 60, "focus": 6, "maxFocus": 6, "attack": 30, "potions": 0}
+	var p := CombatService.combat_player_from(base, GameData.get_class_def("warrior"))
+	p.critChance = 0.0
+	var group := CombatService.create_group({"enemyId": "bat", "group": ["bat", "spider", "moss_spirit"].slice(0, n)}, 1)
+	return CombatService.create_combat(p, group)
+
+
+func test_gruppe_alle_handeln_und_ziel_wechselt() -> void:
+	var s := group_state(3)
+	expect_eq((s.enemies as Array).size(), 3)
+	var single := CombatService.create_enemy(GameData.get_enemy("bat"), 1)
+	expect_lt(int(s.enemies[0].maxHp), int(single.maxHp), "Gruppenmitglieder sind schwächer")
+	var rng := Rng.create(4)
+	var ev := CombatService.resolve_enemy_turn(s, rng)
+	var actors := {}
+	for e: Dictionary in ev:
+		if e.type == "enemyMove":
+			actors[int(e.enemy)] = true
+	expect_eq(actors.size(), 3, "alle drei handeln")
+	# Ziel besiegen → automatisch nächstes Ziel, Kampf läuft weiter.
+	s.enemy.hp = 1
+	ev = CombatService.resolve_player_action(s, "attack", true, GameConfig.section("combat"), rng)
+	expect_true(ev.any(func(e: Dictionary) -> bool: return e.type == "enemyDefeated" and int(e.enemy) == 0))
+	expect_true(ev.any(func(e: Dictionary) -> bool: return e.type == "retarget"))
+	expect_eq(s.outcome, "ongoing")
+	expect_eq(int(s.target), 1)
+	expect_false(CombatService.set_target(s, 0), "Besiegte sind kein Ziel")
+	expect_true(CombatService.set_target(s, 2))
+	s.enemies[1].hp = 0
+	s.enemy.hp = 1
+	CombatService.resolve_player_action(s, "attack", true, GameConfig.section("combat"), rng)
+	expect_eq(s.outcome, "won", "erst wenn alle besiegt sind")
+
+
+func test_gruppen_im_level() -> void:
+	var groups := 0
+	for seed in range(1, 15):
+		var map := LevelGenerator.generate(seed, GameConfig.section("level"), {"bossRunesRequired": 4, "enemies": GameData.THEMES[0].enemies, "group": GameConfig.section("combat").group})
+		for o: Dictionary in map.objects:
+			if o.has("group"):
+				groups += 1
+				expect_eq(o.tier, "normal", "nur normale Gegner in Gruppen")
+				expect_true((o.group as Array).size() >= 2 and (o.group as Array).size() <= 3)
+	expect_gt(groups, 3)
+
+
+func test_kampf_gegen_gruppe_szene() -> void:
+	start_run()
+	var obj := enemy_of("normal")
+	obj.group = [obj.enemyId, "bat", "spider"]
+	var c := open_combat()
+	expect_eq(c.enemy_sprites.size(), 3, "drei Gegner in der Arena")
+	expect_true(c._enemy_panel.find_child("Target_1", true, false) != null, "Zielauswahl")
+	c.cycle_target(2)
+	expect_eq(int(c.state.target), 2)
+	var gold := int(Ctx.profile.gold)
+	var rounds := 0
+	while c.state.outcome == "ongoing" and rounds < 60:
+		act(c, 0, true)
+		rounds += 1
+	expect_eq(c.state.outcome, "won")
+	c.close_result()
+	expect_eq(int(Ctx.profile.bestiary.get("bat", 0)) >= 1, true, "jeder Gegner zählt fürs Bestiarium")
+	expect_ge(int(Ctx.profile.gold), gold)
+	obj.erase("group")

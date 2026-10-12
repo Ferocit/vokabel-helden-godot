@@ -68,7 +68,7 @@ func _generate_map(seed: int, scale: float, boss_runes: int, world_id: String, p
 	# Pakt „Elite-Horden“: mehr Elite-Gegner.
 	var extra := Pact.rank(pact, "p_elite")
 	cfg.eliteEnemies = {"min": int(cfg.eliteEnemies.min) + extra, "max": int(cfg.eliteEnemies.max) + extra}
-	var map := LevelGenerator.generate(seed, cfg, {"bossRunesRequired": boss_runes, "enemies": theme.enemies})
+	var map := LevelGenerator.generate(seed, cfg, {"bossRunesRequired": boss_runes, "enemies": theme.enemies, "group": GameConfig.section("combat").group})
 	map.theme = theme.id
 	return map
 
