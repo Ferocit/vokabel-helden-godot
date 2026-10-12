@@ -52,13 +52,18 @@ func test_abfrage_falsch_dann_abtippen() -> void:
 	expect_eq(out[0].result.outcome, "wrongCorrected")
 
 
-func test_abfrage_fast_richtig_ohne_abtippen() -> void:
+func test_abfrage_fast_richtig_mit_abtippen() -> void:
 	var p := prompt(item(), wallet())
 	var out := []
 	p.finished.connect(func(o: Dictionary) -> void: out.append(o))
 	answer(p, "hosue")
-	expect_eq(out.size(), 1, "Tippfehler: kein Abtippen nötig")
-	expect_eq(out[0].result.outcome, "almostCorrect")
+	expect_eq(p.phase, "correction", "Tippfehler: richtige Schreibweise abtippen (Issue #32)")
+	expect_true(out.is_empty(), "Fenster bleibt offen")
+	answer(p, "hosue")
+	expect_eq(p.phase, "correction", "falsch abgetippt bleibt offen")
+	answer(p, "house")
+	expect_eq(out.size(), 1)
+	expect_eq(out[0].result.outcome, "almostCorrect", "zählt weiter als fast richtig")
 
 
 func test_abfrage_grossschreibung_egal_bei_kleiner_loesung() -> void:

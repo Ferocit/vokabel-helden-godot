@@ -49,7 +49,8 @@ Einstellungen (Ton, Lautstärke, Vollbild) und eine Spielanleitung gibt es im Ti
    ein eigenes Biom: Dschungeltempel → Kristallhöhle → Eistempel, jeweils mit eigenen Gegnern und Boss.
 4. **Kämpfen:** Jede Aktion verlangt eine richtig erinnerte Vokabel. Falsch → die Aktion verpufft, die
    Lösung wird gezeigt und einmal abgetippt; das Wort kommt bald wieder. **Fast richtig** (ein Tippfehler oder
-   nur die Großschreibung falsch): Die Aktion wirkt halb so stark, die richtige Schreibweise wird gezeigt.
+   nur die Großschreibung falsch): Die Aktion wirkt halb so stark, die richtige Schreibweise wird gezeigt und einmal
+   abgetippt.
    Kleingeschriebene Lösungen dürfen auch großgeschrieben werden („House“ für „house“).
    **Gruppen:** Manchmal kommen bis zu drei Gegner zusammen – Ziel mit Tab oder Klick wählen, alle greifen an.
    **Kombo ⚡:** Richtige Antworten in Folge ohne Hilfe machen Angriffe stärker (bis ×1,5); ein Fehler setzt sie zurück.

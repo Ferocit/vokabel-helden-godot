@@ -2,8 +2,8 @@ class_name VocabPrompt
 extends PanelContainer
 ## Gemeinsame Lernabfrage für Kampf, Truhen und Türen:
 ## deutsche Aufgabe → englische Eingabe → Prüfung → bei Fehler Lösung zeigen und abtippen lassen.
-## Ein einzelner Tippfehler (oder nur falsche Großschreibung) gilt als „fast richtig“: Die richtige Schreibweise
-## wird gezeigt, abtippen ist nicht nötig (Issue #17).
+## Ein einzelner Tippfehler (oder nur falsche Großschreibung) gilt als „fast richtig“ (Issue #17): Die richtige
+## Schreibweise wird gezeigt und muss wie bei einem Fehler einmal abgetippt werden (Issue #32).
 ## Kein Zeitlimit. Hilfen (Alt+1/Alt+2) kosten Fokus oder eine Gratis-Ladung.
 ## Ergebnis (Signal `finished`): { cancelled: bool, result: AnswerResult (falls nicht abgebrochen), wallet }
 
@@ -13,7 +13,6 @@ signal wallet_changed(wallet: Dictionary)
 const HINT_TYPES: Array[String] = ["length", "firstLetter"]
 const CORRECT_DELAY := 0.65
 const CORRECTION_DELAY := 0.9
-const ALMOST_DELAY := 2.4
 
 ## Für Tests: Ergebnis sofort melden statt nach kurzer Anzeigezeit.
 static var instant := false
@@ -27,6 +26,8 @@ var allow_cancel := false
 ## Im Training gibt es keine Hilfen (kein Fokus, kein Kampf).
 var show_hints := true
 var phase := "answer"  # answer | correction | done
+## In der Korrektur nach „fast richtig“ (zählt danach als almostCorrect statt als Fehler).
+var _almost := false
 var hints: Dictionary
 
 var input: LineEdit
@@ -193,15 +194,10 @@ func _submit() -> void:
 func _submit_answer(value: String) -> void:
 	var check := Vocab.check_answer(entry, value)
 	if check == "almostCorrect":
-		phase = "done"
-		input.editable = false
-		_set_input_state(true, UI.ACCENT)
-		_feedback.theme_type_variation = "Accent"
-		var case_only := Vocab.accepted_answers(entry).any(func(a: String) -> bool: return a.to_lower() == value.strip_edges().to_lower())
-		var spelled := _closest_answer(value)
-		_feedback.text = ("Fast! Achte auf die Großschreibung: „%s“" if case_only else "Fast richtig! Ein Buchstabe stimmt nicht – richtig ist „%s“.") % spelled
 		Sound.play("hint")
-		_finish_later({"cancelled": false, "result": Vocab.result("almostCorrect", (hints.used as Array).size()), "wallet": wallet}, ALMOST_DELAY)
+		phase = "correction"
+		_almost = true
+		_show_correction(value)
 		return
 	if check == "correct":
 		phase = "done"
@@ -221,7 +217,7 @@ func _show_correction(wrong_input: String) -> void:
 	_detach_all()
 	var others := Vocab.accepted_answers(entry).slice(1)
 	input.text = ""
-	_set_input_state(false)
+	_set_input_state(false, UI.ACCENT if _almost else null)
 	var info := RichTextLabel.new()
 	info.bbcode_enabled = true
 	info.fit_content = true
@@ -230,12 +226,18 @@ func _show_correction(wrong_input: String) -> void:
 	info.add_theme_font_size_override("bold_font_size", 26)
 	info.add_theme_font_override("bold_font", UiTheme.font_bold)
 	info.add_theme_color_override("default_color", UI.TEXT)
-	var t := "[center][color=#ffb38a]Noch nicht richtig.[/color]\n"
+	var target: String = _closest_answer(wrong_input) if _almost else entry.en
+	var t: String
+	if _almost:
+		var case_only := Vocab.accepted_answers(entry).any(func(a: String) -> bool: return a.to_lower() == wrong_input.strip_edges().to_lower())
+		t = "[center][color=#f1c96b]Fast richtig![/color] %s\n" % ("Nur die Großschreibung stimmt nicht." if case_only else "Ein Buchstabe stimmt nicht.")
+	else:
+		t = "[center][color=#ffb38a]Noch nicht richtig.[/color]\n"
 	t += "[font_size=17][color=#b9b29c]Deine Eingabe: [s]%s[/s][/color][/font_size]\n" % _escape(wrong_input.strip_edges())
-	t += "%s → [b][color=#7dffa1]%s[/color][/b]\n" % [_escape(entry.de), _escape(entry.en)]
-	if not others.is_empty():
+	t += "%s → [b][color=#7dffa1]%s[/color][/b]\n" % [_escape(entry.de), _escape(target)]
+	if not others.is_empty() and not _almost:
 		t += "[font_size=17][color=#b9b29c]Auch richtig: %s[/color][/font_size]\n" % _escape(", ".join(PackedStringArray(others)))
-	t += "Tippe „%s“ einmal korrekt ein:[/center]" % _escape(entry.en)
+	t += "Tippe „%s“ einmal korrekt ein:[/center]" % _escape(target)
 	info.text = t
 	info.custom_minimum_size.x = 620
 	_body.add_child(info)
@@ -269,7 +271,8 @@ func _submit_correction(value: String) -> void:
 		_set_input_state(true)
 		_feedback.theme_type_variation = "Good"
 		_feedback.text = "Gut abgeschrieben! Das Wort kommt bald noch einmal."
-		_finish_later({"cancelled": false, "result": Vocab.result("wrongCorrected", (hints.used as Array).size()), "wallet": wallet}, CORRECTION_DELAY)
+		var outcome := "almostCorrect" if _almost else "wrongCorrected"
+		_finish_later({"cancelled": false, "result": Vocab.result(outcome, (hints.used as Array).size()), "wallet": wallet}, CORRECTION_DELAY)
 	else:
 		_feedback.theme_type_variation = "Bad"
 		_feedback.text = "Fast – schau noch einmal genau hin und tippe es exakt ab."

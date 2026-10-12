@@ -323,7 +323,7 @@ class _Run:
 		var correct: bool = rng.call() < p
 		last_revenge = was_missed and correct
 		var outcome := "correct" if correct else ("almostCorrect" if rng.call() < float(sc.almostShare) else "wrongCorrected")
-		_spend(float(sc.time.answerSec) + used * float(sc.time.hintSec) + (float(sc.time.wrongExtraSec) if outcome == "wrongCorrected" else 0.0))
+		_spend(float(sc.time.answerSec) + used * float(sc.time.hintSec) + (float(sc.time.wrongExtraSec) if outcome != "correct" else 0.0))
 		learning.submit(item, Vocab.result(outcome, used))
 		combo = Combo.next(combo, Vocab.result(outcome, used))
 		for bonus: Dictionary in SetBonus.record(run_state, learning.scheduler._items, item, Vocab.result(outcome, used)):

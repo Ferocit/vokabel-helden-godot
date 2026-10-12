@@ -113,7 +113,7 @@ func test_balance_abfragen_pro_minute() -> void:
 	var s := batch({"seed": 6200, "learner": "average"}, 20)
 	expect_ge(s.perMinute, 4.0)
 	expect_ge(s.questions, 42.0)
-	expect_le(s.minutes, 14.0)
+	expect_le(s.minutes, 16.0)  # Ziel: etwa 15 Minuten (run.targetMinutes)
 
 
 func test_balance_ebenen() -> void:
