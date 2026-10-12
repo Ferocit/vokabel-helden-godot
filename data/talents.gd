@@ -44,6 +44,6 @@ static func rank(owned: Array, id: String) -> int:
 
 
 ## Zufällige Auswahl ohne voll ausgebaute Talente.
-static func roll(rng: Callable, owned: Array, count: int = 3) -> Array:
-	var pool := ALL.filter(func(t: Dictionary) -> bool: return rank(owned, t.id) < int(t.max))
+static func roll(rng: Callable, owned: Array, count: int = 3, profile: Dictionary = {}) -> Array:
+	var pool := ALL.filter(func(t: Dictionary) -> bool: return rank(owned, t.id) < int(t.max) and Unlocks.available(profile, "talent", t.id))
 	return Rng.shuffle(rng, pool).slice(0, count)

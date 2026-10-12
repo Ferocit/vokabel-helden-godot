@@ -194,6 +194,12 @@ func resume_run() -> Dictionary:
 	return run
 
 
+## Sammlung (Issue #23): besiegte Gegner zählen fürs Bestiarium.
+func record_defeat(enemy_id: String) -> void:
+	var b: Dictionary = profile.get_or_add("bestiary", {})
+	b[enemy_id] = int(b.get(enemy_id, 0)) + 1
+
+
 ## Nach einem Bosssieg: Geht es noch tiefer? (Issue #27)
 func can_descend() -> bool:
 	return has_run() and int(run.get("floor", 1)) < Meta.max_floors()
@@ -290,6 +296,8 @@ func apply_loot(loot: Dictionary) -> void:
 	profile.potions = int(profile.potions) + int(loot.potions)
 	if loot.itemId != null and not owns(loot.itemId):
 		(profile.bag as Array).append(loot.itemId)
+	if loot.itemId != null:
+		profile.get_or_add("found", {})[loot.itemId] = true
 	if has_run():
 		run.goldGained = int(run.goldGained) + int(loot.gold)
 		if loot.itemId != null:

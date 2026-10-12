@@ -97,12 +97,29 @@ static func campaign(opts: Dictionary, runs: int) -> Array:
 		r.run = i + 1
 		r.shardsBank = int(profile.shards)
 		r.invested = Meta.invested(profile, o.heroClass)
+		r.unlocks = (profile.get("unlocks", []) as Array).size()
 		out.append(r)
 	return out
 
 
-## Splitter in den Skillbaum stecken: immer der günstigste lernbare Knoten.
+## Splitter ausgeben: erst der günstigste lernbare Skillbaum-Knoten, dann die günstigste Freischaltung
+## (ohne Aussehen, das nur Optik ist).
 static func spend_shards(profile: Dictionary, class_id: String) -> Dictionary:
+	profile = _spend_skills(profile, class_id)
+	while true:
+		var best := ""
+		var best_cost := 1 << 30
+		for u: Dictionary in Unlocks.ALL:
+			if u.kind != "skin" and Unlocks.can_buy(profile, u.id) and int(u.cost) < best_cost:
+				best = u.id
+				best_cost = int(u.cost)
+		if best == "":
+			return profile
+		profile = Unlocks.buy(profile, best)
+	return profile
+
+
+static func _spend_skills(profile: Dictionary, class_id: String) -> Dictionary:
 	while true:
 		var best := ""
 		var best_cost := 1 << 30
@@ -208,6 +225,7 @@ class _Run:
 		profile.heroClass = o.heroClass
 		if (o.profile as Dictionary).is_empty():
 			profile.unlockedClasses = ["warrior", "rogue", "mage"]
+			profile.unlocks = Unlocks.all_ids()
 			profile.skills[o.heroClass] = BalanceSim.full_tree(o.heroClass) if o.skills is String and o.skills == "full" else o.skills
 		profile = Meta.reset_run_fields(profile, pc)
 		pact = Pact.normalize(o.get("pact", o.heat))
@@ -342,7 +360,7 @@ class _Run:
 
 	func pick_talents() -> void:
 		while int(profile.get("pendingTalents", 0)) > 0:
-			var offer := Talents.roll(rng, profile.talents)
+			var offer := Talents.roll(rng, profile.talents, 3, profile)
 			if offer.is_empty() or not o.useTalents:
 				profile.pendingTalents = 0
 				return
@@ -353,7 +371,7 @@ class _Run:
 	func pick_blessing() -> void:
 		if not o.useBlessings:
 			return
-		var offer := Blessings.roll(rng, profile.blessings, int(Meta.cfg().blessingChoices), String(profile.heroClass))
+		var offer := Blessings.roll(rng, profile.blessings, int(Meta.cfg().blessingChoices), String(profile.heroClass), profile)
 		if offer.is_empty():
 			return
 		_spend(float(sc.time.choiceSec))
@@ -390,7 +408,7 @@ class _Run:
 		run_state.focus = mini(int(run_state.focus), int(s.maxFocus))
 
 	func add_loot(source: String) -> void:
-		var loot := LootService.roll_loot(source, rng, func(id: String) -> bool: return Player.owns_item(profile, id))
+		var loot := LootService.roll_loot(source, rng, func(id: String) -> bool: return Player.owns_item(profile, id), profile)
 		var find := Meta.mod(_stats().mods, "goldFind")
 		profile.gold = int(profile.gold) + int(round(int(loot.gold) * (1.0 + find)))
 		profile.potions = int(profile.potions) + int(loot.potions)

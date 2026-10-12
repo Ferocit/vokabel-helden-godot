@@ -68,9 +68,11 @@ static func duos_completed_by(owned: Array, id: String) -> Array:
 
 
 ## Zufällige Auswahl ohne bereits erhaltene Segnungen, gewichtet nach Seltenheit, passend zur Klasse.
-static func roll(rng: Callable, owned: Array, count: int, class_id: String = "") -> Array:
+## `profile`: nur freigeschaltete Segnungen (Issue #23); leer = alles.
+static func roll(rng: Callable, owned: Array, count: int, class_id: String = "", profile: Dictionary = {}) -> Array:
 	var pool: Array = ALL.filter(func(b: Dictionary) -> bool:
-		return not owned.has(b.id) and (class_id == "" or not b.has("classes") or (b.classes as Array).has(class_id)))
+		return not owned.has(b.id) and (class_id == "" or not b.has("classes") or (b.classes as Array).has(class_id)) \
+			and Unlocks.available(profile, "blessing", b.id))
 	var picks: Array = []
 	while picks.size() < count and not pool.is_empty():
 		var b: Dictionary = Rng.weighted_pick(rng, pool, func(x: Dictionary) -> float: return RARITY_WEIGHT[x.rarity])

@@ -140,7 +140,7 @@ func _build_combatants() -> void:
 	var hero_root := Node3D.new()
 	hero_root.position = HERO_POS
 	hero_root.add_child(Fx.shadow_quad(1.6))
-	hero = Fx.sprite(Assets.frame(int(cls.frame)), 8.0)
+	hero = Fx.sprite(Assets.frame(Unlocks.hero_frame(Ctx.profile, cls)), 8.0)
 	hero.flip_h = TOWARD_ENEMY < 0.0
 	hero_root.add_child(hero)
 	weapon = HeldWeapon.equip(hero, Ctx.profile.equipment.get("weapon"))
@@ -563,7 +563,8 @@ func victory() -> void:
 	var xp_cfg := GameConfig.section("xp")
 	var xp := int(xp_cfg.boss) if def.tier == "boss" else (int(xp_cfg.eliteEnemy) if def.tier == "elite" else int(xp_cfg.normalEnemy))
 	var levels := Ctx.gain_xp(xp)
-	var loot := LootService.roll_loot(def.tier, rng, Ctx.owns)
+	var loot := LootService.roll_loot(def.tier, rng, Ctx.owns, Ctx.profile)
+	Ctx.record_defeat(def.id)
 	Ctx.apply_loot(loot)
 	var got_rune: bool = def.tier != "boss"
 	if got_rune:
@@ -669,7 +670,7 @@ func result_window(title: String, lines: Array) -> void:
 
 ## Nach einem Elite-Sieg: eine von mehreren Segnungen wählen (gilt nur in diesem Abenteuer).
 func choose_blessing_window() -> void:
-	var options := Blessings.roll(rng, Ctx.profile.blessings, int(Meta.cfg().blessingChoices), String(Ctx.profile.heroClass))
+	var options := Blessings.roll(rng, Ctx.profile.blessings, int(Meta.cfg().blessingChoices), String(Ctx.profile.heroClass), Ctx.profile)
 	if options.is_empty():
 		return
 	var m := UI.modal(ui, "Wähle eine Segnung", 900, false)

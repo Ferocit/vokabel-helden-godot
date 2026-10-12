@@ -117,7 +117,7 @@ func _build_hero() -> void:
 	hero_root = Node3D.new()
 	hero_root.name = "Hero"
 	hero_root.add_child(Fx.shadow_quad(0.8))
-	hero = Fx.sprite(Assets.frame(int(Ctx.hero_class().frame)))
+	hero = Fx.sprite(Assets.frame(Unlocks.hero_frame(Ctx.profile, Ctx.hero_class())))
 	hero.rotation.x = LevelBuilder.TILT
 	hero_root.add_child(hero)
 	HeldWeapon.equip(hero, Ctx.profile.equipment.get("weapon"))
@@ -444,7 +444,7 @@ func interact(obj: Dictionary) -> void:
 ## Beute einer geöffneten Truhe gutschreiben und als Liste mit Symbolen zeigen.
 func grant_chest(obj: Dictionary) -> void:
 	var source := "chestRare" if obj.chestType == "rare" else ("chestSpecial" if obj.chestType == "special" else "chestNormal")
-	var loot := LootService.roll_loot(source, run.rng, Ctx.owns)
+	var loot := LootService.roll_loot(source, run.rng, Ctx.owns, Ctx.profile)
 	Ctx.apply_loot(loot)
 	var xp := int(GameConfig.section("xp").chest)
 	var levels := Ctx.gain_xp(xp)
@@ -931,7 +931,7 @@ func open_menu() -> UI.Modal:
 ## Talentwahl nach einem Level-up: eins von drei zufälligen Talenten (stapelbar, gilt bis Abenteuerende).
 func open_talent_choice() -> UI.Modal:
 	var owned: Array = Ctx.profile.talents
-	_talent_options = Talents.roll(run.rng, owned)
+	_talent_options = Talents.roll(run.rng, owned, 3, Ctx.profile)
 	if _talent_options.is_empty():
 		Ctx.profile.pendingTalents = 0
 		return null

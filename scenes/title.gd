@@ -129,7 +129,9 @@ func render_menu() -> void:
 	var heat_row := UI.hbox([UI.spacer(), _pact_button(), _time_challenge_toggle(), UI.spacer()], 16)
 	var manage_btn := UI.button("📚 Sets & Statistik", open_unit_manager)
 	var skills_btn := UI.button("🌳 Fertigkeiten", open_skills)
-	var bottom_row := UI.hbox([UI.spacer(), manage_btn, skills_btn])
+	var archive_btn := UI.button("🏛 Archiv", open_archive)
+	archive_btn.tooltip_text = "Neue Inhalte freischalten, Aussehen wählen, Sammlung ansehen"
+	var bottom_row := UI.hbox([UI.spacer(), manage_btn, skills_btn, archive_btn])
 	# Im Browser lässt sich das Spiel nicht beenden – dort schließt man einfach den Tab.
 	if not OS.has_feature("web"):
 		bottom_row.add_child(UI.button("🚪 Spiel verlassen", quit_game))
@@ -603,6 +605,16 @@ func open_skills(class_id: String = "") -> UI.Modal:
 	var body := UI.vbox()
 	m.body.add_child(body)
 	SkillTreeView.render(body, class_id)
+	return m
+
+
+## Tempelarchiv: Freischaltungen, Aussehen, Startwaffe, Sammlung (Issue #23).
+func open_archive(tab: String = "unlock") -> UI.Modal:
+	var m := UI.modal(_ui, "🏛 Tempelarchiv", 1000)
+	m.closed.connect(render_menu)
+	var body := UI.vbox()
+	m.body.add_child(body)
+	ArchiveView.render(body, tab)
 	return m
 
 

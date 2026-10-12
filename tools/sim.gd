@@ -79,6 +79,6 @@ func _campaign(args: Dictionary, base: Dictionary) -> void:
 			o.learner = learner
 			var rows: Array = []
 			for r: Dictionary in BalanceSim.campaign(o, int(args.campaign)):
-				rows.append([r.run, "✓" if r.victory else "✗", r.defeats, r.shards, r.invested, r.level, r.questions, r.perMinute, r.minutes, r.knowledgeGain])
+				rows.append([r.run, "✓" if r.victory else "✗", r.defeats, r.shards, r.invested, r.unlocks, r.level, r.questions, r.perMinute, r.minutes, r.knowledgeGain])
 			print("\n### Kampagne: %s, %s\n" % [cls, learner])
-			print(BalanceSim.table(["Lauf", "Sieg", "Niederl.", "🔷", "investiert", "Level", "Abfragen", "Abfr./min", "Minuten", "Wissen +"], rows))
+			print(BalanceSim.table(["Lauf", "Sieg", "Niederl.", "🔷", "investiert", "Freischalt.", "Level", "Abfragen", "Abfr./min", "Minuten", "Wissen +"], rows))

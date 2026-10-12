@@ -89,6 +89,15 @@ kommt nur 50 % des Schadens durch. Angriffe fragen die Rüstungswörter ab; rich
 falsch rückt es nach hinten. Wörter mit Mastery ≥ 0,9 verschwinden aus der Rüstung – der Boss wird mit dem
 Lernfortschritt sichtbar schwächer. Simulator: Spalte „Nemesis gebrochen“.
 
+## Tempelarchiv (Issue #23, `data/unlocks.gd`, Titel → „🏛 Archiv“)
+Splitter schalten neue **Inhalte** frei statt nur Werte: seltene Gegenstände (Runenklinge, Präzisionsklinge,
+Ritterhelm, Bibliotheksring, Heilerreif) kommen erst danach in Beute und Händler, die Regel-Segnungen
+(Kettenblitz 40 🔷 u. a.) und Regel-Talente erst danach in die Auswahl. Dazu Startwaffen (Jägerdolch, Fokusstab,
+Eisenschwert) und Aussehen je Klasse (reine Optik). Die **Sammlung** zeigt das Bestiarium (`profile.bestiary`),
+gefundene Gegenstände (`profile.found`), sehr sichere Wörter und Set-Sterne.
+Gesamtkosten: 3 Skillbäume ≈ 594 🔷 + Archiv ≈ 430 🔷. Simulator-Kampagne (eine Klasse, Bot nutzt alle Pakt-Punkte):
+Baum nach 3 Läufen, Archiv (ohne Aussehen) nach ≈ 5 Läufen.
+
 ## Ebenen (Issue #27, `config/game.json → floors`)
 Nach dem Bosssieg führt eine Treppe tiefer: „⬇ Tiefer hinab“ oder „🏆 Abenteuer beenden“ (bis Ebene 3). Unten gibt
 es eine neue Karte (Seed `Meta.floor_seed`), Gegner haben pro Ebene +110 % HP und +80 % Angriff. Held, Ausrüstung,

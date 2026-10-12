@@ -36,6 +36,11 @@ static func ensure(profile: Dictionary) -> Dictionary:
 		profile.skills = {}
 	if not profile.get("setStars") is Dictionary:
 		profile.setStars = {}
+	for k: String in ["skins", "startWeapons", "bestiary", "found"]:
+		if not profile.get(k) is Dictionary:
+			profile[k] = {}
+	if not profile.get("unlocks") is Array:
+		profile.unlocks = []
 	for c: Dictionary in GameData.HERO_CLASSES:
 		if not (profile.skills as Dictionary).get(c.id) is Dictionary:
 			profile.skills[c.id] = {}
@@ -151,6 +156,7 @@ static func reset_run_fields(profile: Dictionary, player_cfg: Dictionary) -> Dic
 	next.gold = int(mod(m, "startGold"))
 	next.potions = int(player_cfg.startPotions) + int(mod(m, "startPotions"))
 	next.equipment = START_EQUIPMENT.duplicate()
+	next.equipment.weapon = Unlocks.start_weapon(profile)
 	next.bag = []
 	next.blessings = []
 	next.talents = []
@@ -300,7 +306,8 @@ static func add_talent(profile: Dictionary, run: Dictionary, id: String) -> void
 static func shop_offers(run: Dictionary, profile: Dictionary, altar_id: String) -> Array:
 	var rng := Rng.create((int(run.seed) * 31 + altar_id.hash()) & Rng.MASK)
 	# Erst feste Auswahl ziehen, dann Gekauftes/Besessenes ausblenden – Gekauftes wird nicht nachgefüllt.
-	var picks := Rng.shuffle(rng, GameData.ITEMS.duplicate()).slice(0, int(cfg().shopOffers))
+	var pool := GameData.ITEMS.filter(func(i: Dictionary) -> bool: return Unlocks.available(profile, "item", i.id))
+	var picks := Rng.shuffle(rng, pool).slice(0, int(cfg().shopOffers))
 	return picks.filter(func(i: Dictionary) -> bool: return not Player.owns_item(profile, i.id))
 
 

@@ -62,7 +62,7 @@ func _character_column() -> Control:
 	var cells := {}
 	for slot: String in DOLL:
 		cells[DOLL[slot]] = _equip_slot(slot)
-	var hero := UI.sprite(int(cls.frame), 128)
+	var hero := UI.sprite(Unlocks.hero_frame(Ctx.profile, cls), 128)
 	cells[Vector2i(1, 1)] = hero
 	for y in 2:
 		for x in 3:

@@ -25,7 +25,8 @@ static func _roll_rarity(rng: Callable, weights: Dictionary) -> String:
 
 ## Würfelt Beute aus. Bereits besessene Gegenstände werden nicht doppelt vergeben; gibt es in der
 ## Seltenheit nichts Neues, wird auf die anderen Stufen ausgewichen, sonst gibt es Gold.
-static func roll_loot(source: String, rng: Callable, owns: Callable) -> Dictionary:
+## `profile`: nur freigeschaltete Gegenstände (Issue #23); leer = alles.
+static func roll_loot(source: String, rng: Callable, owns: Callable, profile: Dictionary = {}) -> Dictionary:
 	var table: Dictionary = TABLES[source]
 	var loot := {
 		"gold": Rng.rand_int(rng, table.gold[0], table.gold[1]),
@@ -41,7 +42,7 @@ static func roll_loot(source: String, rng: Callable, owns: Callable) -> Dictiona
 			order.append(r)
 	for r: String in order:
 		var candidates: Array = GameData.ITEMS.filter(func(item: Dictionary) -> bool:
-			return item.rarity == r and not owns.call(item.id))
+			return item.rarity == r and not owns.call(item.id) and Unlocks.available(profile, "item", item.id))
 		if not candidates.is_empty():
 			loot.itemId = (Rng.pick(rng, candidates) as Dictionary).id
 			return loot

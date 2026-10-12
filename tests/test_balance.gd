@@ -130,3 +130,10 @@ func test_balance_nemesis_ruestung_brechbar() -> void:
 	expect_gt(s.nemesisArmor, 0.0)
 	expect_ge(s.nemesisBroken, s.nemesisArmor * 0.6)
 	expect_gt(s.winRate, 0.9)
+
+
+func test_balance_kampagne_schaltet_inhalte_frei() -> void:
+	# Issue #23: Nach dem Skillbaum fließen Splitter in neue Inhalte.
+	var runs := BalanceSim.campaign({"seed": 4100, "learner": "average"}, 8)
+	expect_gt(int(runs[7].unlocks), 3)
+	expect_lt(int(runs[2].unlocks), Unlocks.ALL.size(), "nicht alles nach drei Läufen")

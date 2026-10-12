@@ -393,3 +393,57 @@ func test_segnungen_klasse_und_seltenheit() -> void:
 	expect_false(seen.has("b_venom"), "Schurken-Segnung nicht für Krieger")
 	expect_true(seen.has("b_chain"), "legendäre Segnungen kommen vor")
 	expect_lt(int(seen.b_chain), int(seen.b_oak), "legendär seltener als gewöhnlich")
+
+
+# ---------- Freischaltungen und Sammlung (Issue #23) ----------
+
+func test_freischaltungen_filtern_pools() -> void:
+	var p := Player.normalize({}, pc())
+	expect_false(Unlocks.available(p, "blessing", "b_chain"), "Kettenblitz anfangs gesperrt")
+	expect_true(Unlocks.available(p, "blessing", "b_oak"), "Werte-Segnungen immer da")
+	expect_true(Unlocks.available({}, "blessing", "b_chain"), "leeres Profil = alles frei")
+	for i in 100:
+		for b: Dictionary in Blessings.roll(Rng.create(i), [], 3, "warrior", p):
+			expect_ne(b.id, "b_chain")
+		for t: Dictionary in Talents.roll(Rng.create(i), [], 3, p):
+			expect_ne(t.id, "t_ambush")
+		var loot := LootService.roll_loot("boss", Rng.create(i), func(_id: String) -> bool: return false, p)
+		expect_ne(loot.itemId, "rune_blade")
+	p.shards = 100
+	p = Unlocks.buy(p, "u_b_chain")
+	expect_eq(int(p.shards), 60)
+	expect_true(Unlocks.available(p, "blessing", "b_chain"))
+	expect_eq(Unlocks.buy(p, "u_b_chain").shards, p.shards, "nicht doppelt kaufbar")
+
+
+func test_startwaffe_und_aussehen() -> void:
+	var p := Player.normalize({}, pc())
+	p.shards = 200
+	p.startWeapons = {"warrior": "iron_sword"}
+	expect_eq(Meta.reset_run_fields(p, pc()).equipment.weapon, "wooden_sword", "ohne Freischaltung Holzschwert")
+	p = Unlocks.buy(p, "u_start_iron")
+	expect_eq(Meta.reset_run_fields(p, pc()).equipment.weapon, "iron_sword")
+	var cls := GameData.get_class_def("warrior")
+	p.skins = {"warrior": 97}
+	expect_eq(Unlocks.hero_frame(p, cls), int(cls.frame), "ungekauftes Aussehen wirkt nicht")
+	p = Unlocks.buy(p, "u_skin_knight")
+	expect_eq(Unlocks.hero_frame(p, cls), 97)
+
+
+func test_sammlung_bestiarium() -> void:
+	Ctx.setup(KeyValueStore.new())
+	Ctx.start_run(["sample"], "jungle", 5)
+	Ctx.record_defeat("bat")
+	Ctx.record_defeat("bat")
+	Ctx.apply_loot({"gold": 0, "potions": 0, "itemId": "iron_sword"})
+	expect_eq(int(Ctx.profile.bestiary.bat), 2)
+	expect_true(Ctx.profile.found.has("iron_sword"))
+	var box := VBoxContainer.new()
+	(Engine.get_main_loop() as SceneTree).root.add_child(box)
+	ArchiveView.render(box, "collection")
+	var texts := box.find_children("*", "Label", true, false).map(func(l: Label) -> String: return l.text)
+	expect_true(texts.has("Fledermaus"), "besiegter Gegner sichtbar")
+	expect_true(texts.has("???"), "unbekannte Gegner verborgen")
+	ArchiveView.render(box, "unlock")
+	expect_true(box.find_child("Buy_u_b_chain", true, false) != null)
+	box.free()
