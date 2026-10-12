@@ -52,6 +52,11 @@ func _build() -> void:
 	var sub := UI.label("Der Boss ist besiegt. Hier ist, was du gelernt hast:" if victory else "Dein Lernfortschritt wurde gespeichert. Hier ist deine Auswertung:", "Dim", 18)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.add_child(sub)
+	var news := Lore.unread(Ctx.profile, Ctx.progress).size()
+	if news > 0:
+		var camp := UI.label("🏕 %s hat %d %s für dich – schau im Lager vorbei!" % [Lore.NPC_NAME, news, "neue Geschichte" if news == 1 else "neue Geschichten"], "Accent", 17)
+		camp.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		body.add_child(camp)
 	if exam_result != "":
 		var ex := UI.label(exam_result, "Good", 18)
 		ex.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

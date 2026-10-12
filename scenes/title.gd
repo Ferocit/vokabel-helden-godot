@@ -130,8 +130,12 @@ func render_menu() -> void:
 	var manage_btn := UI.button("📚 Sets & Statistik", open_unit_manager)
 	var skills_btn := UI.button("🌳 Fertigkeiten", open_skills)
 	var archive_btn := UI.button("🏛 Archiv", open_archive)
+	var news := Lore.unread(Ctx.profile, Ctx.progress).size()
+	var camp_btn := UI.button("🏕 Lager" + (" (%d neu)" % news if news > 0 else ""), open_camp)
+	camp_btn.name = "CampButton"
+	camp_btn.tooltip_text = "%s erzählt die Geschichte des Tempels" % Lore.NPC_NAME
 	archive_btn.tooltip_text = "Neue Inhalte freischalten, Aussehen wählen, Sammlung ansehen"
-	var bottom_row := UI.hbox([UI.spacer(), manage_btn, skills_btn, archive_btn])
+	var bottom_row := UI.hbox([UI.spacer(), manage_btn, skills_btn, archive_btn, camp_btn])
 	# Im Browser lässt sich das Spiel nicht beenden – dort schließt man einfach den Tab.
 	if not OS.has_feature("web"):
 		bottom_row.add_child(UI.button("🚪 Spiel verlassen", quit_game))
@@ -605,6 +609,39 @@ func open_skills(class_id: String = "") -> UI.Modal:
 	var body := UI.vbox()
 	m.body.add_child(body)
 	SkillTreeView.render(body, class_id)
+	return m
+
+
+## Lager: Professor Knatter erzählt die freigeschalteten Geschichten (Issue #25). Neue sind hervorgehoben und
+## gelten danach als gelesen.
+func open_camp() -> UI.Modal:
+	var m := UI.modal(_ui, "🏕 Lager", 900)
+	m.closed.connect(render_menu)
+	var all := Lore.unlocked(Ctx.profile, Ctx.progress)
+	var fresh := Lore.unread(Ctx.profile, Ctx.progress)
+	var intro := UI.para("%s sitzt am Feuer und blättert in seinen Notizen." % Lore.NPC_NAME if fresh.is_empty() else "%s winkt dich ans Feuer: „Ich habe Neuigkeiten!“" % Lore.NPC_NAME, "", 17)
+	intro.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	m.body.add_child(UI.hbox([UI.sprite(Lore.NPC_FRAME, 72), intro], 14))
+	var list := UI.vbox([], 8)
+	# Neueste zuerst.
+	var ordered := all.duplicate()
+	ordered.reverse()
+	for e: Dictionary in ordered:
+		var is_new := fresh.has(e)
+		var card := PanelContainer.new()
+		card.theme_type_variation = "CardSelected" if is_new else "Card"
+		var title := UI.label(("✨ NEU · " if is_new else "") + String(e.title), "Bold", 18)
+		var text := UI.para(String(e.text), "", 16)
+		text.custom_minimum_size.x = 780
+		card.add_child(UI.vbox([title, text], 4))
+		list.add_child(card)
+	var left := Lore.ENTRIES.size() - all.size()
+	if left > 0:
+		list.add_child(UI.label("Noch %d Geschichten zu entdecken – spiel weiter, lerne Wörter und öffne Truhen (📜 %d/%d Schriftrollen)." % [left, int(Ctx.profile.records.get("scrolls", 0)), Lore.scrolls_total()], "Dim", 15))
+	m.body.add_child(UI.scroll(list, 430))
+	for e: Dictionary in fresh:
+		Lore.mark_seen(Ctx.profile, e.id)
+	Ctx.save_persistent()
 	return m
 
 

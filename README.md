@@ -63,7 +63,9 @@ Einstellungen (Ton, Lautstärke, Vollbild) und eine Spielanleitung gibt es im Ti
 Ende. Mit Tempelsplittern werden dauerhaft Klassen freigeschaltet (anfangs nur der Krieger) und Skillbäume
 ausgebaut (Titel → „🌳 Fertigkeiten“). Pro Abenteuer gibt es 3 Leben, bei jedem Level-up ein Talent zur Wahl,
 Segnungen nach Elite-Siegen und einen Händler am Kristallaltar; nach dem ersten Sieg lässt sich ein **🔥 Pakt** aus Erschwernissen wählen (stärkere Gegner, ohne Hilfen, umgekehrte Richtung …) – jeder Punkt bringt mehr Splitter. Im **🏛 Archiv** schalten Splitter neue Gegenstände, Regel-Segnungen und -Talente, Startwaffen und Aussehen frei; dort
-steht auch die Sammlung (Bestiarium, Gegenstände, Wörter). Details: `ROGUELITE.md`.
+steht auch die Sammlung (Bestiarium, Gegenstände, Wörter). Im **🏕 Lager** erzählt Professor Knatter nach und nach
+die Geschichte des Tempels – neue Geschichten gibt es für Meilensteine und für 📜 Schriftrollen aus Truhen.
+Details: `ROGUELITE.md`.
 
 Es gibt kein Zeitlimit und keinen Strafsound – Fehler sind Teil des Lernens.
 

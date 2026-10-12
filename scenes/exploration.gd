@@ -450,7 +450,12 @@ func grant_chest(obj: Dictionary) -> void:
 	var levels := Ctx.gain_xp(xp)
 	Sound.play("chest")
 	get_tree().create_timer(0.25).timeout.connect(Sound.play.bind("coins", -1.0, 1.0))
-	loot_toast(MapModel.CHEST_LABELS[obj.chestType], CHEST_ICONS[obj.chestType], LootView.entries(loot, xp))
+	var entries := LootView.entries(loot, xp)
+	# Lager-Geschichten (Issue #25): Manchmal liegt eine alte Schriftrolle in der Truhe.
+	if Lore.roll_scroll(Ctx.profile, run.rng):
+		Ctx.profile.records.scrolls = int(Ctx.profile.records.get("scrolls", 0)) + 1
+		entries.append({"icon": "📜", "title": "Alte Schriftrolle", "detail": "%s liest sie dir im Lager vor" % Lore.NPC_NAME, "amount": "%d/%d" % [int(Ctx.profile.records.scrolls), Lore.scrolls_total()], "color": UI.ACCENT, "highlight": true})
+	loot_toast(MapModel.CHEST_LABELS[obj.chestType], CHEST_ICONS[obj.chestType], entries)
 	if levels > 0:
 		level_up_toast(levels)
 

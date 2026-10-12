@@ -598,6 +598,7 @@ func defeat() -> void:
 	Ctx.profile.potions = int(state.player.potions)
 	say("Du wurdest besiegt …")
 	# Rogue-lite: Jede Niederlage kostet ein Leben; ohne Leben endet das Abenteuer.
+	Ctx.profile.records.defeats = int(Ctx.profile.records.get("defeats", 0)) + 1
 	var alive := Meta.lose_life(Ctx.profile)
 	if alive:
 		var lives := int(Ctx.profile.lives)

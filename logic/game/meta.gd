@@ -46,7 +46,7 @@ static func ensure(profile: Dictionary) -> Dictionary:
 			profile.skills[c.id] = {}
 		for k: String in profile.skills[c.id]:
 			profile.skills[c.id][k] = int(profile.skills[c.id][k])
-	var rec := {"runs": 0, "victories": 0, "shardsTotal": 0, "heatUnlocked": 0}
+	var rec := {"runs": 0, "victories": 0, "shardsTotal": 0, "heatUnlocked": 0, "defeats": 0, "maxFloor": 0, "pactRuns": 0, "scrolls": 0}
 	if profile.get("records") is Dictionary:
 		rec.merge(profile.records, true)
 	for k: String in rec:
@@ -242,6 +242,10 @@ static func apply_run_end(profile: Dictionary, run: Dictionary, victory: bool) -
 	profile.shards = int(profile.shards) + int(reward.total)
 	profile.records.runs = int(profile.records.runs) + 1
 	profile.records.shardsTotal = int(profile.records.shardsTotal) + int(reward.total)
+	# Für die Lager-Geschichten (Issue #25): tiefste Ebene, Abenteuer mit Pakt.
+	profile.records.maxFloor = maxi(int(profile.records.get("maxFloor", 0)), int(run.get("floor", 1)))
+	if Pact.points(run_pact(run)) > 0:
+		profile.records.pactRuns = int(profile.records.get("pactRuns", 0)) + 1
 	if victory or int(run.get("floorsCleared", 0)) > 0:
 		profile.records.victories = int(profile.records.victories) + 1
 		# Ein Sieg mit voll ausgeschöpftem Pakt schaltet die nächste Pakt-Stufe frei.

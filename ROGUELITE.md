@@ -82,6 +82,13 @@ Neue Effekte: Schlüssel in `SkillTrees.EFFECT_TEXT` eintragen und an der passen
   Fähigkeitsschaden). Keine Gratis-Vokabelhilfen mehr; einzige Lern-Ausnahme bleibt der Bibliotheksring
   (falsch beantwortete Wörter kommen früher wieder – hilft beim Lernen, nicht beim Antworten).
 
+## Lager und Lore (Issue #25, `data/lore.gd`, Titel → „🏕 Lager“)
+Professor Knatter erzählt 15 kurze, kindgerechte Geschichten. Freigeschaltet durch Meilensteine (erstes Abenteuer,
+erste Niederlage, erster Elite- und Bosssieg, Ebene 2 und 3, 10/50 sehr sichere Wörter, Set-Meister, erster Pakt)
+und durch 4 📜 Schriftrollen (25 % Chance je Truhe, solange welche fehlen). Neue Geschichten sind im Titel („Lager
+(1 neu)“) und in der Auswertung angekündigt; Gelesenes steht in `profile.loreSeen`. Neue Statistik-Felder:
+`records.defeats`, `maxFloor`, `pactRuns`, `scrolls`. Keine Auswirkung auf die Balance.
+
 ## Biome (Issue #28, `GameData.THEMES`)
 Jede Ebene hat ein eigenes Biom (`GameData.theme_for_floor`): 1 Dschungeltempel, 2 Kristallhöhle, 3 Eistempel. Ein
 Thema bestimmt Gegner und Boss sowie `look`: Boden-, Weg- und Pflanzen-Kacheln samt Sheet, Farbtöne von Raumboden,

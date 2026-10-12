@@ -447,3 +447,57 @@ func test_sammlung_bestiarium() -> void:
 	ArchiveView.render(box, "unlock")
 	expect_true(box.find_child("Buy_u_b_chain", true, false) != null)
 	box.free()
+
+
+# ---------- Lager und Lore (Issue #25) ----------
+
+func test_lore_freischalten_und_lesen() -> void:
+	var p := Player.normalize({}, pc())
+	var ids := func(list: Array) -> Array: return list.map(func(e: Dictionary) -> String: return e.id)
+	expect_eq(ids.call(Lore.unlocked(p, {})), ["l_welcome"], "am Anfang nur die Begrüßung")
+	p.records.runs = 1
+	p.records.defeats = 1
+	p.records.victories = 1
+	p.records.maxFloor = 2
+	p.records.scrolls = 1
+	p.bestiary = {"temple_guard": 1, "bat": 3}
+	var got: Array = ids.call(Lore.unlocked(p, {}))
+	for id in ["l_first_run", "l_first_defeat", "l_first_victory", "l_first_elite", "l_cave", "l_scroll_1"]:
+		expect_true(got.has(id), id)
+	expect_false(got.has("l_ice"))
+	expect_false(got.has("l_scroll_2"))
+	var progress := {}
+	for i in 10:
+		progress["s/%d" % i] = {"mastery": 0.95}
+	expect_true(ids.call(Lore.unlocked(p, progress)).has("l_words_10"))
+	Lore.mark_seen(p, "l_welcome")
+	expect_false(ids.call(Lore.unread(p, {})).has("l_welcome"))
+	for e: Dictionary in Lore.ENTRIES:
+		expect_true(String(e.text).length() > 40, e.id)
+
+
+func test_lore_schriftrollen_und_statistik() -> void:
+	var p := Player.normalize({}, pc())
+	var always := func() -> float: return 0.0
+	expect_true(Lore.roll_scroll(p, always))
+	p.records.scrolls = Lore.scrolls_total()
+	expect_false(Lore.roll_scroll(p, always), "alle gefunden")
+	Ctx.setup(KeyValueStore.new())
+	Ctx.profile.records.heatUnlocked = 1
+	Ctx.start_run(["sample"], "jungle", 3, {"p_hp": 1})
+	Ctx.run.floor = 2
+	Ctx.end_run(false)
+	expect_eq(int(Ctx.profile.records.maxFloor), 2)
+	expect_eq(int(Ctx.profile.records.pactRuns), 1)
+
+
+func test_lager_fenster_markiert_gelesen() -> void:
+	Ctx.setup(KeyValueStore.new())
+	var title: Node = load("res://scenes/title.tscn").instantiate()
+	(Engine.get_main_loop() as SceneTree).root.add_child(title)
+	expect_eq(Lore.unread(Ctx.profile, Ctx.progress).size(), 1)
+	var m: UI.Modal = title.open_camp()
+	var texts := m.find_children("*", "Label", true, false).map(func(l: Label) -> String: return l.text)
+	expect_true(texts.any(func(t: String) -> bool: return t.begins_with("✨ NEU")))
+	expect_eq(Lore.unread(Ctx.profile, Ctx.progress).size(), 0, "danach gelesen")
+	title.free()
