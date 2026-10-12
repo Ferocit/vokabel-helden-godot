@@ -393,6 +393,11 @@ func test_kampf_gegen_gruppe_szene() -> void:
 	obj.group = [obj.enemyId, "bat", "spider"]
 	var c := open_combat()
 	expect_eq(c.enemy_sprites.size(), 3, "drei Gegner in der Arena")
+	expect_eq(c._intent_boxes.size(), 3, "Absicht über jedem Gegner (Issue #31)")
+	for i in 3:
+		var lbl: Label = (c._intent_boxes[i] as PanelContainer).get_child(0)
+		expect_true(lbl.text.contains(GameData.ENEMY_MOVES[c.state.enemies[i].intent].name))
+	expect_true(((c._intent_boxes[0] as PanelContainer).get_child(0) as Label).text.begins_with("▶"), "Ziel markiert")
 	expect_true(c._enemy_panel.find_child("Target_1", true, false) != null, "Zielauswahl")
 	c.cycle_target(2)
 	expect_eq(int(c.state.target), 2)

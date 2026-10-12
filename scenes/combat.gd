@@ -50,8 +50,10 @@ var _msg: Label
 var _enemy_panel: VBoxContainer
 var _command_panel: VBoxContainer
 var _party_panel: VBoxContainer
-var _intent: PanelContainer
-var _intent_label: Label
+## Ebene mit den Absichts-Blasen über allen Gegnern (Issue #31); `visible` blendet alle zugleich aus.
+var _intent: Control
+## Eine Blase je Gegner: PanelContainer mit Label.
+var _intent_boxes: Array = []
 var _flash_rect: ColorRect
 var _menu_active := false
 var _command_buttons: Array[Button] = []
@@ -195,11 +197,16 @@ func _build_ui() -> void:
 		clock.add_child(Hud.Clock.new())
 		UI.pin(ui, clock, Control.PRESET_TOP_LEFT, Vector2(14, 14))
 
-	_intent = PanelContainer.new()
-	_intent_label = UI.label("", "Bold", 18)
-	_intent.add_child(_intent_label)
+	_intent = Control.new()
+	_intent.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_intent.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui.add_child(_intent)
+	for i in defs.size():
+		var box := PanelContainer.new()
+		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(UI.label("", "Bold", 18 if defs.size() == 1 else 16))
+		_intent.add_child(box)
+		_intent_boxes.append(box)
 
 	var bottom := HBoxContainer.new()
 	bottom.add_theme_constant_override("separation", 12)
@@ -234,12 +241,18 @@ static func _panel(parent: Control, width: int) -> VBoxContainer:
 
 
 func _process(_delta: float) -> void:
-	# Absichtsanzeige schwebt über dem Gegner.
+	# Absichtsanzeige schwebt über jedem lebenden Gegner (Issue #31).
 	if _intent and fx and fx.camera.is_inside_tree():
-		var top := enemy_root.global_position + Vector3(0, enemy_height + 0.45, 0)
-		var p := fx.camera.unproject_position(top)
-		_intent.reset_size()
-		_intent.position = p - Vector2(_intent.size.x / 2.0, _intent.size.y) + Vector2(0, sin(Time.get_ticks_msec() / 400.0) * 3.0)
+		var enemies: Array = state.get("enemies", [state.enemy])
+		for i in _intent_boxes.size():
+			var box: PanelContainer = _intent_boxes[i]
+			box.visible = CombatService.alive(enemies[i])
+			if not box.visible:
+				continue
+			var top := (enemy_roots[i] as Node3D).global_position + Vector3(0, float(enemy_heights[i]) + 0.45, 0)
+			var p := fx.camera.unproject_position(top)
+			box.reset_size()
+			box.position = p - Vector2(box.size.x / 2.0, box.size.y) + Vector2(0, sin(Time.get_ticks_msec() / 400.0 + i) * 3.0)
 
 
 func refresh_panels() -> void:
@@ -293,15 +306,22 @@ func refresh_panels() -> void:
 			b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 			_enemy_panel.add_child(b)
 
-	_intent_label.text = "%s %s" % [intent.icon, intent.name]
 	var border := {"heavy": Color("#ff6a4a"), "charge": Color("#ffb04a"), "guard": Color("#8ac8ff"), "regenerate": Color("#7dffa1")}
 	var text_c := {"heavy": Color("#ffb39a"), "charge": Color("#ffd79a"), "guard": Color("#c8e6ff"), "regenerate": Color("#c8ffd6")}
-	var sb := UiTheme.box(Color(0.055, 0.047, 0.04, 0.85), border.get(intent.id, UI.GOLD), 1, 14, Vector4(12, 4, 12, 4))
-	if intent.id == "heavy":
-		sb.shadow_color = Color(1, 0.35, 0.24, 0.6)
-		sb.shadow_size = 10
-	_intent.add_theme_stylebox_override("panel", sb)
-	_intent_label.add_theme_color_override("font_color", text_c.get(intent.id, UI.TEXT))
+	var all: Array = state.get("enemies", [e])
+	for i in _intent_boxes.size():
+		var mi: Dictionary = GameData.ENEMY_MOVES[all[i].intent]
+		var box: PanelContainer = _intent_boxes[i]
+		var lbl: Label = box.get_child(0)
+		# In Gruppen markiert ▶ das aktuelle Ziel.
+		var mark := "▶ " if all.size() > 1 and i == int(state.get("target", 0)) else ""
+		lbl.text = "%s%s %s" % [mark, mi.icon, mi.name]
+		var sb := UiTheme.box(Color(0.055, 0.047, 0.04, 0.85), border.get(mi.id, UI.GOLD), 2 if mark != "" else 1, 14, Vector4(12, 4, 12, 4))
+		if mi.id == "heavy":
+			sb.shadow_color = Color(1, 0.35, 0.24, 0.6)
+			sb.shadow_size = 10
+		box.add_theme_stylebox_override("panel", sb)
+		lbl.add_theme_color_override("font_color", text_c.get(mi.id, UI.TEXT))
 
 	UI.clear(_party_panel)
 	var hp_low := float(p.hp) / float(p.maxHp) < 0.3
