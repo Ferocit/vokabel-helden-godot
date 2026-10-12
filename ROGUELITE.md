@@ -169,14 +169,14 @@ Schätzwerte unter `simulation.time`.
 Neu erzeugen: `start.bat sim runs=40 learner=beginner,average,strong` bzw.
 `start.bat sim runs=40 heat=3,5 skills=none,full` und `start.bat sim campaign=8` (Linux/macOS: `./start.sh sim …`).
 
-| Fall (Krieger, 40 Läufe) | Sieg | Ø Splitter | Ø Abfragen | Ø Minuten |
+| Fall (Krieger, 40 Läufe, Stand nach allen Issues) | Sieg | Ø Splitter | Ø Abfragen | Ø Minuten |
 | --- | --- | --- | --- | --- |
-| Stufe 0, Anfänger | 100 % | ≈ 42 | ≈ 68 | ≈ 17 |
-| Stufe 0, Durchschnitt | 100 % | ≈ 41 | ≈ 43 | ≈ 10 |
-| Stufe 0, stark | 100 % | ≈ 41 | ≈ 31 | ≈ 7 |
-| Stufe 3, Durchschnitt, keine Skills | ≈ 50 % | ≈ 59 | ≈ 76 | ≈ 17 |
-| Stufe 3, Durchschnitt, voller Baum | 100 % | ≈ 75 | ≈ 54 | ≈ 12 |
-| Stufe 5, Durchschnitt, voller Baum | ≈ 80 % | ≈ 95 | ≈ 81 | ≈ 18 |
+| Stufe 0, Anfänger | 98 % | ≈ 55 | ≈ 73 | ≈ 18 |
+| Stufe 0, Durchschnitt | 100 % | ≈ 56 | ≈ 57 | ≈ 13 |
+| Stufe 0, stark | 100 % | ≈ 59 | ≈ 43 | ≈ 10 |
+| Pakt-Stufe 3 (= Zähe + Wilde Gegner 3), Durchschnitt, keine Skills | 45 % | ≈ 74 | ≈ 80 | ≈ 18 |
+| dito, voller Baum | 100 % | ≈ 103 | ≈ 74 | ≈ 16 |
+| Pakt-Stufe 5, Durchschnitt, voller Baum | 68 % | ≈ 123 | ≈ 96 | ≈ 21 |
 
 Kampagne (Durchschnitt, immer höchste freie Stufe, Splitter sofort in den Baum): Splitter pro Lauf 37 → 53 → 60 → 80 …,
 der Krieger-Baum ist nach 4 Läufen voll.
