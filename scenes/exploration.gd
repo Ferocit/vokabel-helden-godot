@@ -84,7 +84,8 @@ func is_gone(obj: Dictionary) -> bool:
 	if obj.kind == "enemy":
 		return run.defeated.has(obj.id)
 	if obj.kind == "heal":
-		return false
+		# Ein Altar heilt nur einmal (Issue #33); danach ist er erloschen.
+		return Meta.altar_used(run, obj.id)
 	return run.opened.has(obj.id)
 
 
@@ -356,8 +357,7 @@ func describe(obj: Dictionary) -> String:
 			var missing := int(obj.runes) - int(run.runes)
 			return "Siegeltor – dir fehlen noch %d Runen" % missing if missing > 0 else "Siegeltor mit den Runen öffnen"
 		"heal":
-			return "Am Kristallaltar ausruhen"
-		"shrine":
+			return "Kristallaltar (erloschen) – Händler" if Meta.altar_used(run, obj.id) else "Am Kristallaltar ausruhen (heilt einmal)"
 			return "Wissensschrein befragen (%d Vokabeln – je mehr richtig, desto besser)" % int(GameConfig.section("shrine").words)
 	return ""
 
@@ -389,14 +389,18 @@ func _unhandled_input(event: InputEvent) -> void:
 func interact(obj: Dictionary) -> void:
 	match obj.kind:
 		"heal":
-			var s := Ctx.stats()
-			run.hp = int(s.maxHp)
-			run.focus = int(s.maxFocus)
+			# Jeder Altar heilt nur einmal pro Abenteuer (Issue #33); Händler und Rückkehrpunkt bleiben.
+			var healed := Meta.use_altar(run, obj.id)
+			if healed:
+				var s := Ctx.stats()
+				run.hp = int(s.maxHp)
+				run.focus = int(s.maxFocus)
+				Sound.play("heal")
+				_refresh_object(obj)
 			run.lastHeal = Vector2(obj.x + 0.5, obj.y + 0.5)
-			Sound.play("heal")
 			hud.refresh()
 			Ctx.autosave()
-			open_altar(obj)
+			open_altar(obj, healed)
 		"bossDoor":
 			if int(run.runes) < int(obj.runes):
 				toast("Das Siegeltor braucht %d Runen. Besiege Gegner und öffne Türen, um Runen zu sammeln." % int(obj.runes))
@@ -862,7 +866,7 @@ func _shake(seconds: float, strength: float) -> void:
 # ---------- Kristallaltar mit Händler ----------
 
 ## Rast am Altar: HP/Fokus sind schon aufgefüllt; der Händler bietet Gegenstände und Tränke für Gold an.
-func open_altar(obj: Dictionary) -> UI.Modal:
+func open_altar(obj: Dictionary, healed: bool = true) -> UI.Modal:
 	busy = true
 	walk_time = 0.0
 	var m := UI.modal(ui, "Kristallaltar", 900)
@@ -873,16 +877,19 @@ func open_altar(obj: Dictionary) -> UI.Modal:
 		Ctx.autosave())
 	var content := UI.vbox()
 	m.body.add_child(content)
-	_render_altar(content, obj)
+	_render_altar(content, obj, healed)
 	return m
 
 
-func _render_altar(content: VBoxContainer, obj: Dictionary) -> void:
+func _render_altar(content: VBoxContainer, obj: Dictionary, healed: bool = true) -> void:
 	UI.clear(content)
 	var rerender := func() -> void:
 		hud.refresh()
-		_render_altar(content, obj)
-	content.add_child(UI.para("Der Kristall leuchtet: HP und Fokus sind wieder voll. Hier erwachst du, falls du besiegt wirst.", "Good", 17))
+		_render_altar(content, obj, healed)
+	if healed:
+		content.add_child(UI.para("Der Kristall leuchtet: HP und Fokus sind wieder voll. Seine Kraft ist damit verbraucht – er heilt dich in diesem Abenteuer nicht noch einmal. Hier erwachst du, falls du besiegt wirst.", "Good", 17))
+	else:
+		content.add_child(UI.para("Der Kristall ist erloschen und heilt dich nicht mehr. Der Händler ist aber noch da, und hier erwachst du, falls du besiegt wirst.", "Dim", 17))
 	content.add_child(UI.hbox([UI.label("Händler", "H3"), UI.spacer(), UI.label("💰 %d Gold" % int(Ctx.profile.gold), "Accent", 18)]))
 	var offers := Meta.shop_offers(run, Ctx.profile, obj.id)
 	if offers.is_empty():

@@ -547,6 +547,12 @@ func _create_view(obj: Dictionary) -> void:
 			var s := Fx.sprite(Assets.frame(TD.altar))
 			s.rotation.x = TILT
 			node.add_child(s)
+			if gone:
+				# Erloschener Altar (Issue #33): grau, ohne Licht und Funken.
+				s.modulate = Color(0.5, 0.52, 0.55)
+				objects_root.add_child(node)
+				views[obj.id] = node
+				return
 			var l := Fx.Flicker.new()
 			l.light_color = Color("#6dffa8")
 			l.base_energy = 1.6

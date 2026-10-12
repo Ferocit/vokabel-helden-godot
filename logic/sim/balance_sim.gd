@@ -207,6 +207,7 @@ class _Run:
 	var combo := 0
 	var max_combo := 0
 	var last_revenge := false
+	var altars_used := 0
 	var groups_fought := 0
 	var last_key := ""
 	var armor_broken := 0
@@ -266,6 +267,7 @@ class _Run:
 		run_state.defeated = {}
 		run_state.opened = {}
 		run_state.runes = 0
+		run_state.altarUsed = {}
 		pos = map.start
 		if floor > 1:
 			var s := _stats()
@@ -425,11 +427,14 @@ class _Run:
 		auto_equip()
 
 	## Am Kristallaltar: heilen und einkaufen.
+	## Am Altar: heilen (nur einmal je Altar, Issue #33) und einkaufen.
 	func rest(altar: Dictionary) -> void:
 		_walk_to(Vector2i(altar.x, altar.y))
 		var s := _stats()
-		run_state.hp = int(s.maxHp)
-		run_state.focus = int(s.maxFocus)
+		if Meta.use_altar(run_state, altar.id):
+			run_state.hp = int(s.maxHp)
+			run_state.focus = int(s.maxFocus)
+			altars_used += 1
 		if not o.useShop:
 			return
 		var bought := false
@@ -606,13 +611,15 @@ class _Run:
 		var boss_attempts := 0
 		var alive := true
 		var victory := false
-		# Nächstgelegenes Ziel zuerst; vor Elite und Boss (und bei wenig HP) zum Altar.
+		# Nächstgelegenes Ziel zuerst. Jeder Altar heilt nur einmal (Issue #33): Der Bot spart ihn sich auf, bis
+		# er vor einem Kampf wenig HP hat, und hebt den letzten für den Boss auf, wenn es geht.
 		while alive and not todo.is_empty():
 			todo.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return _dist(a) < _dist(b))
 			var obj: Dictionary = todo[0]
 			var low := float(run_state.hp) < float(_stats().maxHp) * float(sc.restBelowHp)
-			if obj.kind == "enemy" and (obj.tier == "elite" or low):
-				rest(_nearest(altars))
+			var free_altars := altars.filter(func(a: Dictionary) -> bool: return not Meta.altar_used(run_state, a.id))
+			if obj.kind == "enemy" and low and free_altars.size() > (1 if obj.tier == "normal" else 0):
+				rest(_nearest(free_altars))
 			_walk_to(Vector2i(obj.x, obj.y))
 			if obj.kind == "shrine":
 				shrine(obj)
@@ -622,13 +629,17 @@ class _Run:
 				if fight(obj) == "lost":
 					defeats += 1
 					alive = Meta.lose_life(profile)
-					rest(altars[0])
+					_respawn(altars[0])
 					continue
 			else:
 				challenge(obj)
 			todo.pop_front()
 		while alive and not victory:
-			rest(_nearest(altars))
+			var free := altars.filter(func(a: Dictionary) -> bool: return not Meta.altar_used(run_state, a.id))
+			if not free.is_empty() and float(run_state.hp) < float(_stats().maxHp) * 0.9:
+				rest(_nearest(free))
+			else:
+				rest(_nearest(altars))  # nur Händler
 			_walk_to(Vector2i(boss.x, boss.y))
 			boss_attempts += 1
 			if fight(boss) == "won":
@@ -636,7 +647,16 @@ class _Run:
 			else:
 				defeats += 1
 				alive = Meta.lose_life(profile)
+				_respawn(altars[0])
 		return {"victory": victory, "defeats": defeats, "bossAttempts": boss_attempts}
+
+
+	## Nach einer Niederlage: wie im Spiel am Altar erwachen, mit vollen HP und vollem Fokus.
+	func _respawn(altar: Dictionary) -> void:
+		pos = Vector2i(altar.x, altar.y)
+		var s := _stats()
+		run_state.hp = int(s.maxHp)
+		run_state.focus = int(s.maxFocus)
 
 	func _dist(obj: Dictionary) -> int:
 		return absi(int(obj.x) - pos.x) + absi(int(obj.y) - pos.y)
@@ -688,6 +708,7 @@ class _Run:
 			"perMinute": questions / maxf(0.01, seconds / 60.0),
 			"talents": talents_taken,
 			"maxCombo": max_combo,
+			"altarsUsed": altars_used,
 			"groups": groups_fought,
 			"nemesisArmor": armor_total,
 			"nemesisBroken": armor_broken,

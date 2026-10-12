@@ -105,6 +105,7 @@ func start_run(unit_ids: Array, world_id: String = "jungle", seed: int = -1, pac
 		"focus": int(s.maxFocus),
 		"runes": 0,
 		"combo": 0,
+		"altarUsed": {},
 		"player": start_pos,
 		"lastHeal": start_pos,
 		"defeated": {},
@@ -173,6 +174,7 @@ func resume_run() -> Dictionary:
 		"focus": mini(int(snap.focus), int(s.maxFocus)),
 		"runes": int(snap.runes),
 		"combo": int(snap.get("combo", 0)),
+		"altarUsed": _to_set(snap.get("altarUsed", [])),
 		"player": Vector2(snap.player.x, snap.player.y),
 		"lastHeal": Vector2(snap.lastHeal.x, snap.lastHeal.y),
 		"defeated": to_set.call(snap.defeated),
@@ -221,6 +223,7 @@ func descend() -> void:
 	run.map = map
 	run.defeated = {}
 	run.opened = {}
+	run.altarUsed = {}
 	run.runes = 0
 	var start_pos := Vector2(map.start.x + 0.5, map.start.y + 0.5)
 	run.player = start_pos
@@ -350,6 +353,14 @@ func submit_answer(item: Dictionary, res: Dictionary) -> int:
 	return 0
 
 
+static func _to_set(list: Variant) -> Dictionary:
+	var d := {}
+	if list is Array:
+		for k: Variant in list:
+			d[String(k)] = true
+	return d
+
+
 func _create_learning(unit_ids: Array, seed: int, pact: Dictionary = {}) -> LearningSession:
 	return LearningSession.new(repo.learning_items(unit_ids), progress, GameConfig.section("learning"), Rng.create(seed & Rng.MASK), Vocab.now_ms,
 		{"repeatGapReduction": stats().repeatGapReduction, "unseenBoost": Pact.rank(pact, "p_new") > 0})
@@ -385,6 +396,7 @@ func snapshot_run() -> Dictionary:
 		"focus": run.focus,
 		"runes": run.runes,
 		"combo": run.get("combo", 0),
+		"altarUsed": (run.get("altarUsed", {}) as Dictionary).keys(),
 		"player": {"x": run.player.x, "y": run.player.y},
 		"lastHeal": {"x": run.lastHeal.x, "y": run.lastHeal.y},
 		"defeated": run.defeated.keys(),

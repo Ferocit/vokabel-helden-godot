@@ -193,6 +193,20 @@ func test_erkundung_altar_heilt() -> void:
 	expect_true(e.busy, "Altar-Fenster mit Händler offen")
 	var buys: Array = e.ui.find_children("*", "Button", true, false).filter(func(b: Button) -> bool: return b.text.begins_with("Kaufen −"))
 	expect_ge(buys.size(), 2, "Gegenstände und Trank im Angebot")
+	# Issue #33: Ein Altar heilt nur einmal; Händler und Rückkehrpunkt bleiben.
+	for m in e.ui.find_children("*", "Modal", true, false):
+		(m as UI.Modal).close()
+	e.busy = false
+	Ctx.run.hp = 3
+	e.interact(heal)
+	expect_eq(int(Ctx.run.hp), 3, "zweites Mal keine Heilung")
+	expect_true(e.busy, "Händler trotzdem offen")
+	expect_true(e.is_gone(heal), "Altar gilt als erloschen")
+	expect_true(e.describe(heal).contains("erloschen"))
+	Ctx.autosave()
+	expect_true(Meta.altar_used(Ctx.resume_run(), heal.id), "bleibt im Spielstand erloschen")
+	Ctx.descend()
+	expect_false(Meta.altar_used(Ctx.run, heal.id), "neue Ebene, neue Altäre")
 	e.free()
 
 

@@ -76,6 +76,9 @@ Neue Effekte: Schlüssel in `SkillTrees.EFFECT_TEXT` eintragen und an der passen
   Angriffe und Fähigkeiten machen dann +10 % Schaden je Stufe (bis ×1,5). Mit Hilfe oder „fast richtig“ bleibt sie
   stehen, ein Fehler setzt sie zurück. Sie gilt für das ganze Abenteuer (auch Truhen und Türen). Ausgleich: Gegner
   haben ×1,3 HP (`combat.enemyHpFactor`).
+- **Kristallaltar heilt nur einmal** (Issue #33, `Meta.use_altar`): danach erlischt er (grau, ohne Licht),
+  Händler und Rückkehrpunkt bleiben. Pro Ebene gibt es neue Altäre. Laut Simulator ändert das die Balance kaum,
+  weil Level-ups, Tränke, Schreine und „HP nach Sieg“ heilen.
 - **Händler am Kristallaltar:** pro Abenteuer und Altar 3 feste Angebote (Seed), Preise nach Seltenheit
   (`meta.shopPrice` 20/45/90), dazu Heiltränke. Gekauftes landet in der Tasche.
 - **Gegenstände** nutzen ebenfalls die Skill-Effektschlüssel (z. B. Wandererring = Tempo, Runenklinge =
@@ -160,7 +163,7 @@ Erschwernis, und Sprachausgabe hängt unter Windows von installierten Stimmen ab
 
 ## Gemessene Balance (Simulator `logic/sim/balance_sim.gd`)
 Der Simulator spielt komplette Abenteuer mit der echten Spiellogik. Der Bot geht immer zum nächsten Ziel, heilt sich
-am Altar vor Elite/Boss und bei weniger als 50 % HP, kauft beim Händler, wählt Talente und Segnungen, nutzt Hilfen
+am Altar (jeder heilt nur einmal) bei weniger als 50 % HP und vor dem Boss, kauft beim Händler, wählt Talente und Segnungen, nutzt Hilfen
 bei unsicheren Wörtern und verliert nach 3 Niederlagen. Lerner-Modelle (`config/game.json → simulation.learners`):
 jedes Wort hat eine eigene Trefferwahrscheinlichkeit, die mit jedem Abruf wächst (Anfänger ≈ 25 %, Durchschnitt ≈ 55 %,
 stark ≈ 80 % zu Beginn); zwischen zwei Läufen wird etwas vergessen. Zeiten (Laufen, Antworten, Kampfrunden) sind grobe

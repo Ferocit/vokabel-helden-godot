@@ -59,6 +59,8 @@ func _draw() -> void:
 				c = Color("#8a5a2c")
 			"bossDoor":
 				c = Color("#c070ff")
+			"heal":
+				c = Color("#6a8070") if Meta.altar_used(run, obj.id) else Color("#3ddc84")
 			"shrine":
 				c = Color("#7ab8ff") if not run.opened.has(obj.id) else Color("#6a7080")
 			"plate":

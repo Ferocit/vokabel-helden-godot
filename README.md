@@ -44,7 +44,8 @@ Einstellungen (Ton, Lautstärke, Vollbild) und eine Spielanleitung gibt es im Ti
 3. **Erkunden:** Runen ◆ sammeln (Gegner, Türen), um das Siegeltor zum Boss zu öffnen. **Wissensschreine**
    (blaue Steintafeln) fragen drei Vokabeln ab – je mehr richtig, desto besser die Belohnung, alle drei heilen.
    **Runenplatten** in den Gängen fragen beim Drüberlaufen ein Wort ab (richtig: Gold, falsch: ein paar HP).
-   Der Kristallaltar heilt und ist der Rückkehrpunkt nach einer Niederlage.
+   Jeder Kristallaltar heilt **einmal** voll; danach ist er erloschen, bleibt aber Händler und Rückkehrpunkt nach
+   einer Niederlage.
    Nach dem Boss geht es auf Wunsch **tiefer hinab** (bis Ebene 3, stärkere Gegner, mehr Splitter) – jede Ebene ist
    ein eigenes Biom: Dschungeltempel → Kristallhöhle → Eistempel, jeweils mit eigenen Gegnern und Boss.
 4. **Kämpfen:** Jede Aktion verlangt eine richtig erinnerte Vokabel. Falsch → die Aktion verpufft, die

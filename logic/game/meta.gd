@@ -276,6 +276,23 @@ static func apply_final_exam(profile: Dictionary, run: Dictionary, correct: int)
 	return shards
 
 
+# ---------- Kristallaltar (Issue #33) ----------
+## Jeder Altar heilt pro Abenteuer (und Ebene) nur einmal; Händler und Rückkehrpunkt bleiben.
+
+static func altar_used(run: Dictionary, altar_id: String) -> bool:
+	return (run.get("altarUsed", {}) as Dictionary).has(altar_id)
+
+
+## Altar zum Heilen benutzen. Liefert true, wenn er noch Kraft hatte (dann ist er jetzt verbraucht).
+static func use_altar(run: Dictionary, altar_id: String) -> bool:
+	if altar_used(run, altar_id):
+		return false
+	if not run.get("altarUsed") is Dictionary:
+		run.altarUsed = {}
+	run.altarUsed[altar_id] = true
+	return true
+
+
 # ---------- Leben, Segnungen, Händler (nur im laufenden Abenteuer) ----------
 
 ## Eine Niederlage kostet ein Leben. Liefert true, wenn noch Leben übrig sind (Erwachen am Altar).
